@@ -2,7 +2,7 @@ import { Link } from '@modules/router';
 
 /**
  * Страница «Не найдено»: показывается, когда адресу не подошёл ни один маршрут.
- * @returns {JSX.Element} страница
+ * @returns страница
  */
 export const NotFoundPage = () => (
     <section>

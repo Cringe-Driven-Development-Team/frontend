@@ -11,8 +11,8 @@ interface CellProps {
 
 /**
  * Ячейка блокнота (Components → Cell). Пустая показывает подсказку.
- * @param {CellProps} props свойства ячейки
- * @returns {JSX.Element} ячейка
+ * @param props свойства ячейки
+ * @returns ячейка
  */
 export function Cell({ cell, onDelete }: CellProps) {
     const isCode = cell.kind === 'code';
@@ -42,8 +42,8 @@ export function Cell({ cell, onDelete }: CellProps) {
 
 /**
  * Id элемента ячейки: по нему страница прокручивает к новой ячейке.
- * @param {string} id id ячейки внутри блокнота
- * @returns {string} id элемента
+ * @param id id ячейки внутри блокнота
+ * @returns id элемента
  */
 export function cellDomId(id: string): string {
     return `cell-${id}`;
@@ -51,7 +51,7 @@ export function cellDomId(id: string): string {
 
 /**
  * Ячейка-скелетон, пока блокнот загружается.
- * @returns {JSX.Element} скелетон ячейки
+ * @returns скелетон ячейки
  */
 export function CellSkeleton() {
     return (

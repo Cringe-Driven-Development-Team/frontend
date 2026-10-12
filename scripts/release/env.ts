@@ -5,8 +5,8 @@ export class ReleaseError extends Error {}
 
 /**
  * Обязательная переменная окружения; если её нет или она пустая — ReleaseError.
- * @param {string} name имя переменной
- * @returns {string} значение переменной
+ * @param name имя переменной
+ * @returns значение переменной
  */
 export function need(name: string): string {
     const value = process.env[name];
@@ -16,8 +16,8 @@ export function need(name: string): string {
 
 /**
  * Проверяет аргумент команды: нужен полный sha коммита, иначе ReleaseError.
- * @param {string | undefined} sha аргумент команды
- * @returns {string} тот же sha
+ * @param sha аргумент команды
+ * @returns тот же sha
  */
 export function checkSha(sha: string | undefined): string {
     if (!sha || !isSha(sha))
@@ -27,8 +27,8 @@ export function checkSha(sha: string | undefined): string {
 
 /**
  * Похожа ли строка на полный sha коммита.
- * @param {string} value строка
- * @returns {boolean} true, если это 40 шестнадцатеричных символов в нижнем регистре
+ * @param value строка
+ * @returns true, если это 40 шестнадцатеричных символов в нижнем регистре
  */
 export function isSha(value: string): boolean {
     return /^[0-9a-f]{40}$/.test(value);
@@ -40,7 +40,7 @@ function baseUrl(value: string): string {
 
 /**
  * Адрес CDN релизов из переменной CDN_URL.
- * @returns {string} адрес со схемой и без завершающего слэша
+ * @returns адрес со схемой и без завершающего слэша
  */
 export function cdnUrl(): string {
     return baseUrl(need('CDN_URL'));
@@ -48,7 +48,7 @@ export function cdnUrl(): string {
 
 /**
  * Адрес сайта из переменной SITE_URL (по умолчанию https://cellestial.ru).
- * @returns {string} адрес со схемой и без завершающего слэша
+ * @returns адрес со схемой и без завершающего слэша
  */
 export function siteUrl(): string {
     return baseUrl(process.env.SITE_URL || 'https://cellestial.ru');
@@ -56,8 +56,8 @@ export function siteUrl(): string {
 
 /**
  * Выход шага workflow; вне GitHub Actions ничего не делает.
- * @param {string} name имя выхода
- * @param {string} value значение
+ * @param name имя выхода
+ * @param value значение
  */
 export function output(name: string, value: string): void {
     const file = process.env.GITHUB_OUTPUT;

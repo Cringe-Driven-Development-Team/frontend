@@ -12,8 +12,8 @@ interface StateBlockProps {
 
 /**
  * Заглушка пустого состояния (Components → StateBlock).
- * @param {StateBlockProps} props свойства заглушки
- * @returns {JSX.Element} заглушка
+ * @param props свойства заглушки
+ * @returns заглушка
  */
 export function StateBlock({ title, description, children }: StateBlockProps) {
     return (

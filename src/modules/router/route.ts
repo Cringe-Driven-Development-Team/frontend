@@ -184,7 +184,7 @@ export class Route<
 
     /**
      * Вычисляет `id` и `fullPath` по родителю. Вызывается роутером при обходе дерева.
-     * @param {AnyRoute | undefined} parent родительский маршрут; `undefined` — у корня
+     * @param parent родительский маршрут; `undefined` — у корня
      */
     init(parent: AnyRoute | undefined): void {
         this.parentRoute = parent;
@@ -215,8 +215,8 @@ export class Route<
 
 /**
  * Создаёт маршрут.
- * @param {RouteOptions} options родитель, `path` или `id`, компоненты, `beforeLoad` и `loader`
- * @returns {Route} маршрут
+ * @param options родитель, `path` или `id`, компоненты, `beforeLoad` и `loader`
+ * @returns маршрут
  */
 export function createRoute<
     TParent extends AnyRoute,
@@ -240,8 +240,8 @@ export function createRoute<
 
 /**
  * Создаёт корневой маршрут.
- * @param {RootRouteOptions} [options] компоненты, `beforeLoad` и `loader`
- * @returns {Route} корневой маршрут
+ * @param [options] компоненты, `beforeLoad` и `loader`
+ * @returns корневой маршрут
  */
 export function createRootRoute<
     TOwnSearch = {},
@@ -256,7 +256,7 @@ export function createRootRoute<
 
 /**
  * Корневой маршрут с типизированным контекстом роутера: `createRootRouteWithContext<Ctx>()({...})`
- * @returns {Function} функция, которая создаёт корневой маршрут из его настроек
+ * @returns функция, которая создаёт корневой маршрут из его настроек
  */
 export function createRootRouteWithContext<TRouterContext extends object>() {
     return <TOwnSearch = {}, TBeforeLoad = void, TDeps = undefined, TLoaderResult = undefined>(

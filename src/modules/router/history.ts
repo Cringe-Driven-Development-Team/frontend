@@ -20,7 +20,7 @@ export interface RouterHistory {
 
 /**
  * История поверх `window.history`.
- * @returns {RouterHistory} история браузера
+ * @returns история браузера
  */
 export function createBrowserHistory(): RouterHistory {
     const listeners = new Set<() => void>();
@@ -56,8 +56,8 @@ export interface MemoryHistoryOptions {
 
 /**
  * История в памяти: для тестов и окружений без `window`.
- * @param {MemoryHistoryOptions} [options] начальные записи и номер текущей
- * @returns {RouterHistory} история в памяти
+ * @param [options] начальные записи и номер текущей
+ * @returns история в памяти
  */
 export function createMemoryHistory(options: MemoryHistoryOptions = {}): RouterHistory {
     const entries = (options.initialEntries ?? ['/']).map((href) => parseHref(href, null));

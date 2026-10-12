@@ -4,9 +4,9 @@
 /**
  * JSDoc-комментарий прямо перед узлом.
  *
- * @param {object} context контекст правила
- * @param {object} node узел AST
- * @returns {string | null} текст комментария без ограничителей или null, если JSDoc нет
+ * @param context контекст правила
+ * @param node узел AST
+ * @returns текст комментария без ограничителей или null, если JSDoc нет
  */
 function jsdocBefore(context, node) {
     const comment = context.sourceCode.getCommentsBefore(node).at(-1);
@@ -16,8 +16,8 @@ function jsdocBefore(context, node) {
 /**
  * Имена параметров из тегов `@param`, без вложенных (`props.name`) и в порядке записи.
  *
- * @param {string} jsdoc текст JSDoc-комментария
- * @returns {string[]} имена параметров
+ * @param jsdoc текст JSDoc-комментария
+ * @returns имена параметров
  */
 function paramTags(jsdoc) {
     const names = [];
@@ -43,8 +43,8 @@ function paramTags(jsdoc) {
  * Функция, которую документирует комментарий перед узлом: само объявление либо функция
  * в инициализаторе `const`.
  *
- * @param {object} node объявление после `export` или сам узел
- * @returns {object | null} узел функции или null, если документируется не функция
+ * @param node объявление после `export` или сам узел
+ * @returns узел функции или null, если документируется не функция
  */
 function documentedFunction(node) {
     const target = node.type.startsWith('Export') ? node.declaration : node;
@@ -62,8 +62,8 @@ function documentedFunction(node) {
 /**
  * Имя параметра функции, как его ждёт `@param`.
  *
- * @param {object} param узел параметра
- * @returns {string | null} имя или null, если параметр деструктурирован и имя в JSDoc любое
+ * @param param узел параметра
+ * @returns имя или null, если параметр деструктурирован и имя в JSDoc любое
  */
 function paramName(param) {
     if (param.type === 'TSParameterProperty') return paramName(param.parameter);

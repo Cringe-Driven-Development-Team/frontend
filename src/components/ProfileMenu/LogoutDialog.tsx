@@ -16,8 +16,8 @@ interface LogoutDialogProps {
 
 /**
  * Модалка «Выйти из аккаунта?». После выхода открывается страница входа.
- * @param {LogoutDialogProps} props свойства модалки
- * @returns {JSX.Element} модалка
+ * @param props свойства модалки
+ * @returns модалка
  */
 export function LogoutDialog({ onClose }: LogoutDialogProps) {
     const navigate = useNavigate();

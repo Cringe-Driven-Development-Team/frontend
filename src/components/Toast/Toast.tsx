@@ -22,8 +22,8 @@ interface ToastProps {
 
 /**
  * Тост внизу по центру экрана (Components → Toast).
- * @param {ToastProps} props свойства тоста
- * @returns {JSX.Element} область уведомлений
+ * @param props свойства тоста
+ * @returns область уведомлений
  */
 export function Toast({ toast }: ToastProps) {
     return (
