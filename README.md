@@ -116,6 +116,9 @@ APIDOG_BRANCH_ID=
 | `CD` | вручную из `main`, вход `sha` (пусто — голова `main`) | релиз есть в бакете → Release check → `index.html` и `current.json` → Health check → в S3 остаются 5 релизов → сообщение в Telegram |
 | `Rollback` | вручную: `Actions` → `Rollback` → `Run workflow` из `main` | Release check релиза `previous` → возвращает его, `stable` и `previous` меняются местами → Health check → сообщение в Telegram |
 
+Сообщения о релизах приходят в топик из переменной репозитория `TELEGRAM_RELEASES_TOPIC_ID`
+(Frontend / Releases); если она пустая — в `TELEGRAM_TOPIC_ID`, вместе с задачами и PR
+
 Выкатить релиз: `Actions` → `CD` → `Run workflow` из `main`, в поле `sha` — полный sha коммита
 (он есть в сообщении о заливке), либо `gh workflow run cd.yml -f sha=<sha>`
 
