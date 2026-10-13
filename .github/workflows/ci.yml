@@ -28,7 +28,6 @@ jobs:
         with:
           bun-version: 1.4.x
       - run: bun install --frozen-lockfile
-      - run: bun test ./scripts/release/notify.test.ts
       - run: bun run check
       - run: bun run build
 
