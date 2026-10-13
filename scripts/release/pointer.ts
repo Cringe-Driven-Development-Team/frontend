@@ -34,7 +34,7 @@ function checkForward(stable: string, sha: string): void {
 
 /**
  * Релиз есть в бакете; выполняется до Release check, чтобы ошибка была понятнее, чем 404 с CDN.
- * @param {string} sha sha релиза
+ * @param sha sha релиза
  */
 export async function exists(sha: string): Promise<void> {
     if (!(await hasRelease(openBucket(), sha))) {
@@ -48,7 +48,7 @@ export async function exists(sha: string): Promise<void> {
 
 /**
  * Сделать релиз текущим.
- * @param {string} sha sha релиза
+ * @param sha sha релиза
  */
 export async function promote(sha: string): Promise<void> {
     const bucket = openBucket();
@@ -65,7 +65,7 @@ export async function promote(sha: string): Promise<void> {
 
 /**
  * Sha релиза previous — того, на который вернёт откат; попадает в выход шага sha.
- * @returns {Promise<string>} sha релиза previous
+ * @returns sha релиза previous
  */
 export async function findPrevious(): Promise<string> {
     const current = await readCurrent(openBucket());
@@ -79,7 +79,7 @@ export async function findPrevious(): Promise<string> {
 
 /**
  * Вернуть релиз previous: stable и previous меняются местами.
- * @param {string} sha sha релиза previous
+ * @param sha sha релиза previous
  */
 export async function rollback(sha: string): Promise<void> {
     const bucket = openBucket();

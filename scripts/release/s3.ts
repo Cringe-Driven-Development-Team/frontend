@@ -31,7 +31,7 @@ export interface Bucket {
 
 /**
  * Клиент S3 и бакет из переменных S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY и S3_SECRET_KEY.
- * @returns {Bucket} бакет релизов
+ * @returns бакет релизов
  */
 export function openBucket(): Bucket {
     const endpoint = need('S3_ENDPOINT');
@@ -57,11 +57,11 @@ export function openBucket(): Bucket {
 
 /**
  * Записывает объект в бакет.
- * @param {Bucket} bucket бакет
- * @param {string} key ключ объекта
- * @param {Uint8Array | string} body содержимое
- * @param {string} contentType значение Content-Type
- * @param {string} cacheControl значение Cache-Control
+ * @param bucket бакет
+ * @param key ключ объекта
+ * @param body содержимое
+ * @param contentType значение Content-Type
+ * @param cacheControl значение Cache-Control
  */
 export async function putObject(
     bucket: Bucket,
@@ -83,9 +83,9 @@ export async function putObject(
 
 /**
  * Релиз залит целиком: upload пишет index.html последним.
- * @param {Bucket} bucket бакет
- * @param {string} sha sha релиза
- * @returns {Promise<boolean>} true, если в бакете есть index.html релиза
+ * @param bucket бакет
+ * @param sha sha релиза
+ * @returns true, если в бакете есть index.html релиза
  */
 export async function hasRelease(bucket: Bucket, sha: string): Promise<boolean> {
     try {
@@ -101,8 +101,8 @@ export async function hasRelease(bucket: Bucket, sha: string): Promise<boolean> 
 
 /**
  * Читает current.json.
- * @param {Bucket} bucket бакет
- * @returns {Promise<Current | null>} указатель релиза; null — файла ещё нет (первый релиз)
+ * @param bucket бакет
+ * @returns указатель релиза; null — файла ещё нет (первый релиз)
  */
 export async function readCurrent(bucket: Bucket): Promise<Current | null> {
     let text: string | undefined;
@@ -131,8 +131,8 @@ export async function readCurrent(bucket: Bucket): Promise<Current | null> {
 
 /**
  * Записывает current.json.
- * @param {Bucket} bucket бакет
- * @param {Current} current указатель релиза
+ * @param bucket бакет
+ * @param current указатель релиза
  */
 export async function writeCurrent(bucket: Bucket, current: Current): Promise<void> {
     await putObject(bucket, 'current.json', JSON.stringify(current), 'application/json', NO_CACHE);
@@ -140,8 +140,8 @@ export async function writeCurrent(bucket: Bucket, current: Current): Promise<vo
 
 /**
  * releases/{sha}/index.html → корневой index.html, его отдаёт Caddy.
- * @param {Bucket} bucket бакет
- * @param {string} sha sha релиза
+ * @param bucket бакет
+ * @param sha sha релиза
  */
 export async function publishIndex(bucket: Bucket, sha: string): Promise<void> {
     await bucket.client.send(
@@ -164,9 +164,9 @@ export interface StoredObject {
 
 /**
  * Все объекты бакета с префиксом, со всех страниц выдачи.
- * @param {Bucket} bucket бакет
- * @param {string} prefix префикс ключей
- * @returns {Promise<StoredObject[]>} объекты
+ * @param bucket бакет
+ * @param prefix префикс ключей
+ * @returns объекты
  */
 export async function listObjects(bucket: Bucket, prefix: string): Promise<StoredObject[]> {
     const objects: StoredObject[] = [];
@@ -190,8 +190,8 @@ export async function listObjects(bucket: Bucket, prefix: string): Promise<Store
 
 /**
  * Удаляет объект из бакета.
- * @param {Bucket} bucket бакет
- * @param {string} key ключ объекта
+ * @param bucket бакет
+ * @param key ключ объекта
  */
 export async function deleteObject(bucket: Bucket, key: string): Promise<void> {
     await bucket.client.send(new DeleteObjectCommand({ Bucket: bucket.name, Key: key }));

@@ -17,11 +17,6 @@ export default defineConfig({
         // Экспортируемый код документируется JSDoc (README, «Документация кода»)
         'cdd/require-jsdoc': 'error',
         'cdd/check-param-names': 'error',
-        // свойства компонента описаны в интерфейсе его props, в @param — только сам объект
-        'jsdoc/require-param': ['error', { checkDestructured: false }],
-        'jsdoc/require-param-type': 'error',
-        'jsdoc/require-returns': 'error',
-        'jsdoc/require-returns-type': 'error',
         // Модули из src/modules импортируются только через их index.ts
         'no-restricted-imports': [
             'error',

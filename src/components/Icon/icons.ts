@@ -4,9 +4,9 @@
 
 /**
  * Разметка SVG-иконки.
- * @param {number} size сторона квадрата, px
- * @param {string} body содержимое тега svg
- * @returns {string} разметка SVG
+ * @param size сторона квадрата, px
+ * @param body содержимое тега svg
+ * @returns разметка SVG
  */
 const svg = (size: number, body: string): string =>
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" fill="none">${body}</svg>`;

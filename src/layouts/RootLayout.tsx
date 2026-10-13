@@ -6,7 +6,7 @@ import { useToastStore } from '@stores/toast';
 
 /**
  * Корневой макет: `<main>` с дочерним маршрутом, тост и снекбар.
- * @returns {JSX.Element} макет
+ * @returns макет
  */
 export const RootLayout = () => {
     const toast = useToastStore((state) => state.toast);

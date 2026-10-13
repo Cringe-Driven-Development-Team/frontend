@@ -3,7 +3,7 @@ import styles from './Logo.module.css';
 
 /**
  * Логотип (Components → Logo).
- * @returns {JSX.Element} логотип
+ * @returns логотип
  */
 export function Logo() {
     return (

@@ -42,7 +42,7 @@ async function releaseCheckOnce(sha: string): Promise<string> {
 
 /**
  * Релиз отдаётся с CDN: его index.html и чанк из него. Выполняется до смены указателя.
- * @param {string} sha sha релиза
+ * @param sha sha релиза
  */
 export async function releaseCheck(sha: string): Promise<void> {
     for (let attempt = 1; ; attempt++) {
@@ -61,7 +61,7 @@ export async function releaseCheck(sha: string): Promise<void> {
 
 /**
  * Сайт отдаёт HTML релиза. Выполняется после смены указателя.
- * @param {string} sha sha релиза
+ * @param sha sha релиза
  */
 export async function health(sha: string): Promise<void> {
     const url = `${siteUrl()}/`;

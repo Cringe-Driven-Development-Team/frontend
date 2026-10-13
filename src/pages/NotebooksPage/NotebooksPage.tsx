@@ -25,8 +25,7 @@ type ListState =
 
 /**
  * Загружает блокноты пользователя, недавно изменённые — первыми.
- * @returns {Promise<NotebookSummary[] | undefined>} блокноты или undefined, если загрузить не
- *     удалось
+ * @returns блокноты или undefined, если загрузить не удалось
  */
 async function loadNotebooks(): Promise<NotebookSummary[] | undefined> {
     try {
@@ -39,8 +38,8 @@ async function loadNotebooks(): Promise<NotebookSummary[] | undefined> {
 
 /**
  * Подзаголовок под приветствием.
- * @param {ListState} state состояние списка
- * @returns {string} текст подзаголовка
+ * @param state состояние списка
+ * @returns текст подзаголовка
  */
 function subtitle(state: ListState): string {
     switch (state.status) {
@@ -58,7 +57,7 @@ function subtitle(state: ListState): string {
 /**
  * Главная: список блокнотов.
  * Ошибка загрузки — в снекбаре: «Повторить» загружает список ещё раз.
- * @returns {JSX.Element} страница
+ * @returns страница
  */
 export function NotebooksPage() {
     const login = useSessionStore((state) => state.user?.login ?? '');

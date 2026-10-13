@@ -10,8 +10,8 @@ const SPLAT_PARAM = '_splat';
 
 /**
  * Делит путь на непустые сегменты.
- * @param {string} path путь
- * @returns {string[]} сегменты
+ * @param path путь
+ * @returns сегменты
  */
 export function splitPath(path: string): string[] {
     return path.split('/').filter(Boolean);
@@ -19,8 +19,8 @@ export function splitPath(path: string): string[] {
 
 /**
  * Склеивает части в абсолютный путь без дублирующихся и завершающих слэшей.
- * @param {string[]} paths части пути
- * @returns {string} абсолютный путь
+ * @param paths части пути
+ * @returns абсолютный путь
  */
 export function joinPaths(...paths: string[]): string {
     return `/${paths.flatMap(splitPath).join('/')}`;
@@ -28,9 +28,9 @@ export function joinPaths(...paths: string[]): string {
 
 /**
  * Разрешает `to` относительно `base`: поддерживает абсолютные пути, `.` и `..`
- * @param {string} base путь, от которого считать
- * @param {string} to абсолютный или относительный путь
- * @returns {string} абсолютный путь
+ * @param base путь, от которого считать
+ * @param to абсолютный или относительный путь
+ * @returns абсолютный путь
  */
 export function resolvePath(base: string, to: string): string {
     if (to.startsWith('/')) return joinPaths(to);
@@ -47,9 +47,9 @@ export function resolvePath(base: string, to: string): string {
 
 /**
  * Сопоставляет шаблон вида `/users/$userId` с адресом.
- * @param {string} pattern шаблон пути
- * @param {string} pathname путь адреса
- * @returns {Params | undefined} параметры пути или `undefined`, если адрес не подошёл
+ * @param pattern шаблон пути
+ * @param pathname путь адреса
+ * @returns параметры пути или `undefined`, если адрес не подошёл
  */
 export function matchPath(pattern: string, pathname: string): Params | undefined {
     const patternSegments = splitPath(pattern);
@@ -74,9 +74,9 @@ export function matchPath(pattern: string, pathname: string): Params | undefined
 
 /**
  * Подставляет параметры в шаблон пути, сохраняя относительные сегменты.
- * @param {string} pattern шаблон пути
- * @param {ParamValues} params значения параметров
- * @returns {string} путь
+ * @param pattern шаблон пути
+ * @param params значения параметров
+ * @returns путь
  */
 export function interpolatePath(pattern: string, params: ParamValues): string {
     return pattern
@@ -100,8 +100,8 @@ export function interpolatePath(pattern: string, params: ParamValues): string {
 
 /**
  * Приводит кодирование сегментов пути к тому виду, в котором его собирает `interpolatePath`.
- * @param {string} pathname путь адреса
- * @returns {string} путь в едином кодировании
+ * @param pathname путь адреса
+ * @returns путь в едином кодировании
  */
 export function normalizePath(pathname: string): string {
     return joinPaths(encodeSegments(splitPath(pathname).map(decodeSegment).join('/')));
@@ -110,9 +110,9 @@ export function normalizePath(pathname: string): string {
 /**
  * Сравнивает шаблоны по специфичности: статичный сегмент важнее параметра,
  * параметр важнее сплата.
- * @param {string} a первый шаблон
- * @param {string} b второй шаблон
- * @returns {number} отрицательное число, если первым идёт `a`, положительное — если `b`
+ * @param a первый шаблон
+ * @param b второй шаблон
+ * @returns отрицательное число, если первым идёт `a`, положительное — если `b`
  */
 export function comparePatterns(a: string, b: string): number {
     const aSegments = splitPath(a);
@@ -128,8 +128,8 @@ export function comparePatterns(a: string, b: string): number {
 
 /**
  * Разбирает строку search-параметров: значения читаются как JSON, повторяющийся ключ даёт массив.
- * @param {string} searchStr строка запроса, с ведущим `?` или без
- * @returns {Search} search-параметры
+ * @param searchStr строка запроса, с ведущим `?` или без
+ * @returns search-параметры
  */
 export function parseSearch(searchStr: string): Search {
     // Собираем в Map: у объекта ключи вроде `toString` и `__proto__` попали бы в прототип
@@ -150,8 +150,8 @@ export function parseSearch(searchStr: string): Search {
 /**
  * Обратная к `parseSearch`: не-строки пишутся как JSON, так что типы значений переживают
  * перезагрузку.
- * @param {Search} search search-параметры
- * @returns {string} строка с ведущим `?` или пустая, если параметров нет
+ * @param search search-параметры
+ * @returns строка с ведущим `?` или пустая, если параметров нет
  */
 export function stringifySearch(search: Search): string {
     const query = new URLSearchParams();

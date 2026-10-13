@@ -6,8 +6,7 @@ const STAR_COUNT = 70;
 
 /**
  * Звёзды.
- * @returns {{ x: number; y: number; size: number; opacity: number }[]} звёзды: x и y в px макета,
- *     диаметр, непрозрачность
+ * @returns звёзды: x и y в px макета, диаметр, непрозрачность
  */
 function makeStars() {
     let seed = 7;
@@ -35,8 +34,8 @@ interface SpaceProps {
 
 /**
  * Фон «Космос». Декоративный.
- * @param {SpaceProps} props свойства фона
- * @returns {JSX.Element} фон
+ * @param props свойства фона
+ * @returns фон
  */
 export function Space({ variant = 'auth' }: SpaceProps) {
     return (

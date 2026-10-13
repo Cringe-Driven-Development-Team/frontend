@@ -26,7 +26,7 @@ interface FromOptions<TFrom> {
 
 /**
  * Роутер из ближайшего `<RouterProvider>`.
- * @returns {RegisteredRouter} роутер
+ * @returns роутер
  */
 export function useRouter(): RegisteredRouter {
     const router = useContext(RouterContext);
@@ -37,7 +37,7 @@ export function useRouter(): RegisteredRouter {
 
 /**
  * Состояние роутера. С `select` — его часть: компонент перерисовывается, только когда она меняется.
- * @returns {RouterState} состояние роутера
+ * @returns состояние роутера
  */
 export function useRouterState(): RouterState;
 export function useRouterState<TSelected>(options: {
@@ -83,7 +83,7 @@ function selectMatches(state: RouterState): RouteMatch[] {
 
 /**
  * Текущий адрес.
- * @returns {ParsedLocation} адрес, на который идёт навигация
+ * @returns адрес, на который идёт навигация
  */
 export function useLocation(): ParsedLocation {
     return useRouterState({ select: selectLocation });
@@ -91,7 +91,7 @@ export function useLocation(): ParsedLocation {
 
 /**
  * Функция перехода на другой адрес.
- * @returns {RegisteredRouter['navigate']} `navigate` роутера
+ * @returns `navigate` роутера
  */
 export function useNavigate(): RegisteredRouter['navigate'] {
     return useRouter().navigate;
@@ -99,7 +99,7 @@ export function useNavigate(): RegisteredRouter['navigate'] {
 
 /**
  * Совпадения маршрутов текущего адреса.
- * @returns {RouteMatch[]} совпадения от корня к листу
+ * @returns совпадения от корня к листу
  */
 export function useMatches(): RouteMatch[] {
     return useRouterState({ select: selectMatches });
@@ -107,8 +107,8 @@ export function useMatches(): RouteMatch[] {
 
 /**
  * Совпадение маршрута `from`, а без него — ближайшего к компоненту.
- * @param {string} [from] `id` маршрута
- * @returns {RouteMatch} совпадение маршрута
+ * @param [from] `id` маршрута
+ * @returns совпадение маршрута
  */
 export function useRouteMatch(from?: string): RouteMatch {
     const nearestRouteId = useContext(MatchContext);
@@ -121,9 +121,8 @@ export function useRouteMatch(from?: string): RouteMatch {
 
 /**
  * Совпадение маршрута: параметры, данные и состояние загрузки.
- * @param {FromOptions<TFrom>} options `from` — `id` маршрута; без него берётся ближайший к
- *     компоненту
- * @returns {RouteMatch} совпадение маршрута
+ * @param options `from` — `id` маршрута; без него берётся ближайший к компоненту
+ * @returns совпадение маршрута
  */
 export function useMatch<TFrom extends RouteIds>(
     options: FromOptions<TFrom>,
@@ -135,9 +134,8 @@ export function useMatch(options?: FromOptions<string>): RouteMatch {
 
 /**
  * Параметры пути маршрута.
- * @param {FromOptions<TFrom>} options `from` — `id` маршрута; без него берётся ближайший к
- *     компоненту
- * @returns {Record<string, string>} параметры пути
+ * @param options `from` — `id` маршрута; без него берётся ближайший к компоненту
+ * @returns параметры пути
  */
 export function useParams<TFrom extends RouteIds>(
     options: FromOptions<TFrom>,
@@ -149,9 +147,8 @@ export function useParams(options?: FromOptions<string>): unknown {
 
 /**
  * Search-параметры маршрута, разобранные его `validateSearch`.
- * @param {FromOptions<TFrom>} options `from` — `id` маршрута; без него берётся ближайший к
- *     компоненту
- * @returns {Record<string, unknown>} search-параметры
+ * @param options `from` — `id` маршрута; без него берётся ближайший к компоненту
+ * @returns search-параметры
  */
 export function useSearch<TFrom extends RouteIds>(
     options: FromOptions<TFrom>,
@@ -163,9 +160,8 @@ export function useSearch(options?: FromOptions<string>): unknown {
 
 /**
  * Данные, которые вернул `loader` маршрута.
- * @param {FromOptions<TFrom>} options `from` — `id` маршрута; без него берётся ближайший к
- *     компоненту
- * @returns {unknown} данные маршрута
+ * @param options `from` — `id` маршрута; без него берётся ближайший к компоненту
+ * @returns данные маршрута
  */
 export function useLoaderData<TFrom extends RouteIds>(
     options: FromOptions<TFrom>,
@@ -177,9 +173,8 @@ export function useLoaderData(options?: FromOptions<string>): unknown {
 
 /**
  * Контекст маршрута: контекст роутера и то, что вернули `beforeLoad` маршрута и его предков.
- * @param {FromOptions<TFrom>} options `from` — `id` маршрута; без него берётся ближайший к
- *     компоненту
- * @returns {unknown} контекст маршрута
+ * @param options `from` — `id` маршрута; без него берётся ближайший к компоненту
+ * @returns контекст маршрута
  */
 export function useRouteContext<TFrom extends RouteIds>(
     options: FromOptions<TFrom>,
@@ -191,9 +186,9 @@ export function useRouteContext(options?: FromOptions<string>): unknown {
 
 /**
  * Собирает хук, читающий данные совпадения маршрута. `id` читается лениво: роутер задаёт его позже.
- * @param {{ id: string }} route маршрут или объект с его `id`
- * @param {(match: RouteMatch) => TSelected} select что взять из совпадения
- * @returns {()} хук
+ * @param route маршрут или объект с его `id`
+ * @param select что взять из совпадения
+ * @returns хук
  */
 export function createMatchHook<TSelected>(
     route: { id: string },
@@ -206,8 +201,8 @@ export function createMatchHook<TSelected>(
 
 /**
  * Типизированные хуки маршрута по его `id` — без импорта самого маршрута.
- * @param {TId} id `id` маршрута
- * @returns {object} хуки `useMatch`, `useParams`, `useSearch`, `useLoaderData` и `useRouteContext`
+ * @param id `id` маршрута
+ * @returns хуки `useMatch`, `useParams`, `useSearch`, `useLoaderData` и `useRouteContext`
  */
 export function getRouteApi<TId extends RouteIds>(id: TId) {
     const route = { id: id as string };

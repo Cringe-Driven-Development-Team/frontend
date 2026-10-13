@@ -14,8 +14,8 @@ interface IconProps {
 
 /**
  * Декоративная иконка. Цвет наследуется из `color` родителя, для скринридеров не видна.
- * @param {IconProps} props свойства иконки
- * @returns {JSX.Element} span с CSS-маской
+ * @param props свойства иконки
+ * @returns span с CSS-маской
  */
 export function Icon({ name, size = 16, className }: IconProps) {
     return (

@@ -33,9 +33,9 @@ interface ButtonProps {
 
 /**
  * Классы кнопки: нужны и ссылке, которая выглядит как кнопка.
- * @param {ButtonVariant} variant вид кнопки
- * @param {boolean} [block] растянуть на ширину родителя
- * @returns {string} строка классов
+ * @param variant вид кнопки
+ * @param [block] растянуть на ширину родителя
+ * @returns строка классов
  */
 export function buttonClassName(variant: ButtonVariant, block = false): string {
     return clsx(styles.button, styles[variant], block && styles.block);
@@ -43,8 +43,8 @@ export function buttonClassName(variant: ButtonVariant, block = false): string {
 
 /**
  * Кнопка высотой 44 px (размер M из макета).
- * @param {ButtonProps} props свойства кнопки
- * @returns {JSX.Element} элемент button
+ * @param props свойства кнопки
+ * @returns элемент button
  */
 export function Button({
     id,

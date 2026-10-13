@@ -32,8 +32,8 @@ interface AuthFormProps {
  * Форма входа или регистрации.
  * Ошибки полей видны после первой отправки или после ухода из заполненного поля.
  * Ошибки сервера и сети — в снекбаре: «Повторить» отправляет форму ещё раз.
- * @param {AuthFormProps} props свойства формы
- * @returns {JSX.Element} форма
+ * @param props свойства формы
+ * @returns форма
  */
 export function AuthForm({ mode }: AuthFormProps) {
     const isRegister = mode === 'register';
