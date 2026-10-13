@@ -143,7 +143,8 @@ APIDOG_BRANCH_ID=
 | `Rollback` | вручную: `Actions` → `Rollback` → `Run workflow` из `main` | Release check релиза `previous` → возвращает его, `stable` и `previous` меняются местами → Health check → сообщение в Telegram |
 
 Сообщения о релизах приходят в топик из переменной репозитория `TELEGRAM_RELEASES_TOPIC_ID`
-(Frontend / Releases); если она пустая — в `TELEGRAM_TOPIC_ID`, вместе с задачами и PR
+(Frontend / Releases). Если она не задана или пустая, параметр `message_thread_id`
+не передаётся, сообщение идёт без указания топика.
 
 В строке “Запустил” инициатор упоминается в Telegram по переменной `TELEGRAM_USER_MAP`
 репозитория — JSON-карте GitHub-логинов на Telegram ID. Если соответствия нет или карта

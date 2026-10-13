@@ -10,6 +10,16 @@
 
 **Spec:** [Утверждённая спека](../specs/2026-10-13-release-telegram-mentions-design.md), утверждена пользователем 13.10.2026. Исполнитель и ревьюер читают оба документа.
 
+## Уточнение пользователя от 14.10.2026: только релизный топик
+
+В существующем PR #57 прежний переход на общий топик отменяется по явной просьбе пользователя. Поправка выполняется в `/Users/y.mihalev/projects/cdd/frontend/.claude/worktrees/web-54`; завершённые задачи ниже повторять не нужно.
+
+- [ ] Обновить спеку и план: во всех четырёх релизных шагах использовать `TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}`.
+- [ ] В существующем структурном тесте заменить ожидание топика и выполнить целевой `bun test ./scripts/release/notify.test.ts`. RED: один тест падает из-за прежнего выражения в YAML; остальные тесты проходят. Новые зеркальные тесты не добавлять.
+- [ ] Удалить переход на общий топик в четырёх шагах CI/CD/Rollback; карту, runtime notify, условия, статусы, аргументы и очередь сохранить.
+- [ ] В README описать релизную настройку: если она отсутствует или пустая, `message_thread_id` не передаётся, сообщение идёт без указания топика. Существующий API-тест пустого/отсутствующего topic сохранить.
+- [ ] Форматировать только изменённый тест и оба SDD-документа. Выполнить целевые тесты GREEN, полный `bun test`, `bun run check` и `bun run build`; проверить ровно четыре конечных выражения. Контроллер организует ревью и публикацию поправки в тот же PR.
+
 ## Global Constraints
 
 - Работа ведётся в `/Users/y.mihalev/projects/cdd/frontend-telegram-mentions`, снимке `main` на `ceecb4ec79e315a0824dd7ddbd967ed87311ab4c`. Это отдельная копия без `.git`.
@@ -21,7 +31,7 @@
 - «Упоминание применяется ко всем сообщениям команды независимо от операции и статуса»: 3 операции × 3 статуса = 9 сочетаний.
 - «Новые зависимости не добавляются». Использовать имеющиеся зависимости проекта и встроенный `bun:test`; не менять `package.json`, `bun.lock`, настройки карты или `.github` организации.
 - «Реальный Telegram и production-релизы при автоматической проверке не вызываются». Тестовые token, chat и ID синтетические; не читать `.env*` или секретные файлы.
-- «Отмена job до старта не создаёт новое уведомление». Сохраняются `GITHUB_ACTOR`, условия запуска, SHA, топики, кнопки, очередь и обработка ошибки Telegram.
+- «Отмена job до старта не создаёт новое уведомление». Сохраняются `GITHUB_ACTOR`, условия запуска, SHA, кнопки, очередь и обработка ошибки Telegram. Релизный топик берётся только из `vars.TELEGRAM_RELEASES_TOPIC_ID` согласно уточнению пользователя.
 - Каждый исполнитель отвечает только за файлы своей задачи; в копии могут работать другие агенты. Не откатывать чужие изменения, при неожиданном изменении согласовать работу с контроллером. Задачи выполняются последовательно.
 
 ## Review Focus
@@ -114,7 +124,7 @@
 **Interfaces:**
 
 - Consumes: проверенная `notify` из задачи 1 и `TELEGRAM_USER_MAP` из `vars` репозитория.
-- Produces: во всех четырёх шагах команды `release notify` одноимённая переменная окружения; в `jobs.check.steps` запуск `bun test ./scripts/release/notify.test.ts` до `bun run check` и `bun run build`.
+- Produces: во всех четырёх шагах команды `release notify` одноимённая переменная окружения и `TELEGRAM_TOPIC_ID` только из `vars.TELEGRAM_RELEASES_TOPIC_ID`; в `jobs.check.steps` запуск `bun test ./scripts/release/notify.test.ts` до `bun run check` и `bun run build`.
 - Test-only types: `Workflow = { jobs: Record<string, { steps: WorkflowStep[] }> }`; `WorkflowStep = { run?: string; if?: string; env?: Record<string, string> }`. YAML читать `Bun.file` по URL относительно `import.meta.url`, разбирать встроенным `Bun.YAML.parse`; сторонний парсер не устанавливать.
 
 - [ ] **Шаг 1: Добавить failing-тесты подключения workflow.**
@@ -125,9 +135,7 @@
     expect(notifySteps).toHaveLength(4);
     for (const step of notifySteps) {
         expect(step.env?.TELEGRAM_USER_MAP).toBe('${{ vars.TELEGRAM_USER_MAP }}');
-        expect(step.env?.TELEGRAM_TOPIC_ID).toBe(
-            '${{ vars.TELEGRAM_RELEASES_TOPIC_ID || vars.TELEGRAM_TOPIC_ID }}',
-        );
+        expect(step.env?.TELEGRAM_TOPIC_ID).toBe('${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}');
     }
     ```
 
@@ -145,13 +153,14 @@
 
     ```yaml
     TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
+    TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
     ```
 
     В job `check` CI после `bun install --frozen-lockfile` добавить `run: bun test ./scripts/release/notify.test.ts`. Не менять условия запуска шагов и очередь production.
 
 - [ ] **Шаг 4: Обновить описание релизных сообщений.**
 
-    После абзаца о `TELEGRAM_RELEASES_TOPIC_ID` в README добавить: «В строке “Запустил” инициатор упоминается в Telegram по переменной `TELEGRAM_USER_MAP` репозитория — JSON-карте GitHub-логинов на Telegram ID. Если соответствия нет или карта некорректна, показывается обычный GitHub-логин». Не публиковать реальные ID.
+    В абзаце о `TELEGRAM_RELEASES_TOPIC_ID` в README описать только релизную настройку: если она отсутствует или пустая, параметр `message_thread_id` не передаётся, сообщение идёт без указания топика. После абзаца добавить: «В строке “Запустил” инициатор упоминается в Telegram по переменной `TELEGRAM_USER_MAP` репозитория — JSON-карте GitHub-логинов на Telegram ID. Если соответствия нет или карта некорректна, показывается обычный GitHub-логин». Не публиковать реальные ID.
 
 - [ ] **Шаг 5: Проверить GREEN и получить ревью задачи.**
 

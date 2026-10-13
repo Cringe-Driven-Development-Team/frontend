@@ -277,9 +277,7 @@ test('передаёт карту всем релизным уведомлени
     expect(notifySteps).toHaveLength(4);
     for (const step of notifySteps) {
         expect(step.env?.TELEGRAM_USER_MAP).toBe('${{ vars.TELEGRAM_USER_MAP }}');
-        expect(step.env?.TELEGRAM_TOPIC_ID).toBe(
-            '${{ vars.TELEGRAM_RELEASES_TOPIC_ID || vars.TELEGRAM_TOPIC_ID }}',
-        );
+        expect(step.env?.TELEGRAM_TOPIC_ID).toBe('${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}');
     }
 });
 
