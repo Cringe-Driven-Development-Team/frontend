@@ -121,11 +121,12 @@ APIDOG_BRANCH_ID=
 
 | Правило | Что требует |
 |---|---|
-| `cdd/require-jsdoc` | JSDoc у каждого экспортируемого объявления. Реэкспорт (`export { a } from './a'`) не считается; у перегрузок комментарий несёт первая сигнатура |
+| `cdd/require-jsdoc` | JSDoc у каждого экспортируемого объявления и у публичных методов экспортируемого класса. Реэкспорт (`export { a } from './a'`) не считается; у перегрузок комментарий несёт первая сигнатура |
 | `cdd/check-param-names` | имена в `@param` совпадают с параметрами функции и идут в том же порядке |
 
-Оба правила — свой плагин `lint/jsdoc.js`: в `oxlint` правил `require-jsdoc` и `check-param-names`
-нет. Сами теги линт не требует: `@param` и `@returns` пишутся там, где описание что-то добавляет
+Оба правила — командный плагин
+[`@iredtea/oxlint-plugin-jsdoc`](https://github.com/Cringe-Driven-Development-Team/oxlint-plugin-jsdoc):
+в `oxlint` правил `require-jsdoc` и `check-param-names` нет. Сами теги линт не требует: `@param` и `@returns` пишутся там, где описание что-то добавляет
 к имени и типу. Сгенерированный `src/api/schema.ts` линт не проверяет
 
 ## Выкатка

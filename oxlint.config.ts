@@ -3,7 +3,7 @@ import { defineConfig } from 'oxlint';
 export default defineConfig({
     plugins: ['typescript', 'unicorn', 'oxc', 'react', 'jsx-a11y', 'jsdoc'],
     // require-jsdoc и check-param-names: в плагине jsdoc самого oxlint этих правил нет
-    jsPlugins: ['./lint/jsdoc.js'],
+    jsPlugins: ['@iredtea/oxlint-plugin-jsdoc'],
     categories: {
         correctness: 'error',
         suspicious: 'warn',
