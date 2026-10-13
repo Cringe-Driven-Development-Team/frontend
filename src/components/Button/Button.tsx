@@ -34,7 +34,7 @@ interface ButtonProps {
 /**
  * Классы кнопки: нужны и ссылке, которая выглядит как кнопка.
  * @param variant вид кнопки
- * @param block растянуть на ширину родителя
+ * @param [block] растянуть на ширину родителя
  * @returns строка классов
  */
 export function buttonClassName(variant: ButtonVariant, block = false): string {

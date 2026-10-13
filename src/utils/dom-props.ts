@@ -1,5 +1,6 @@
 /**
- * Атрибуты, которых нет в JSX-типах @maninthecoat/react (autocomplete, autocapitalize, spellcheck...).
+ * Атрибуты, которых нет в JSX-типах @maninthecoat/react (autocomplete, autocapitalize,
+ * spellcheck...).
  *
  * @example
  * <input {...domProps({ autocomplete: 'username', spellcheck: false })} />

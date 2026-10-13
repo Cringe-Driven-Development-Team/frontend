@@ -1,7 +1,9 @@
 import { defineConfig } from 'oxlint';
 
 export default defineConfig({
-    plugins: ['typescript', 'unicorn', 'oxc', 'react', 'jsx-a11y'],
+    plugins: ['typescript', 'unicorn', 'oxc', 'react', 'jsx-a11y', 'jsdoc'],
+    // require-jsdoc и check-param-names: в плагине jsdoc самого oxlint этих правил нет
+    jsPlugins: ['@iredtea/oxlint-plugin-jsdoc'],
     categories: {
         correctness: 'error',
         suspicious: 'warn',
@@ -12,6 +14,9 @@ export default defineConfig({
         'react-hooks/exhaustive-deps': 'error',
         'react/jsx-key': 'error',
         'react/react-in-jsx-scope': 'off',
+        // Экспортируемый код документируется JSDoc (README, «Документация кода»)
+        'cdd/require-jsdoc': 'error',
+        'cdd/check-param-names': 'error',
         // Модули из src/modules импортируются только через их index.ts
         'no-restricted-imports': [
             'error',
