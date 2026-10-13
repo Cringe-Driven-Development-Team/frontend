@@ -175,6 +175,11 @@ export class Route<
         return this.options.path === '/';
     }
 
+    /**
+     * Задаёт дочерние маршруты.
+     * @param children дочерние маршруты
+     * @returns этот же маршрут с типом, который знает о детях
+     */
     addChildren<const TNewChildren extends readonly AnyRoute[]>(
         children: TNewChildren,
     ): Route<TFullPath, TId, TSearch, TContext, TLoaderData, TNewChildren> {

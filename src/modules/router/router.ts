@@ -258,6 +258,11 @@ export class Router<TRouteTree extends AnyRoute = AnyRoute> {
         };
     }
 
+    /**
+     * Подписывает на изменения состояния роутера.
+     * @param listener вызывается после каждого изменения `state`
+     * @returns функция отписки
+     */
     subscribe = (listener: () => void): (() => void) => {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
@@ -273,6 +278,11 @@ export class Router<TRouteTree extends AnyRoute = AnyRoute> {
         return unsubscribe;
     };
 
+    /**
+     * Переходит по адресу; путь проверяется по зарегистрированным маршрутам.
+     * @param options адрес перехода
+     * @returns промис: выполнится, когда маршруты нового адреса загрузятся
+     */
     navigate = <TTo extends NavigateTo = '.'>(options: NavigateOptions<TTo>): Promise<void> =>
         this.commitLocation(options as NavigateOptions);
 
@@ -293,6 +303,11 @@ export class Router<TRouteTree extends AnyRoute = AnyRoute> {
      */
     invalidate = (): Promise<void> => this.load({ invalidate: true });
 
+    /**
+     * Собирает адрес перехода относительно текущего, без самого перехода.
+     * @param options адрес перехода
+     * @returns разобранный адрес
+     */
     buildLocation(options: NavigateOptions): ParsedLocation {
         // Путь и параметры берём от одного и того же адреса: `state.matches` во время загрузки
         // ещё описывает предыдущую страницу
@@ -317,6 +332,12 @@ export class Router<TRouteTree extends AnyRoute = AnyRoute> {
         return this.createLocation(pathname, nextSearch, hash, options.state);
     }
 
+    /**
+     * Сопоставляет адрес из истории с маршрутами и загружает их. Новый вызов отменяет предыдущий.
+     * @param options `invalidate` — перезагрузить и уже загруженные маршруты; `redirectCount` —
+     * сколько редиректов уже сделано в этой загрузке
+     * @returns промис: выполнится, когда маршруты загрузятся
+     */
     async load(options: { invalidate?: boolean; redirectCount?: number } = {}): Promise<void> {
         const { invalidate = false, redirectCount = 0 } = options;
 
