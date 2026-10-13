@@ -28,6 +28,7 @@ jobs:
         with:
           bun-version: 1.4.x
       - run: bun install --frozen-lockfile
+      - run: bun test ./scripts/release/notify.test.ts
       - run: bun run check
       - run: bun run build
 
@@ -67,12 +68,14 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
-          TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID || vars.TELEGRAM_TOPIC_ID }}
+          TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
+          TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
         run: bun run release notify Заливка success "$GITHUB_SHA"
       - name: Send failure to tg
         if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
-          TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID || vars.TELEGRAM_TOPIC_ID }}
+          TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
+          TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
         run: bun run release notify Заливка failure "$GITHUB_SHA"

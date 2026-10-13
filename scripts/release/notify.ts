@@ -1,5 +1,24 @@
 import { ReleaseError, need } from './env.ts';
 
+function mentionActor(actor: string, rawMap: string | undefined): string {
+    const escaped = actor.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+    if (!rawMap) return escaped;
+    try {
+        const map: unknown = JSON.parse(rawMap);
+        if (!map || typeof map !== 'object' || Array.isArray(map) || !Object.hasOwn(map, actor))
+            return escaped;
+        const value: unknown = (map as Record<string, unknown>)[actor];
+        const valid =
+            typeof value === 'string'
+                ? /^[1-9][0-9]*$/.test(value)
+                : typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+        if (valid) return `<a href="tg://user?id=${value}">${escaped}</a>`;
+    } catch {
+        return escaped;
+    }
+    return escaped;
+}
+
 /**
  * Сообщение в Telegram о результате заливки, выкатки или отката.
  * @param what что произошло: Заливка, Выкатка или Откат
@@ -24,7 +43,8 @@ export async function notify(what: string, status: string, sha?: string): Promis
                 : `❌ ${what} фронта: ошибка`,
     ];
     if (sha) lines.push(`Релиз <code>${sha}</code>`);
-    if (GITHUB_ACTOR) lines.push(`Запустил: ${GITHUB_ACTOR}`);
+    if (GITHUB_ACTOR)
+        lines.push(`Запустил: ${mentionActor(GITHUB_ACTOR, process.env.TELEGRAM_USER_MAP)}`);
     const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
     const repo = `${server}/${GITHUB_REPOSITORY}`;
     const buttons = [{ text: 'Запуск', url: `${repo}/actions/runs/${GITHUB_RUN_ID}` }];
