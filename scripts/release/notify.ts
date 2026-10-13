@@ -19,7 +19,12 @@ function mentionActor(actor: string, rawMap: string | undefined): string {
     return escaped;
 }
 
-/** Сообщение в Telegram о результате заливки, выкатки или отката */
+/**
+ * Сообщение в Telegram о результате заливки, выкатки или отката.
+ * @param what что произошло: Заливка, Выкатка или Откат
+ * @param status итог job: success, failure или cancelled
+ * @param [sha] sha релиза
+ */
 export async function notify(what: string, status: string, sha?: string): Promise<void> {
     const token = need('TELEGRAM_BOT_TOKEN');
     const chat = need('TELEGRAM_CHAT_ID');

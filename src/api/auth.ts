@@ -7,7 +7,7 @@ const AUTH_PREFIX = '/auth/';
 /**
  * После 401 обновляет cookie через refresh и повторяет запрос.
  * Запросы, получившие 401 одновременно, ждут один и тот же refresh.
- * @returns {Middleware} middleware клиента
+ * @returns middleware клиента
  */
 export function authMiddleware(): Middleware {
     const retries = new WeakMap<Request, Request>();

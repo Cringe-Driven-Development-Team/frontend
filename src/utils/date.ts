@@ -23,7 +23,7 @@ function startOfDay(value: Date): number {
  * Сколько назад было время: «только что», «5 мин назад», «2 ч назад», «вчера», «3 дня назад»,
  * дальше недели — дата.
  * @param iso время в формате ISO 8601
- * @param now текущее время
+ * @param [now] текущее время
  * @returns текст для подписи «изменён …»
  */
 export function timeAgo(iso: string, now = new Date()): string {

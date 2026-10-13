@@ -4,9 +4,11 @@ import { createMatchHook } from './hooks';
 import type { Search } from './path';
 import type { ParsedLocation, RouteMatch } from './router';
 
+/** `id` корневого маршрута. */
 export const rootRouteId = '__root__';
 
 type TrimLeft<T extends string> = T extends `/${infer TRest}` ? TrimLeft<TRest> : T;
+/** Путь без завершающих слэшей. */
 export type TrimRight<T extends string> = T extends `${infer TRest}/` ? TrimRight<TRest> : T;
 type JoinPath<
     TBase extends string,
@@ -26,6 +28,7 @@ export type PathParams<TPath extends string> = string extends TPath
     ? Record<string, string>
     : { [TParam in ParsePathParams<TPath>]: string };
 
+/** Имена параметров пути из шаблона: `/users/$userId` → `'userId'` */
 export type PathParamNames<TPath extends string> = ParsePathParams<TPath>;
 
 type ResolveFullPath<TParent extends AnyRoute, TPath extends string> = TPath extends ''
@@ -40,12 +43,15 @@ type ResolveId<TParent extends AnyRoute, TPath extends string, TId extends strin
 /** То, что вернул `beforeLoad`, дополняет контекст дочерних маршрутов */
 type ResolveContext<TBeforeLoad> = Awaited<TBeforeLoad> extends object ? Awaited<TBeforeLoad> : {};
 
+/** Компонент маршрута: свойств нет, данные маршрута читаются хуками. */
 export type RouteComponent = () => ReactElement | null;
+/** Компонент ошибки маршрута: получает ошибку и `reset` — перезагрузку маршрутов. */
 export type ErrorRouteComponent = (props: {
     error: unknown;
     reset: () => void;
 }) => ReactElement | null;
 
+/** Что получает `beforeLoad` маршрута. */
 export interface BeforeLoadContext<TParams, TSearch, TContext> {
     params: TParams;
     search: TSearch;
@@ -54,6 +60,7 @@ export interface BeforeLoadContext<TParams, TSearch, TContext> {
     abortController: AbortController;
 }
 
+/** Что получает `loader` маршрута. */
 export interface LoaderContext<TParams, TDeps, TContext> {
     params: TParams;
     deps: TDeps;
@@ -89,6 +96,7 @@ interface BaseRouteOptions<
     ) => TLoaderResult;
 }
 
+/** Настройки маршрута для {@link createRoute}. */
 export interface RouteOptions<
     TParent extends AnyRoute,
     TPath extends string,
@@ -113,6 +121,7 @@ export interface RouteOptions<
     id?: TId;
 }
 
+/** Настройки корневого маршрута: родителя, пути и `id` у него нет. */
 export type RootRouteOptions<TRouterContext, TOwnSearch, TBeforeLoad, TDeps, TLoaderResult> =
     BaseRouteOptions<{}, {}, TRouterContext, TOwnSearch, TBeforeLoad, TDeps, TLoaderResult>;
 
@@ -132,8 +141,13 @@ interface RouteTypes<TFullPath extends string, TId, TSearch, TContext, TLoaderDa
     children: TChildren;
 }
 
+/** Маршрут с любыми типами. */
 export type AnyRoute = Route<any, any, any, any, any, any>;
 
+/**
+ * Маршрут: настройки, место в дереве и хуки его данных.
+ * Создаётся через {@link createRoute} и {@link createRootRoute}.
+ */
 export class Route<
     TFullPath extends string = string,
     TId extends string = string,
@@ -161,6 +175,11 @@ export class Route<
         return this.options.path === '/';
     }
 
+    /**
+     * Задаёт дочерние маршруты.
+     * @param children дочерние маршруты
+     * @returns этот же маршрут с типом, который знает о детях
+     */
     addChildren<const TNewChildren extends readonly AnyRoute[]>(
         children: TNewChildren,
     ): Route<TFullPath, TId, TSearch, TContext, TLoaderData, TNewChildren> {
@@ -168,7 +187,10 @@ export class Route<
         return this as Route<TFullPath, TId, TSearch, TContext, TLoaderData, any>;
     }
 
-    /** Вычисляет `id` и `fullPath` по родителю. Вызывается роутером при обходе дерева */
+    /**
+     * Вычисляет `id` и `fullPath` по родителю. Вызывается роутером при обходе дерева.
+     * @param parent родительский маршрут; `undefined` — у корня
+     */
     init(parent: AnyRoute | undefined): void {
         this.parentRoute = parent;
 
@@ -196,6 +218,11 @@ export class Route<
     useRouteContext: () => TContext = createMatchHook(this, (match) => match.context);
 }
 
+/**
+ * Создаёт маршрут.
+ * @param options родитель, `path` или `id`, компоненты, `beforeLoad` и `loader`
+ * @returns маршрут
+ */
 export function createRoute<
     TParent extends AnyRoute,
     TPath extends string = '',
@@ -216,6 +243,11 @@ export function createRoute<
     return new Route(options);
 }
 
+/**
+ * Создаёт корневой маршрут.
+ * @param [options] компоненты, `beforeLoad` и `loader`
+ * @returns корневой маршрут
+ */
 export function createRootRoute<
     TOwnSearch = {},
     TBeforeLoad = void,
@@ -227,7 +259,10 @@ export function createRootRoute<
     return new Route(options, true);
 }
 
-/** Корневой маршрут с типизированным контекстом роутера: `createRootRouteWithContext<Ctx>()({...})` */
+/**
+ * Корневой маршрут с типизированным контекстом роутера: `createRootRouteWithContext<Ctx>()({...})`
+ * @returns функция, которая создаёт корневой маршрут из его настроек
+ */
 export function createRootRouteWithContext<TRouterContext extends object>() {
     return <TOwnSearch = {}, TBeforeLoad = void, TDeps = undefined, TLoaderResult = undefined>(
         options: RootRouteOptions<

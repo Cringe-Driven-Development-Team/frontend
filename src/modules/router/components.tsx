@@ -12,6 +12,12 @@ import { useLocation, useMatches, useRouter } from './hooks';
 import type { AnyRoute, ErrorRouteComponent } from './route';
 import type { AnyRouter, NavigateOptions, NavigateTo, ParsedLocation, RouteMatch } from './router';
 
+/**
+ * Подключает роутер к дереву компонентов и отрисовывает корневой маршрут.
+ * @param props свойства
+ * @param props.router роутер приложения
+ * @returns корневой маршрут в контексте роутера
+ */
 export const RouterProvider = ({ router }: { router: AnyRouter }) => {
     useLayoutEffect(() => router.mount(), [router]);
 
@@ -22,7 +28,10 @@ export const RouterProvider = ({ router }: { router: AnyRouter }) => {
     );
 };
 
-/** Место, куда отрисовывается дочерний маршрут. Вне маршрутов отрисовывает корневой */
+/**
+ * Место, куда отрисовывается дочерний маршрут. Вне маршрутов отрисовывает корневой.
+ * @returns дочерний маршрут или null, если отрисовывать нечего
+ */
 export const Outlet = () => {
     const router = useRouter();
     const routeId = useContext(MatchContext);
@@ -86,6 +95,7 @@ const DefaultError: ErrorRouteComponent = ({ error }) => (
     </div>
 );
 
+/** Когда {@link Link} считается активной. */
 export interface ActiveOptions {
     /** Считать ссылку активной только при полном совпадении пути, а не по префиксу */
     exact?: boolean;
@@ -93,6 +103,7 @@ export interface ActiveOptions {
     includeSearch?: boolean;
 }
 
+/** Свойства {@link Link}: атрибуты `<a>` и адрес перехода, как у `navigate`. */
 export type LinkProps<TTo extends string = string> = Omit<
     AnchorHTMLAttributes,
     'href' | 'children'
@@ -106,6 +117,12 @@ export type LinkProps<TTo extends string = string> = Omit<
         children?: ReactElement[];
     };
 
+/**
+ * Ссылка на маршрут: переход без перезагрузки страницы. Активной ссылке ставит
+ * `aria-current="page"` и `data-status="active"`.
+ * @param props свойства ссылки
+ * @returns элемент a
+ */
 export const Link = <TTo extends NavigateTo = '.'>(props: LinkProps<TTo>) => {
     const {
         to,
