@@ -119,6 +119,10 @@ APIDOG_BRANCH_ID=
 Сообщения о релизах приходят в топик из переменной репозитория `TELEGRAM_RELEASES_TOPIC_ID`
 (Frontend / Releases); если она пустая — в `TELEGRAM_TOPIC_ID`, вместе с задачами и PR
 
+В строке “Запустил” инициатор упоминается в Telegram по переменной `TELEGRAM_USER_MAP`
+репозитория — JSON-карте GitHub-логинов на Telegram ID. Если соответствия нет или карта
+некорректна, показывается обычный GitHub-логин.
+
 Выкатить релиз: `Actions` → `CD` → `Run workflow` из `main`, в поле `sha` — полный sha коммита
 (он есть в сообщении о заливке), либо `gh workflow run cd.yml -f sha=<sha>`
 
