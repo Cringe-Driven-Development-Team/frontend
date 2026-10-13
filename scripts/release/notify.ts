@@ -29,7 +29,7 @@ export async function notify(what: string, status: string, sha?: string): Promis
     const token = need('TELEGRAM_BOT_TOKEN');
     const chat = need('TELEGRAM_CHAT_ID');
     const topic = process.env.TELEGRAM_TOPIC_ID;
-    const { GITHUB_ACTOR, GITHUB_REPOSITORY, GITHUB_RUN_ID } = process.env;
+    const { GITHUB_ACTOR, GITHUB_REPOSITORY } = process.env;
 
     // залитый релиз пользователи не видят: выкатывает его человек, кнопка ведёт на запуск CD
     const uploaded = what === 'Заливка' && status === 'success';
@@ -47,9 +47,6 @@ export async function notify(what: string, status: string, sha?: string): Promis
         lines.push(`Запустил: ${mentionActor(GITHUB_ACTOR, process.env.TELEGRAM_USER_MAP)}`);
     const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
     const repo = `${server}/${GITHUB_REPOSITORY}`;
-    const buttons = [{ text: 'Запуск', url: `${repo}/actions/runs/${GITHUB_RUN_ID}` }];
-    if (uploaded) buttons.push({ text: 'Выкатить', url: `${repo}/actions/workflows/cd.yml` });
-
     const api = process.env.TELEGRAM_API || 'https://api.telegram.org';
     const res = await fetch(`${api}/bot${token}/sendMessage`, {
         method: 'POST',
@@ -58,7 +55,15 @@ export async function notify(what: string, status: string, sha?: string): Promis
             chat_id: chat,
             text: lines.join('\n'),
             parse_mode: 'HTML',
-            reply_markup: { inline_keyboard: [buttons] },
+            ...(uploaded
+                ? {
+                      reply_markup: {
+                          inline_keyboard: [
+                              [{ text: 'Выкатить', url: `${repo}/actions/workflows/cd.yml` }],
+                          ],
+                      },
+                  }
+                : {}),
             ...(topic ? { message_thread_id: Number(topic) } : {}),
         }),
         signal: AbortSignal.timeout(20_000),
