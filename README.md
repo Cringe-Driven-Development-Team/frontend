@@ -83,17 +83,44 @@ Frontend-репозиторий проекта «Colab» команды «Cringe
 > Ветку, созданную руками (`git switch -c web-12 origin/main`), с задачей свяжет
 > та же строка `Closes …` — поэтому она обязательна всегда
 
+## Монорепа
+
+Репозиторий — монорепа на bun workspaces и [Turborepo](https://turborepo.com)
+
+| Каталог | Пакет | Что внутри |
+|---|---|---|
+| `apps/client` | `@cdd/client` | клиент: Vite, `src/`, `index.html` |
+| `apps/bff` | `@cdd/bff` | BFF, пока пустой — [frontend#2](https://github.com/Cringe-Driven-Development-Team/frontend/issues/2) |
+| `packages/schemas` | `@cdd/schemas` | zod-схемы операций Go, пока пустой — их сгенерирует Orval |
+
+В корне остаются общее: `spec/` с контрактом, `scripts/` (выгрузка из Apidog и выкатка), конфиги
+`oxlint` и `oxfmt`, `.env` — его читают и клиент, и скрипты
+
+Все команды запускаются из корня, зависимости ставит один `bun install`
+
+| Команда | Что делает |
+|---|---|
+| `bun run dev` | dev-сервер клиента, `/api/v1` проксируется на бэкенд |
+| `bun run build` | сборка всех пакетов, клиент — в `apps/client/dist` |
+| `bun run check` | `oxfmt --check`, `oxlint` и `tsc` во всех пакетах и в `scripts/` |
+| `bun run lint`, `bun run typecheck`, `bun run test` | по отдельности, тоже во всех пакетах |
+
+`build`, `lint`, `typecheck` и `test` идут через `turbo run`: пакет собирается после своих
+зависимостей, а повторный запуск без изменений берёт результат из кеша `.turbo/`
+(`>>> FULL TURBO` в выводе). Команду в одном пакете —
+`bun run --filter @cdd/client <скрипт>`
+
 ## Контракт API
 
 Контракт ведётся в [Apidog](https://app.apidog.com/project/1382426), в репозитории лежит его копия
-`spec/openapi.json` и сгенерированные по ней типы `src/api/schema.ts`. Оба файла коммитятся
+`spec/openapi.json` и сгенерированные по ней типы клиента `apps/client/src/api/schema.ts`. Оба файла коммитятся
 и руками не правятся
 
 | Команда | Что делает |
 |---|---|
 | `bun run sync` | всё сразу: выгрузка из Apidog и генерация типов |
 | `bun run apidog` | выгружает спеку в `spec/openapi.json` |
-| `bun run generate` | генерирует `src/api/schema.ts` из `spec/openapi.json` |
+| `bun run generate` | генерирует `apps/client/src/api/schema.ts` из `spec/openapi.json` |
 
 Для выгрузки нужен личный токен Apidog (`Account Settings` → `API Access Token`) в `.env`:
 
@@ -127,7 +154,7 @@ APIDOG_BRANCH_ID=
 Оба правила — командный плагин
 [`@iredtea/oxlint-plugin-jsdoc`](https://github.com/Cringe-Driven-Development-Team/oxlint-plugin-jsdoc):
 в `oxlint` правил `require-jsdoc` и `check-param-names` нет. Сами теги линт не требует: `@param` и `@returns` пишутся там, где описание что-то добавляет
-к имени и типу. Сгенерированный `src/api/schema.ts` линт не проверяет
+к имени и типу. Сгенерированный `apps/client/src/api/schema.ts` линт не проверяет
 
 ## Выкатка
 
