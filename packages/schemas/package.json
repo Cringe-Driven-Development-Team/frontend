@@ -1,0 +1,8 @@
+{
+    "name": "@cdd/schemas",
+    "private": true,
+    "type": "module",
+    "exports": {
+        ".": "./src/zod.ts"
+    }
+}

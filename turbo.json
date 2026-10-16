@@ -1,0 +1,32 @@
+{
+    "$schema": "https://turborepo.com/schema.json",
+    "ui": "stream",
+    "globalDependencies": [".env"],
+    "tasks": {
+        "build": {
+            "dependsOn": ["^build"],
+            // RELEASE_SHA и CDN_URL задаёт CI для релиза: от них зависит base в сборке клиента
+            "env": ["RELEASE_SHA", "CDN_URL", "STATIC_URL"],
+            "outputs": ["dist/**"]
+        },
+        "lint": {
+            "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/oxlint.config.ts"]
+        },
+        "typecheck": {
+            "dependsOn": ["^build"]
+        },
+        "test": {
+            "dependsOn": ["^build"]
+        },
+        "dev": {
+            "cache": false,
+            "persistent": true
+        },
+        "//#lint:scripts": {
+            "inputs": ["scripts/**", "oxlint.config.ts"]
+        },
+        "//#typecheck:scripts": {
+            "inputs": ["scripts/**"]
+        }
+    }
+}

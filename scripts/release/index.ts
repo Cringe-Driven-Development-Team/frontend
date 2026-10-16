@@ -10,7 +10,7 @@ import { retention } from './retention.ts';
 import { upload } from './upload.ts';
 
 const USAGE = `Использование: bun run release <команда>
-  upload <sha> [каталог]   dist → releases/{sha}/
+  upload <sha> [каталог]   apps/client/dist → releases/{sha}/
   exists <sha>             релиз есть в бакете
   check <sha>              Release check: релиз отдаётся с CDN
   promote <sha>            сделать релиз текущим, только вперёд по истории main
