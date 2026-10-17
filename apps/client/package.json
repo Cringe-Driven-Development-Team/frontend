@@ -11,9 +11,9 @@
         "generate": "openapi-cdd ../../spec/openapi.json -o src/api/schema.ts"
     },
     "dependencies": {
-        "@iredtea/openapi": "^0.2.0",
-        "@maninthecoat/react": "^1.2.0",
-        "@maninthecoat/zustand": "^1.0.0"
+        "@cdd-team/openapi": "^0.2.1",
+        "@cdd-team/react": "^1.2.1",
+        "@cdd-team/zustand": "^1.0.1"
     },
     "devDependencies": {
         "typescript": "^7.0.2",

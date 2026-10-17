@@ -1,7 +1,7 @@
 # Роутер
 
 Собственный роутер с API по образцу [TanStack Router](https://tanstack.com/router/latest)
-(code-based routing). Без сторонних зависимостей: только `@maninthecoat/react` и History API.
+(code-based routing). Без сторонних зависимостей: только `@cdd-team/react` и History API.
 
 ## Быстрый старт
 

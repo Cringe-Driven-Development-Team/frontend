@@ -1,4 +1,4 @@
-import { useEffect, useState } from '@maninthecoat/react';
+import { useEffect, useState } from '@cdd-team/react';
 
 import { api, type Cell as CellData, type Notebook } from '@api/client';
 import logoMarkUrl from '@assets/logo-mark.svg';

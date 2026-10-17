@@ -1,4 +1,4 @@
-import { createRoot } from '@maninthecoat/react';
+import { createRoot } from '@cdd-team/react';
 
 import { RouterProvider } from './modules/router';
 import { router } from './router';

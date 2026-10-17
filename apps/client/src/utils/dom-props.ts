@@ -1,5 +1,5 @@
 /**
- * Атрибуты, которых нет в JSX-типах @maninthecoat/react (autocomplete, autocapitalize,
+ * Атрибуты, которых нет в JSX-типах @cdd-team/react (autocomplete, autocapitalize,
  * spellcheck...).
  *
  * @example

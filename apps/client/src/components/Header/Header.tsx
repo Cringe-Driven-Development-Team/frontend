@@ -1,4 +1,4 @@
-import type { ReactNode } from '@maninthecoat/react';
+import type { ReactNode } from '@cdd-team/react';
 import styles from './Header.module.css';
 
 /** Свойства {@link Header}. */

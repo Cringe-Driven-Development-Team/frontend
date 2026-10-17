@@ -1,4 +1,4 @@
-import { useEffect, useState } from '@maninthecoat/react';
+import { useEffect, useState } from '@cdd-team/react';
 
 import { buttonClassName } from '@components/Button/Button';
 import { Logo } from '@components/Logo/Logo';

@@ -4,7 +4,7 @@ import {
     type AnchorHTMLAttributes,
     type MouseEvent,
     type ReactElement,
-} from '@maninthecoat/react';
+} from '@cdd-team/react';
 
 import { clsx } from '@modules/clsx';
 import { MatchContext, RouterContext } from './context';

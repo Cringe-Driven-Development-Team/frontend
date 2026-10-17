@@ -1,4 +1,4 @@
-import { useEffect, useState } from '@maninthecoat/react';
+import { useEffect, useState } from '@cdd-team/react';
 import { Avatar } from '@components/Avatar/Avatar';
 import { Icon } from '@components/Icon/Icon';
 import { clsx } from '@modules/clsx';

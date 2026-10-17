@@ -1,4 +1,4 @@
-import type { ReactNode } from '@maninthecoat/react';
+import type { ReactNode } from '@cdd-team/react';
 import emptyPlanetUrl from '@assets/empty-planet.svg';
 import styles from './StateBlock.module.css';
 

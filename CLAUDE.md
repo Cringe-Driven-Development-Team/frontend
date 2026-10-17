@@ -16,7 +16,7 @@ zod-схемы — `packages/schemas` (README, «Монорепа»). Коман
 - Работать этапами: сделать этап → человек проверяет → следующий этап только после его команды.
 - Если что-то непонятно или есть выбор — спросить, а не угадывать.
 - Готовые библиотеки из интернета не подключать. Можно только командные пакеты:
-  `@maninthecoat/react`, `@maninthecoat/zustand`, `@iredtea/openapi`.
+  `@cdd-team/react`, `@cdd-team/zustand`, `@cdd-team/openapi`.
 - Не добавлять ничего, что не нужно для задачи. Комментарии в коде — коротко и только там,
   где без них непонятно.
 - Каждому экспорту — JSDoc: без него падает `bun run lint`. Типы в `@param` и `@returns` не
@@ -46,14 +46,14 @@ bun run generate   # spec/openapi.json → apps/client/src/api/schema.ts
 внутри своей папки — через `./`. Алиасы заданы только в `paths` в `apps/client/tsconfig.json`,
 vite берёт их оттуда.
 
-- `api/` — клиент `@iredtea/openapi` (единственный экземпляр) и сгенерированная схема.
+- `api/` — клиент `@cdd-team/openapi` (единственный экземпляр) и сгенерированная схема.
 - `components/` — UI-kit по Components из макета: `Button`, `Input`, `Icon`, `Logo`, `Moon`,
   `Snackbar`, `Toast`, `Space`. Каждый компонент — папка с `.tsx` и `.module.css`.
 - `layouts/RootLayout.tsx` — `<main>` с `<Outlet />`, тост и снекбар. Второй `<main>` на страницах не нужен.
 - `modules/router/` — командный роутер (API как у TanStack Router). Импорт только через
   `@modules/router`, не из внутренних файлов.
 - `pages/` — страницы. `routes/` — маршруты и дерево `routeTree.ts`.
-- `stores/` — сторы на `@maninthecoat/zustand`: `session`, `toast`, `snackbar`.
+- `stores/` — сторы на `@cdd-team/zustand`: `session`, `toast`, `snackbar`.
 - `styles/tokens.css` — переменные с именами как в макете (`color/bg` → `--color-bg`).
   Глобальные стили — только `styles/global.css` и `styles/tokens.css`.
 - `assets/` — SVG (знак логотипа, иконки) и favicon: Vite встраивает их в бандл.

@@ -1,4 +1,4 @@
-import type { ReactNode } from '@maninthecoat/react';
+import type { ReactNode } from '@cdd-team/react';
 import { clsx } from '@modules/clsx';
 import { Icon } from '@components/Icon/Icon';
 import type { IconName } from '@components/Icon/icons';
