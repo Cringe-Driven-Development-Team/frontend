@@ -14,7 +14,7 @@ Frontend-репозиторий проекта «Colab» команды «Cringe
 [![Доска задач](https://img.shields.io/badge/Доска_задач-1F6FEB?style=for-the-badge&logo=github&logoColor=white)](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1)
 [![Макеты в Figma](https://img.shields.io/badge/Макеты-F24E1E?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/7iaVDGiwzQk2vZIB5ogVlq/Colab)
 [![Сайт документации](https://img.shields.io/badge/Документация-5C73E7?style=for-the-badge&logo=vitepress&logoColor=white)](https://cringe-driven-development-team.github.io/docs/)
-[![Репозиторий бэкенда](https://img.shields.io/badge/Бэкенд-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://github.com/go-park-mail-ru/2026_2_Cringe_Driven_Development)
+[![Репозиторий бэкенда](https://img.shields.io/badge/Бэкенд-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://github.com/Cringe-Driven-Development-Team/backend)
 [![Организация команды](https://img.shields.io/badge/Организация-24292E?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Cringe-Driven-Development-Team)
 
 ### Участники команды
