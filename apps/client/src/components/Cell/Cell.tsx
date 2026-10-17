@@ -1,0 +1,63 @@
+import type { Cell as CellData } from '@api/client';
+import { IconButton } from '@components/IconButton/IconButton';
+import { clsx } from '@modules/clsx';
+import styles from './Cell.module.css';
+
+/** Свойства {@link Cell}. */
+interface CellProps {
+    cell: CellData;
+    onDelete: () => void;
+}
+
+/**
+ * Ячейка блокнота (Components → Cell). Пустая показывает подсказку.
+ * @param props свойства ячейки
+ * @returns ячейка
+ */
+export function Cell({ cell, onDelete }: CellProps) {
+    const isCode = cell.kind === 'code';
+    const placeholder = isCode ? '# Код на Python' : 'Заголовок или описание — Markdown';
+
+    return (
+        <div id={cellDomId(cell.id)} className={clsx(styles.cell, isCode && styles.code)}>
+            {cell.source === '' ? (
+                <p key="content" className={clsx(styles.content, styles.empty)}>
+                    {placeholder}
+                </p>
+            ) : (
+                <pre key="content" className={styles.content}>
+                    {cell.source}
+                </pre>
+            )}
+            <IconButton
+                key="delete"
+                icon="trash"
+                label="Удалить ячейку"
+                className={styles.delete}
+                onClick={onDelete}
+            />
+        </div>
+    );
+}
+
+/**
+ * Id элемента ячейки: по нему страница прокручивает к новой ячейке.
+ * @param id id ячейки внутри блокнота
+ * @returns id элемента
+ */
+export function cellDomId(id: string): string {
+    return `cell-${id}`;
+}
+
+/**
+ * Ячейка-скелетон, пока блокнот загружается.
+ * @returns скелетон ячейки
+ */
+export function CellSkeleton() {
+    return (
+        <div className={clsx(styles.cell, styles.skeleton)} aria-hidden="true">
+            <span key="line-1" className={styles.bar} style={{ width: '420px' }} />
+            <span key="line-2" className={styles.bar} style={{ width: '280px' }} />
+        </div>
+    );
+}

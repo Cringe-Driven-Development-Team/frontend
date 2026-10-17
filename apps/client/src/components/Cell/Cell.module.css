@@ -1,0 +1,57 @@
+.cell {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-height: 56px;
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--color-surface);
+    box-shadow: inset 0 0 0 1px var(--color-border);
+}
+
+.content {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    font: var(--font-body);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.code .content {
+    font: var(--font-code);
+    color: var(--code-text);
+}
+
+.cell .empty {
+    color: var(--color-text-secondary);
+}
+
+.code .empty {
+    padding: 2px 0;
+}
+
+.delete {
+    margin: -6px -6px -6px 0;
+    background: none;
+    box-shadow: none;
+}
+
+.delete:hover {
+    color: var(--color-error);
+}
+
+.skeleton {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 8px;
+}
+
+.bar {
+    display: block;
+    max-width: 100%;
+    height: 12px;
+    border-radius: 6px;
+    background: var(--color-surface-hover);
+}

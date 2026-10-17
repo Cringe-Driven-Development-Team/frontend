@@ -1,0 +1,17 @@
+import { defineConfig } from 'oxfmt';
+
+export default defineConfig({
+    singleQuote: true,
+    printWidth: 100,
+    endOfLine: 'lf',
+    tabWidth: 4,
+    ignorePatterns: [
+        '.claude/**',
+        '.github/**',
+        'README.md',
+        '**/dist/**',
+        '.turbo/**',
+        'spec/**',
+        'apps/client/src/api/schema.ts',
+    ],
+});

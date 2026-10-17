@@ -1,0 +1,38 @@
+{
+    "name": "cellestial",
+    "private": true,
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "type": "module",
+    "scripts": {
+        "dev": "turbo run dev",
+        "build": "turbo run build",
+        "lint": "turbo run lint lint:scripts",
+        "typecheck": "turbo run typecheck typecheck:scripts",
+        "test": "turbo run test",
+        "lint:scripts": "oxlint scripts",
+        "typecheck:scripts": "tsc --noEmit -p scripts",
+        "fmt": "oxfmt",
+        "fmt:check": "oxfmt --check",
+        "check": "bun run fmt:check && turbo run lint lint:scripts typecheck typecheck:scripts",
+        "release": "bun scripts/release/index.ts",
+        "apidog": "bun scripts/openapi/apidog.ts",
+        "generate": "bun run --filter @cdd/client generate",
+        "sync": "bun run apidog && bun run generate"
+    },
+    "devDependencies": {
+        "@aws-sdk/client-s3": "^3.1146.0",
+        "@iredtea/oxlint-plugin-jsdoc": "^0.1.1",
+        "@types/bun": "^1.4.2",
+        "oxfmt": "^0.71.0",
+        "oxlint": "^1.86.0",
+        "turbo": "^2.11.7",
+        "typescript": "^7.0.2"
+    },
+    "engines": {
+        "bun": ">=1.4.0"
+    },
+    "packageManager": "bun@1.4.2"
+}
