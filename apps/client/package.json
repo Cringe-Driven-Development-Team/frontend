@@ -1,0 +1,22 @@
+{
+    "name": "@cdd/client",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "lint": "oxlint",
+        "typecheck": "tsc --noEmit",
+        "generate": "openapi-cdd ../../spec/openapi.json -o src/api/schema.ts"
+    },
+    "dependencies": {
+        "@iredtea/openapi": "^0.2.0",
+        "@maninthecoat/react": "^1.2.0",
+        "@maninthecoat/zustand": "^1.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^7.0.2",
+        "vite": "^8.3.1"
+    }
+}

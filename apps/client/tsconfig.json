@@ -1,0 +1,44 @@
+{
+    "compilerOptions": {
+        // Environment setup & latest features
+        "lib": ["ESNext", "DOM", "DOM.Iterable"],
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleDetection": "force",
+        "jsx": "react-jsx",
+        "jsxImportSource": "@maninthecoat/react",
+        "types": ["vite/client"],
+
+        // Bundler mode
+        "moduleResolution": "bundler",
+        "verbatimModuleSyntax": true,
+        "allowImportingTsExtensions": true,
+        "isolatedModules": true,
+        "resolveJsonModule": true,
+        "noEmit": true,
+
+        // Алиасы папок src; vite читает их отсюда
+        "paths": {
+            "@api/*": ["./src/api/*"],
+            "@assets/*": ["./src/assets/*"],
+            "@components/*": ["./src/components/*"],
+            "@layouts/*": ["./src/layouts/*"],
+            "@modules/*": ["./src/modules/*"],
+            "@pages/*": ["./src/pages/*"],
+            "@stores/*": ["./src/stores/*"],
+            "@utils/*": ["./src/utils/*"]
+        },
+
+        // Best practices
+        "strict": true,
+        "skipLibCheck": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitOverride": true,
+
+        // Some stricter flags (disabled by default)
+        "noUnusedLocals": false,
+        "noUnusedParameters": false
+    },
+    "include": ["src", "vite.config.ts"]
+}
