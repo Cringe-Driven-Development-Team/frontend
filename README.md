@@ -83,7 +83,7 @@ Frontend-репозиторий проекта «Colab» команды «Cringe
 > Ветку, созданную руками (`git switch -c web-12 origin/main`), с задачей свяжет
 > та же строка `Closes …` — поэтому она обязательна всегда
 
-## Монорепа
+## Рабочий репозиторий и синхронизация
 
 Разработка и ревью ментора проходят в командном репозитории.
 [Учебный репозиторий](https://github.com/frontend-park-mail-ru/2026_2_Cringe_Driven_Development)
@@ -97,6 +97,8 @@ Upload release, CD и Rollback доступны только в командно
 при `PRODUCTION_ENABLED=true`. Отсутствующий flag означает выключенную операцию.
 Порядок первого включения и отката — в
 [runbook организации](https://github.com/Cringe-Driven-Development-Team/.github/blob/main/docs/migrations/team-repositories-runbook.md).
+
+## Монорепа
 
 Репозиторий — монорепа на bun workspaces и [Turborepo](https://turborepo.com)
 
