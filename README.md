@@ -98,6 +98,26 @@ Upload release, CD и Rollback доступны только в командно
 Порядок первого включения и отката — в
 [runbook организации](https://github.com/Cringe-Driven-Development-Team/.github/blob/main/docs/migrations/team-repositories-runbook.md).
 
+### Переключение 18 октября 2026
+
+История разработки перенесена через [PR #59](https://github.com/Cringe-Driven-Development-Team/frontend/pull/59)
+с ревью ментора. После импорта задачи, связи и поля общей доски сверены с резервным
+снимком: изменений нет. Первая синхронизация подтвердила одинаковые SHA main
+и дерево файлов в командном и учебном репозиториях.
+
+В существующем клоне переключить основной remote и проверить адрес перед push:
+
+```bash
+git remote set-url origin https://github.com/Cringe-Driven-Development-Team/frontend.git
+git fetch origin
+git remote -v
+```
+
+Релизы загружает CI командного репозитория. Для выкатки выбрать его Actions → CD
+и указать полный SHA успешно загруженного релиза. Перед переключением stable CD
+проверит релиз; затем выполнит health check. Предыдущий stable остаётся доступен
+для штатного Rollback. Учебный репозиторий не запускает upload, CD или Rollback.
+
 ## Монорепа
 
 Репозиторий — монорепа на bun workspaces и [Turborepo](https://turborepo.com)
