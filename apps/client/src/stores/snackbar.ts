@@ -1,4 +1,4 @@
-import { create } from '@maninthecoat/zustand';
+import { create } from '@cdd-team/zustand';
 import type { SnackbarMessage } from '@components/Snackbar/Snackbar';
 
 interface SnackbarState {

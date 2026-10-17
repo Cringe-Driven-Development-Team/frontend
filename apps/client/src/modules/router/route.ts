@@ -1,4 +1,4 @@
-import type { ReactElement } from '@maninthecoat/react';
+import type { ReactElement } from '@cdd-team/react';
 
 import { createMatchHook } from './hooks';
 import type { Search } from './path';

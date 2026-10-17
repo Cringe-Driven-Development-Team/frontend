@@ -1,4 +1,4 @@
-import type { Middleware } from '@iredtea/openapi';
+import type { Middleware } from '@cdd-team/openapi';
 
 const CSRF_COOKIE = '__Host-csrf';
 const CSRF_HEADER = 'X-CSRF-Token';
