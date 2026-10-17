@@ -9,8 +9,9 @@ export default defineConfig({
         '.claude/**',
         '.github/**',
         'README.md',
-        'dist/**',
+        '**/dist/**',
+        '.turbo/**',
         'spec/**',
-        'src/api/schema.ts',
+        'apps/client/src/api/schema.ts',
     ],
 });

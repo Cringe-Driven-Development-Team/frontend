@@ -8,14 +8,18 @@ import { defineConfig, loadEnv } from 'vite';
 const toUrl = (url: string) =>
     (/^https?:\/\//.test(url) ? url : `https://${url}`).replace(/\/+$/, '');
 
+// .env лежит в корне монорепы: его же читают скрипты apidog и release
+const envDir = '../..';
+
 export default defineConfig(({ mode }) => {
     // RELEASE_SHA и CDN_URL задаёт CI при сборке релиза; без них (локально и в PR) base остаётся '/'
     // STATIC_URL — адрес static (картинки и шрифты), BACKEND_URL — адрес локального бэкенда
-    const { RELEASE_SHA: sha, CDN_URL: cdn, STATIC_URL, BACKEND_URL } = loadEnv(mode, '.', '');
+    const { RELEASE_SHA: sha, CDN_URL: cdn, STATIC_URL, BACKEND_URL } = loadEnv(mode, envDir, '');
     const cdnUrl = cdn && toUrl(cdn);
     const staticUrl = toUrl(STATIC_URL || 'https://static.cellestial.ru');
 
     return {
+        envDir,
         // чанки релиза лежат в S3 под своим sha и грузятся с CDN: открытая вкладка живёт на своём релизе
         base: sha && cdnUrl ? `${cdnUrl}/releases/${sha}/` : '/',
         // алиасы папок src берутся из paths в tsconfig.json

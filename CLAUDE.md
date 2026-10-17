@@ -1,6 +1,8 @@
 # CLAUDE.md
 
 Фронтенд проекта «Colab» (Cellestial) команды «Cringe Driven Development».
+Монорепа на bun workspaces и Turborepo: клиент — `apps/client`, BFF — `apps/bff`,
+zod-схемы — `packages/schemas` (README, «Монорепа»). Команды — из корня.
 Процесс работы с задачами, ветками, коммитами и PR — в [README.md](README.md).
 
 ## Правила работы
@@ -28,17 +30,17 @@
 
 ```bash
 bun run dev        # dev-сервер, /api/v1 проксируется на бэкенд
-bun run check      # oxfmt --check, oxlint, tsc
-bun run build      # сборка в dist/
-bun run generate   # spec/openapi.json → src/api/schema.ts
+bun run check      # oxfmt --check, oxlint, tsc во всех пакетах
+bun run build      # сборка, клиент — в apps/client/dist/
+bun run generate   # spec/openapi.json → apps/client/src/api/schema.ts
 ```
 
 Перед тем как сказать «готово» — `bun run check` и `bun run build` должны проходить.
 
-## Структура `src/`
+## Структура `apps/client/src/`
 
 Импорты из другой папки `src` — через алиасы (`@components/...`, `@modules/clsx`, `@stores/...`),
-внутри своей папки — через `./`. Алиасы заданы только в `paths` в `tsconfig.json`,
+внутри своей папки — через `./`. Алиасы заданы только в `paths` в `apps/client/tsconfig.json`,
 vite берёт их оттуда.
 
 - `api/` — клиент `@iredtea/openapi` (единственный экземпляр) и сгенерированная схема.
@@ -55,7 +57,7 @@ vite берёт их оттуда.
   Картинки и шрифты лежат в репозитории
   [static](https://github.com/Cringe-Driven-Development-Team/static) и берутся с
   `https://static.cellestial.ru` (переменная `STATIC_URL` в `.env`). В CSS адрес пишется как
-  `url('%STATIC_URL%/img/…')`: плагин в `vite.config.ts` подставляет его при сборке и в dev.
+  `url('%STATIC_URL%/img/…')`: плагин в `apps/client/vite.config.ts` подставляет его при сборке и в dev.
 
 Стили компонентов и страниц — CSS Modules: `import styles from './X.module.css'`,
 в JSX `className={styles.peek}`, несколько классов — через `clsx` из `@modules/clsx`.
