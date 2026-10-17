@@ -4,6 +4,9 @@
 Монорепа на bun workspaces и Turborepo: клиент — `apps/client`, BFF — `apps/bff`,
 zod-схемы — `packages/schemas` (README, «Монорепа»). Команды — из корня.
 Процесс работы с задачами, ветками, коммитами и PR — в [README.md](README.md).
+Код/PR/issues — в Cringe-Driven-Development-Team/frontend: ветка web-N,
+в PR `Closes #N`, обязательное ревью ментора. Учебный frontend-park-mail-ru
+получает копию main, новые PR туда не создаются.
 
 ## Правила работы
 

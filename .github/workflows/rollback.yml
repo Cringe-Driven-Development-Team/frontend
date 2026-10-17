@@ -12,7 +12,7 @@ env:
 jobs:
   rollback:
     name: Rollback
-    if: github.ref == 'refs/heads/main'
+    if: github.repository == 'Cringe-Driven-Development-Team/frontend' && github.ref == 'refs/heads/main' && vars.PRODUCTION_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: production
     # указатель релиза меняет кто-то один: группа общая с CD. Очереди в ней нет — ожидает

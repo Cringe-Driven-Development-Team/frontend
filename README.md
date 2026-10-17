@@ -32,7 +32,7 @@ Frontend-репозиторий проекта «Colab» команды «Cringe
 
 ## Как работать с задачами
 
-Код лежит здесь, а задачи — в
+Код, PR и задачи ведём в
 [Cringe-Driven-Development-Team/frontend](https://github.com/Cringe-Driven-Development-Team/frontend)
 и на общей [доске](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1) вместе с бэковыми
 
@@ -44,7 +44,7 @@ Frontend-репозиторий проекта «Colab» команды «Cringe
 
 3. **Создать ветку.** Открыть задачу → в правой колонке `Development` →
    **`Create a branch`**. В `Repository destination` выбрать
-   `frontend-park-mail-ru/2026_2_Cringe_Driven_Development` (в поиске — `2026_2`),
+   `Cringe-Driven-Development-Team/frontend`,
    имя ветки заменить на `web-<номер задачи>`, например `web-12`.
    Затем `Create branch` и локально:
 
@@ -67,10 +67,10 @@ Frontend-репозиторий проекта «Colab» команды «Cringe
    `WEB-12: Форма входа`. В описании — **обязательно** строка
 
    ```
-   Closes Cringe-Driven-Development-Team/frontend#12
+   Closes #12
    ```
 
-   Почему ссылка полная и что писать, если задача затрагивает ещё один репозиторий, —
+   Что писать, если задача затрагивает ещё один репозиторий, —
    в [гайдлайне](https://github.com/Cringe-Driven-Development-Team/.github/blob/main/CONTRIBUTING.md#как-закрыть).
    Убедиться, что в правой колонке PR в блоке `Development` указана задача
 
@@ -84,6 +84,19 @@ Frontend-репозиторий проекта «Colab» команды «Cringe
 > та же строка `Closes …` — поэтому она обязательна всегда
 
 ## Монорепа
+
+Разработка и ревью ментора проходят в командном репозитории.
+[Учебный репозиторий](https://github.com/frontend-park-mail-ru/2026_2_Cringe_Driven_Development)
+получает копию main с теми же коммитами; его Actions выключены настройкой GitHub.
+Новые PR и ревью туда не копируются.
+
+Синхронизация включается переменной `COURSE_SYNC_ENABLED=true` после Check,
+независимо от Upload release. Повторить её без выкатки: Actions → Sync to course,
+ветка main, `ci_run_id` успешного push/main CI. Произвольный SHA не принимается.
+Upload release, CD и Rollback доступны только в командном репозитории из main
+при `PRODUCTION_ENABLED=true`. Отсутствующий flag означает выключенную операцию.
+Порядок первого включения и отката — в
+[runbook организации](https://github.com/Cringe-Driven-Development-Team/.github/blob/main/docs/migrations/team-repositories-runbook.md).
 
 Репозиторий — монорепа на bun workspaces и [Turborepo](https://turborepo.com)
 
