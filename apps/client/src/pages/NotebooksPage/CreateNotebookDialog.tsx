@@ -1,4 +1,4 @@
-import { useEffect, useState } from '@maninthecoat/react';
+import { useEffect, useState } from '@cdd-team/react';
 
 import { api } from '@api/client';
 import { Button } from '@components/Button/Button';

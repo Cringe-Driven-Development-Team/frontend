@@ -6,7 +6,7 @@
         "module": "ESNext",
         "moduleDetection": "force",
         "jsx": "react-jsx",
-        "jsxImportSource": "@maninthecoat/react",
+        "jsxImportSource": "@cdd-team/react",
         "types": ["vite/client"],
 
         // Bundler mode

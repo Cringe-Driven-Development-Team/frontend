@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from '@maninthecoat/react';
+import { useEffect, type ReactNode } from '@cdd-team/react';
 import { IconButton } from '@components/IconButton/IconButton';
 import styles from './Modal.module.css';
 

@@ -1,4 +1,4 @@
-import createClient from '@iredtea/openapi';
+import createClient from '@cdd-team/openapi';
 import { authMiddleware } from './auth';
 import { csrfMiddleware } from './csrf';
 import type { components, paths } from './schema';

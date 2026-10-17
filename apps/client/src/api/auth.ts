@@ -1,4 +1,4 @@
-import type { Middleware } from '@iredtea/openapi';
+import type { Middleware } from '@cdd-team/openapi';
 import { setCsrfHeader } from './csrf';
 
 const REFRESH_PATH = '/auth/refresh';

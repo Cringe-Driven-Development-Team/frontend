@@ -1,4 +1,4 @@
-import { create } from '@maninthecoat/zustand';
+import { create } from '@cdd-team/zustand';
 import type { ToastMessage, ToastType } from '@components/Toast/Toast';
 
 interface ToastState {

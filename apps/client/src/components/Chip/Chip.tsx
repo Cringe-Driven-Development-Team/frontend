@@ -1,4 +1,4 @@
-import type { ReactNode } from '@maninthecoat/react';
+import type { ReactNode } from '@cdd-team/react';
 import { Icon } from '@components/Icon/Icon';
 import styles from './Chip.module.css';
 
