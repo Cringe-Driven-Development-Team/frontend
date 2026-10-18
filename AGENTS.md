@@ -2,8 +2,8 @@
 
 Фронтенд проекта «Colab» (Cellestial) команды «Cringe Driven Development».
 Монорепа на bun workspaces и Turborepo: клиент — `apps/client`, BFF — `apps/bff`,
-zod-схемы — `packages/schemas` (README, «Монорепа»). Команды — из корня.
-Процесс работы с задачами, ветками, коммитами и PR — в [README.md](README.md).
+zod-схемы — `packages/schemas` ([README](README.md#монорепа)). Команды — из корня.
+Процесс работы с задачами, ветками, коммитами и PR — в [README.md](README.md#как-работать-с-задачами) и [CONTRIBUTING организации](https://github.com/Cringe-Driven-Development-Team/.github/blob/main/CONTRIBUTING.md).
 Код/PR/issues — в Cringe-Driven-Development-Team/frontend: ветка web-N,
 в PR `Closes #N`, обязательное ревью ментора. Учебный frontend-park-mail-ru
 получает копию main, новые PR туда не создаются.
@@ -21,7 +21,7 @@ zod-схемы — `packages/schemas` (README, «Монорепа»). Коман
 - Не добавлять ничего, что не нужно для задачи. Комментарии в коде — коротко и только там,
   где без них непонятно.
 - Каждому экспорту — JSDoc: без него падает `bun run lint`. Типы в `@param` и `@returns` не
-  писать — их несёт TypeScript (README, «Документация кода»).
+  писать — их несёт TypeScript ([локальные правила](docs/local-development.md#документация-кода)).
 
 ## Источники
 
