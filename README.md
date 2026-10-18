@@ -52,7 +52,8 @@ bun run dev
 ## Как работать с задачами
 
 Создавайте задачи и PR в [командном frontend](https://github.com/Cringe-Driven-Development-Team/frontend),
-берите задачи на общей [доске](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1).
+берите задачи на общей [доске](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1):
+выберите карточку из `Ready`, назначьте себя в `Assignees` и переведите её в `In progress`.
 Для задачи `#N` создайте ветку `web-N` и PR в `main` с заголовком `WEB-N: <название>`
 и строкой `Closes #N` в описании. PR проходит ревью ментора; после merge задача
 закроется автоматически. Правила описания задач и межрепозиторных связей — в
