@@ -1,5 +1,7 @@
 # 2026_2_Cringe_Driven_Development
 
+![Главная страница Cellestial со списком блокнотов](.github/assets/cellestial-home.png)
+
 Frontend проекта «Colab» (Cellestial) команды «Cringe Driven Development».
 Разработка, задачи и PR — в [командном frontend](https://github.com/Cringe-Driven-Development-Team/frontend).
 [Учебная копия](https://github.com/frontend-park-mail-ru/2026_2_Cringe_Driven_Development)
@@ -10,8 +12,6 @@ Frontend проекта «Colab» (Cellestial) команды «Cringe Driven De
 [![Макеты в Figma](https://img.shields.io/badge/Макеты-F24E1E?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/7iaVDGiwzQk2vZIB5ogVlq/Colab)
 [![Документация](https://img.shields.io/badge/Документация-5C73E7?style=for-the-badge&logo=vitepress&logoColor=white)](https://docs.cellestial.ru/project-context)
 [![Бэкенд](https://img.shields.io/badge/Бэкенд-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://github.com/Cringe-Driven-Development-Team/backend)
-
-![Главная страница Cellestial со списком блокнотов](.github/assets/cellestial-home.png)
 
 ## Быстрый старт
 
