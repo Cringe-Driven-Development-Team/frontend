@@ -37,14 +37,17 @@ jobs:
         run: bun run release previous
       # как и в выкатке, релиз проверяется до переключения
       - name: Release check
+        id: check
         env:
           SHA: ${{ steps.previous.outputs.sha }}
         run: bun run release check "$SHA"
       - name: Switch release pointer
+        id: switch
         env:
           SHA: ${{ steps.previous.outputs.sha }}
         run: bun run release rollback "$SHA"
       - name: Health check
+        id: health
         env:
           SHA: ${{ steps.previous.outputs.sha }}
         run: bun run release health "$SHA"
@@ -57,4 +60,11 @@ jobs:
           TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
           STATUS: ${{ job.status }}
           SHA: ${{ steps.previous.outputs.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_BEFORE_SHA: ${{ steps.switch.outputs.before_sha || steps.previous.outputs.before_sha }}
+          RELEASE_INDEX_PUBLISHED: ${{ steps.switch.outputs.index_published }}
+          RELEASE_PREVIOUS_STATUS: ${{ steps.previous.outcome }}
+          RELEASE_CHECK_STATUS: ${{ steps.check.outcome }}
+          RELEASE_SWITCH_STATUS: ${{ steps.switch.outcome }}
+          RELEASE_HEALTH_STATUS: ${{ steps.health.outcome }}
         run: bun run release notify Откат "$STATUS" "$SHA"

@@ -53,12 +53,14 @@ export async function exists(sha: string): Promise<void> {
 export async function promote(sha: string): Promise<void> {
     const bucket = openBucket();
     const current = await readCurrent(bucket);
+    output('before_sha', current?.stable ?? '');
     if (current) checkForward(current.stable, sha);
     // повторная выкатка того же релиза previous не трогает, иначе откатываться будет некуда
     const previous = current?.stable === sha ? current.previous : (current?.stable ?? null);
     // сначала index.html, потом указатель: атомарной записи двух объектов в S3 нет,
     // при падении между шагами отстаёт указатель, а не сайт
     await publishIndex(bucket, sha);
+    output('index_published', 'true');
     await writeCurrent(bucket, { stable: sha, previous });
     console.log(`stable: ${sha}, previous: ${previous}`);
 }
@@ -69,6 +71,7 @@ export async function promote(sha: string): Promise<void> {
  */
 export async function findPrevious(): Promise<string> {
     const current = await readCurrent(openBucket());
+    output('before_sha', current?.stable ?? '');
     if (!current) throw new ReleaseError('current.json нет — откатываться некуда');
     if (!current.previous)
         throw new ReleaseError('В current.json нет previous — откатываться некуда');
@@ -84,6 +87,7 @@ export async function findPrevious(): Promise<string> {
 export async function rollback(sha: string): Promise<void> {
     const bucket = openBucket();
     const current = await readCurrent(bucket);
+    output('before_sha', current?.stable ?? '');
     // откатываемся ровно на тот релиз, который прошёл Release check
     if (current?.previous !== sha) {
         throw new ReleaseError(
@@ -91,6 +95,7 @@ export async function rollback(sha: string): Promise<void> {
         );
     }
     await publishIndex(bucket, sha);
+    output('index_published', 'true');
     await writeCurrent(bucket, { stable: sha, previous: current.stable });
     console.log(`stable: ${sha}, previous: ${current.stable}`);
 }
