@@ -187,7 +187,7 @@ APIDOG_BRANCH_ID=
 | `cdd/check-param-names` | имена в `@param` совпадают с параметрами функции и идут в том же порядке |
 
 Оба правила — командный плагин
-[`@iredtea/oxlint-plugin-jsdoc`](https://github.com/Cringe-Driven-Development-Team/oxlint-plugin-jsdoc):
+[`@cdd-team/oxlint-plugin-jsdoc`](https://github.com/Cringe-Driven-Development-Team/frontend-packages/tree/main/packages/oxlint-plugin-jsdoc):
 в `oxlint` правил `require-jsdoc` и `check-param-names` нет. Сами теги линт не требует: `@param` и `@returns` пишутся там, где описание что-то добавляет
 к имени и типу. Сгенерированный `apps/client/src/api/schema.ts` линт не проверяет
 

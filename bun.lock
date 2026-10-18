@@ -6,7 +6,7 @@
       "name": "2026_2_cringe_driven_development",
       "devDependencies": {
         "@aws-sdk/client-s3": "^3.1146.0",
-        "@iredtea/oxlint-plugin-jsdoc": "^0.1.1",
+        "@cdd-team/oxlint-plugin-jsdoc": "^0.1.2",
         "@types/bun": "^1.4.2",
         "oxfmt": "^0.71.0",
         "oxlint": "^1.86.0",
@@ -72,6 +72,8 @@
 
     "@cdd-team/openapi": ["@cdd-team/openapi@0.2.1", "", { "bin": { "openapi-cdd": "dist/bin.js" } }, "sha512-ct7HzmyYblbwuBAbrjYFhZ0/QuKUw/O+Kl2vJW/U6nK/eiy+UKbD8CBrKVv9p7vlZqE8PwH/sKdV9li1oSI77Q=="],
 
+    "@cdd-team/oxlint-plugin-jsdoc": ["@cdd-team/oxlint-plugin-jsdoc@0.1.2", "", { "peerDependencies": { "oxlint": ">=1.86.0" } }, "sha512-JeDHB9I0QrA7ueL8tvEEa/nw0q1+yacnOdw5Cn8iKaTFqhDhbqAaaGhYxQxUYWTPnoLcZpPs7yy1vJ8IYDPfig=="],
+
     "@cdd-team/react": ["@cdd-team/react@1.2.1", "", {}, "sha512-YUzDEmHAYR8CtW8xg6vT3EjOq7aX3z8g4aRECYagzr2EhFSXO/HH7YJP5NvzJO/97tgyOFSpR4nS0FFw+59pxA=="],
 
     "@cdd-team/zustand": ["@cdd-team/zustand@1.0.1", "", { "peerDependencies": { "@cdd-team/react": "^1.2.1" }, "optionalPeers": ["@cdd-team/react"] }, "sha512-KaKI9ZkjVyEuWbayK5/Glx3VVyk770+X+D+iyLo6CcIwIUSHq9fhRq17QomPUHo7sy9x3VAiGv46KsX0D89HAg=="],
@@ -81,8 +83,6 @@
     "@cdd/client": ["@cdd/client@workspace:apps/client"],
 
     "@cdd/schemas": ["@cdd/schemas@workspace:packages/schemas"],
-
-    "@iredtea/oxlint-plugin-jsdoc": ["@iredtea/oxlint-plugin-jsdoc@0.1.1", "", { "peerDependencies": { "oxlint": ">=1.86.0" } }, "sha512-h8K18j7x7UBoMwcFeh6t99NG8/2uBW+bQoTYn3kdyX9HP+eIPEJSelvVss5dEg8OEIM70rNy7/MHt8Ar6iJ7Nw=="],
 
     "@oxc-project/types": ["@oxc-project/types@0.151.0", "", {}, "sha512-J1yXrIlNDZVzE3ada310xeAw7nH8yCAyLPuUIsjKatFPmfn5bS1oW+cM+QsGOtVWd5nhSpbwZWx/rue+r5Z+PA=="],
 
