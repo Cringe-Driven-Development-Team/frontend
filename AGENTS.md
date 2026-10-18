@@ -9,7 +9,7 @@ zod-схемы — `packages/schemas` (README, «Монорепа»). Коман
 получает копию main, новые PR туда не создаются.
 
 Общепроектный контекст, текущая архитектура и планы — в
-[docs/site/project-context.md](https://github.com/Cringe-Driven-Development-Team/docs/blob/main/site/project-context.md).
+[Контекст проекта](https://docs.cellestial.ru/project-context).
 Факты о реализации проверяй по актуальному коду.
 
 ## Правила работы
