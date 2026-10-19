@@ -27,10 +27,20 @@
         var(--shadow-popover);
 }
 
+.head {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .title {
     padding-right: 44px;
     font: var(--font-title);
     letter-spacing: var(--tracking-title);
+}
+
+.description {
+    color: var(--color-text-secondary);
 }
 
 .close {

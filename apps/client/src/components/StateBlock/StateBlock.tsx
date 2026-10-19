@@ -1,5 +1,6 @@
 import type { ReactNode } from '@cdd-team/react';
 import emptyPlanetUrl from '@assets/empty-planet.svg';
+import { clsx } from '@modules/clsx';
 import styles from './StateBlock.module.css';
 
 /** Свойства {@link StateBlock}. */
@@ -8,6 +9,8 @@ interface StateBlockProps {
     description: string;
     /** Кнопки под описанием */
     children?: ReactNode;
+    /** Класс блока кнопок */
+    actionsClassName?: string;
 }
 
 /**
@@ -15,7 +18,7 @@ interface StateBlockProps {
  * @param props свойства заглушки
  * @returns заглушка
  */
-export function StateBlock({ title, description, children }: StateBlockProps) {
+export function StateBlock({ title, description, children, actionsClassName }: StateBlockProps) {
     return (
         <div className={styles.block}>
             <img key="icon" src={emptyPlanetUrl} alt="" width={56} height={56} />
@@ -26,7 +29,7 @@ export function StateBlock({ title, description, children }: StateBlockProps) {
                 {description}
             </p>
             {children && (
-                <div key="actions" className={styles.actions}>
+                <div key="actions" className={clsx(styles.actions, actionsClassName)}>
                     {children}
                 </div>
             )}

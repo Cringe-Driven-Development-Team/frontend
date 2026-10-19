@@ -34,6 +34,8 @@
 
     /* Код */
     --code-text: #cfc8f2;
+    --code-keyword: #b79bff;
+    --code-number: #ffc98a;
 
     /* «Луна»: светлая поверхность, тёмный текст */
     --color-on-light: #1a1330;
@@ -53,8 +55,12 @@
 
     /* Эффекты */
     --shadow-glow-primary:
-        0 8px 32px -8px rgb(124 92 255 / 0.8), inset 0 1px 0 rgb(255 255 255 / 0.35);
+        0 8px 24px -10px rgb(124 92 255 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.35);
     --shadow-glow-primary-hover:
-        0 12px 40px -6px rgb(140 110 255 / 0.95), inset 0 1px 0 rgb(255 255 255 / 0.45);
-    --shadow-popover: 0 16px 40px -10px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.1);
+        0 10px 28px -8px rgb(140 110 255 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.45);
+    --shadow-popover:
+        0 12px 32px rgb(0 0 0 / 0.6), 0 0 32px 2px rgb(139 108 255 / 0.28),
+        inset 0 1px 0 rgb(255 255 255 / 0.1);
+    /* Glass / Blur: в макете радиус 40, в CSS размытие вдвое меньше */
+    --blur-glass: blur(20px);
 }

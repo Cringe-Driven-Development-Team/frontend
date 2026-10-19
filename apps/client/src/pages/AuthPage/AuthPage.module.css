@@ -39,7 +39,8 @@
 
 .formPane {
     display: flex;
-    flex: 1 1 544px;
+    /* 50% вместе с padding: при flex-basis 0 форма забирает его сверх половины */
+    flex: 1 1 50%;
     flex-direction: column;
     justify-content: center;
     min-width: 0;
@@ -49,24 +50,28 @@
 .side {
     position: relative;
     display: flex;
-    flex: 1 1 452px;
+    flex: 1 1 50%;
     align-items: center;
     justify-content: center;
     min-width: 0;
 }
 
-/* Вход: левый край луны на границе половин (544 из 996), регистрация: правый (452 из 996) */
+/*
+ * Луна 660 px (600 × 1.1) накрывает внешние углы своей половины карточки 996 × 560.
+ * Масштаб — от центра: вход — левый край на середине карточки (центр в 50cqw + 330px),
+ * регистрация — правый (центр в 50cqw − 330px).
+ */
 .moon {
     position: absolute;
     top: 50%;
     left: 0;
     margin-top: -300px;
-    transform: translateX(calc(100cqw * 544 / 996));
+    transform: translateX(calc(50cqw + 30px)) scale(1.1);
     transition: transform var(--sweep) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .register .moon {
-    transform: translateX(calc(100cqw * 452 / 996 - 600px));
+    transform: translateX(calc(50cqw - 630px)) scale(1.1);
 }
 
 .formPane,
@@ -85,9 +90,16 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 24px;
     color: var(--color-on-light);
     text-align: center;
+}
+
+.faceCopy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
 
 .faceTitle {
@@ -96,8 +108,9 @@
 }
 
 .facePitch {
+    width: 300px;
+    max-width: 100%;
     font: var(--font-caption);
-    white-space: pre-line;
 }
 
 .form {

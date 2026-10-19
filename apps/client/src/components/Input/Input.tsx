@@ -21,6 +21,8 @@ interface InputProps {
     hint?: string;
     /** Текст ошибки: красная граница, иконка и сообщение под полем */
     error?: string;
+    /** Ошибка без своего сообщения: красная граница, строка под полем пустая */
+    invalid?: boolean;
     /** Состояние Disabled: поле полупрозрачное и не редактируется */
     disabled?: boolean;
     /** Значение атрибута autocomplete */
@@ -50,6 +52,7 @@ export function Input({
     placeholder,
     hint,
     error,
+    invalid = false,
     disabled = false,
     autocomplete,
     revealed = false,
@@ -59,9 +62,10 @@ export function Input({
 }: InputProps) {
     const isPassword = type === 'password';
     const messageId = `${id}-message`;
+    const isInvalid = Boolean(error) || invalid;
 
     return (
-        <div className={clsx(styles.input, error && styles.error, disabled && styles.disabled)}>
+        <div className={clsx(styles.input, isInvalid && styles.error, disabled && styles.disabled)}>
             <label key="label" className={styles.label} htmlFor={id}>
                 {label}
             </label>
@@ -75,8 +79,8 @@ export function Input({
                     value={value}
                     placeholder={placeholder ?? ''}
                     disabled={disabled}
-                    aria-invalid={error ? true : undefined}
-                    aria-describedby={error || hint ? messageId : undefined}
+                    aria-invalid={isInvalid ? true : undefined}
+                    aria-describedby={error || (hint && !invalid) ? messageId : undefined}
                     {...domProps({
                         autocomplete,
                         autocapitalize: 'none',
@@ -108,7 +112,7 @@ export function Input({
                     </span>
                 ) : (
                     <span key="hint" className={styles.messageText}>
-                        {hint ?? ''}
+                        {invalid ? '' : (hint ?? '')}
                     </span>
                 )}
             </p>

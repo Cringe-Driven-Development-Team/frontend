@@ -10,6 +10,7 @@
     border: 1px dashed var(--color-border-control);
     border-radius: 16px;
     background: var(--color-surface);
+    backdrop-filter: var(--blur-glass);
     text-align: center;
 }
 
@@ -24,6 +25,6 @@
 
 .actions {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     padding-top: 8px;
 }

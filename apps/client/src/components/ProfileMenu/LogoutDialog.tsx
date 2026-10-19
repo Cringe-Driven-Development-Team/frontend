@@ -57,24 +57,24 @@ export function LogoutDialog({ onClose }: LogoutDialogProps) {
     };
 
     return (
-        <Modal title="Выйти из аккаунта?" initialFocusId={STAY_ID} onClose={close}>
-            <div className={styles.dialog}>
-                <p key="text" className={styles.dialogText}>
-                    Блокноты сохранятся — войдите снова, чтобы продолжить работу.
-                </p>
-                <div key="actions" className={styles.dialogActions}>
-                    <Button key="stay" id={STAY_ID} variant="secondary" onClick={close}>
-                        Остаться
-                    </Button>
-                    <Button
-                        key="logout"
-                        variant="danger"
-                        loading={pending}
-                        onClick={() => void confirm()}
-                    >
-                        {pending ? 'Выходим…' : 'Выйти'}
-                    </Button>
-                </div>
+        <Modal
+            title="Выйти из аккаунта?"
+            description="Блокноты сохранятся — войдите снова, чтобы продолжить работу."
+            initialFocusId={STAY_ID}
+            onClose={close}
+        >
+            <div className={styles.dialogActions}>
+                <Button key="stay" id={STAY_ID} variant="secondary" onClick={close}>
+                    Остаться
+                </Button>
+                <Button
+                    key="logout"
+                    variant="danger"
+                    loading={pending}
+                    onClick={() => void confirm()}
+                >
+                    {pending ? 'Выходим…' : 'Выйти'}
+                </Button>
             </div>
         </Modal>
     );
