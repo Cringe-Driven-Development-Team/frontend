@@ -31,10 +31,10 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding-right: 44px;
 }
 
 .title {
+    padding-right: 44px;
     font: var(--font-title);
     letter-spacing: var(--tracking-title);
 }
