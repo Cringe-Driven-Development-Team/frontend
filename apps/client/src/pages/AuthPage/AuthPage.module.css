@@ -39,7 +39,8 @@
 
 .formPane {
     display: flex;
-    flex: 1 1 0;
+    /* 50% вместе с padding: при flex-basis 0 форма забирает его сверх половины */
+    flex: 1 1 50%;
     flex-direction: column;
     justify-content: center;
     min-width: 0;
@@ -49,7 +50,7 @@
 .side {
     position: relative;
     display: flex;
-    flex: 1 1 0;
+    flex: 1 1 50%;
     align-items: center;
     justify-content: center;
     min-width: 0;
