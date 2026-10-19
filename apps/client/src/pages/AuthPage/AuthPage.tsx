@@ -12,6 +12,16 @@ import styles from './AuthPage.module.css';
 
 const REGISTER_ROUTE: RouteIds = '/_guest/register';
 
+/** Текст на луне при входе: зовёт создать аккаунт */
+const LOGIN_PITCH =
+    'Cellestial — блокноты с Python прямо в браузере. Пишите код и заметки в ячейках, ' +
+    'запускайте их и сразу видите результат. Ничего не нужно устанавливать.';
+
+/** Текст на луне при регистрации: зовёт войти */
+const REGISTER_PITCH =
+    'Войдите, чтобы вернуться к своим блокнотам. Код и заметки сохраняются автоматически — ' +
+    'продолжите с того места, где остановились.';
+
 /** Длительность переезда луны, мс */
 const SWEEP_MS = 700;
 
@@ -67,14 +77,14 @@ export function AuthPage() {
                 </div>
                 <div key="side" className={styles.side}>
                     <div key="face" className={styles.face}>
-                        <h2 key="title" className={styles.faceTitle}>
-                            {showRegister ? 'Уже есть аккаунт?' : 'Ещё нет аккаунта?'}
-                        </h2>
-                        <p key="pitch" className={styles.facePitch}>
-                            {showRegister
-                                ? 'Ваши блокноты ждут\nна орбите'
-                                : 'Python прямо в браузере —\nбез установки окружения'}
-                        </p>
+                        <div key="copy" className={styles.faceCopy}>
+                            <h2 key="title" className={styles.faceTitle}>
+                                {showRegister ? 'Уже есть аккаунт?' : 'Ещё нет аккаунта?'}
+                            </h2>
+                            <p key="pitch" className={styles.facePitch}>
+                                {showRegister ? REGISTER_PITCH : LOGIN_PITCH}
+                            </p>
+                        </div>
                         <Link
                             key="switch"
                             to={showRegister ? '/login' : '/register'}
