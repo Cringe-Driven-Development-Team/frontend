@@ -44,6 +44,8 @@ export function AuthForm({ mode }: AuthFormProps) {
     const [submitted, setSubmitted] = useState(false);
     const [pending, setPending] = useState(false);
     const [serverErrors, setServerErrors] = useState<FieldTexts>({});
+    // Сервер не сказал, что неверно, — подсвечиваем и логин, сообщение только под паролем
+    const [credentialsRejected, setCredentialsRejected] = useState(false);
     const [revealed, setRevealed] = useState({ password: false, confirm: false });
     const [focusRequest, setFocusRequest] = useState<{ field: Field }>({ field: 'login' });
     const [life] = useState({ alive: true });
@@ -76,6 +78,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const change = (field: Field) => (value: string) => {
         setValues((current) => ({ ...current, [field]: value }));
         setServerErrors({});
+        setCredentialsRejected(false);
         hideSnackbar();
     };
 
@@ -91,6 +94,7 @@ export function AuthForm({ mode }: AuthFormProps) {
     const send = async () => {
         setPending(true);
         setServerErrors({});
+        setCredentialsRejected(false);
         hideSnackbar();
 
         const credentials = { login: values.login, password: values.password };
@@ -108,6 +112,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         switch (result.error.code) {
             case 'invalid_credentials':
                 setServerErrors({ password: message });
+                setCredentialsRejected(true);
                 setFocusRequest({ field: 'password' });
                 break;
             case 'login_taken':
@@ -153,6 +158,7 @@ export function AuthForm({ mode }: AuthFormProps) {
                 placeholder="Введите логин"
                 hint={isRegister ? LOGIN_RULE : undefined}
                 error={errorOf('login')}
+                invalid={credentialsRejected}
                 disabled={pending}
                 autocomplete="username"
                 onValueChange={change('login')}
