@@ -10,6 +10,7 @@ import { IconButton } from '@components/IconButton/IconButton';
 import { ProfileMenu } from '@components/ProfileMenu/ProfileMenu';
 import { Space } from '@components/Space/Space';
 import { StateBlock } from '@components/StateBlock/StateBlock';
+import { clsx } from '@modules/clsx';
 import { Link, useNavigate, useParams } from '@modules/router';
 import { useSessionStore } from '@stores/session';
 import { hideSnackbar, showSnackbar } from '@stores/snackbar';
@@ -268,7 +269,11 @@ export function NotebookPage() {
                     <ProfileMenu key="profile" login={login} />
                 </Header>
                 {page.status === 'loading' && (
-                    <ul key="skeletons" className={styles.cells} aria-hidden="true">
+                    <ul
+                        key="skeletons"
+                        className={clsx(styles.cells, styles.column)}
+                        aria-hidden="true"
+                    >
                         {Array.from({ length: SKELETON_COUNT }, (_, index) => (
                             <li key={`skeleton-${index}`}>
                                 <CellSkeleton />
@@ -277,7 +282,7 @@ export function NotebookPage() {
                     </ul>
                 )}
                 {page.status === 'ready' && !isEmpty && (
-                    <div key="body" className={styles.body}>
+                    <div key="body" className={clsx(styles.body, styles.column)}>
                         <ul key="cells" className={styles.cells}>
                             {cells.map((cell) => (
                                 <li key={cell.id}>
@@ -295,6 +300,7 @@ export function NotebookPage() {
                         key="empty"
                         title="В блокноте пусто"
                         description="Добавьте первую ячейку с кодом или текстом."
+                        actionsClassName={styles.chips}
                     >
                         <AddCellChips onAdd={handleAdd} />
                     </StateBlock>

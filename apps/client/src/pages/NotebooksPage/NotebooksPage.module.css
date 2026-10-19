@@ -57,7 +57,7 @@
 .createActions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 12px;
 }
 
 @media (max-width: 860px) {

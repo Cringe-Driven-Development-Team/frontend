@@ -80,18 +80,8 @@
     color: var(--color-error);
 }
 
-.dialog {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-}
-
-.dialogText {
-    color: var(--color-text-secondary);
-}
-
 .dialogActions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 12px;
 }

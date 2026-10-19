@@ -4,11 +4,14 @@ import styles from './Modal.module.css';
 
 const DIALOG_ID = 'modal';
 const TITLE_ID = 'modal-title';
+const DESCRIPTION_ID = 'modal-description';
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled])';
 
 /** Свойства {@link Modal}. */
 interface ModalProps {
     title: string;
+    /** Текст под заголовком */
+    description?: string;
     /** id элемента, который получает фокус при открытии */
     initialFocusId: string;
     onClose: () => void;
@@ -45,7 +48,7 @@ function trapFocus(event: KeyboardEvent, dialog: HTMLElement) {
  * @param props свойства модалки
  * @returns модалка
  */
-export function Modal({ title, initialFocusId, onClose, children }: ModalProps) {
+export function Modal({ title, description, initialFocusId, onClose, children }: ModalProps) {
     useEffect(() => {
         const opener =
             document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -75,10 +78,18 @@ export function Modal({ title, initialFocusId, onClose, children }: ModalProps) 
                 open
                 aria-modal="true"
                 aria-labelledby={TITLE_ID}
+                aria-describedby={description ? DESCRIPTION_ID : undefined}
             >
-                <h2 key="title" id={TITLE_ID} className={styles.title}>
-                    {title}
-                </h2>
+                <div key="head" className={styles.head}>
+                    <h2 key="title" id={TITLE_ID} className={styles.title}>
+                        {title}
+                    </h2>
+                    {description && (
+                        <p key="description" id={DESCRIPTION_ID} className={styles.description}>
+                            {description}
+                        </p>
+                    )}
+                </div>
                 <IconButton
                     key="close"
                     icon="close"
