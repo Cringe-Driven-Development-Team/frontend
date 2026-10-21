@@ -15,11 +15,11 @@ bun run build
 
 Репозиторий — монорепа на bun workspaces и [Turborepo](https://turborepo.com)
 
-| Каталог            | Пакет          | Что внутри                                                                                           |
-| ------------------ | -------------- | ---------------------------------------------------------------------------------------------------- |
-| `apps/client`      | `@cdd/client`  | клиент: Vite, `src/`, `index.html`                                                                   |
-| `apps/bff`         | `@cdd/bff`     | BFF, пока пустой — [frontend#2](https://github.com/Cringe-Driven-Development-Team/frontend/issues/2) |
-| `packages/schemas` | `@cdd/schemas` | zod-схемы операций Go, пока пустой — их сгенерирует Orval                                            |
+| Каталог            | Пакет          | Что внутри                                                                                                                           |
+| ------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/client`      | `@cdd/client`  | клиент: Vite, `src/`, `index.html`                                                                                                   |
+| `apps/bff`         | `@cdd/bff`     | BFF: пока только клиент к Go (`src/go/`), роутер — [frontend#2](https://github.com/Cringe-Driven-Development-Team/frontend/issues/2) |
+| `packages/schemas` | `@cdd/schemas` | zod-схемы операций Go, генерирует Orval (`bun run orval`)                                                                            |
 
 В корне остаются общее: `spec/` с контрактом, `scripts/` (выгрузка из Apidog и выкатка), конфиги
 `oxlint` и `oxfmt`, `.env` — его читают и клиент, и скрипты

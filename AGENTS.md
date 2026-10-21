@@ -28,7 +28,9 @@ zod-схемы — `packages/schemas` ([README](README.md#монорепа)). К
 ## Источники
 
 - API: контракт в Apidog, локальная копия — `spec/openapi.json`. Обновить — `bun run sync`
-  (выгрузка `bun run apidog` + `bun run generate`), оба файла руками не править.
+  (`bun run apidog` + `bun run orval` + `bun run generate`); спеку и сгенерированное
+  (`apps/bff/src/go/client.ts`, `packages/schemas/src/zod.ts`, `apps/client/src/api/schema.ts`)
+  руками не править. Orval и zod — по задаче frontend#45, исключение из правила про внешние библиотеки.
 - Бэкенд: https://github.com/Cringe-Driven-Development-Team/backend, локально на
   `http://127.0.0.1:8080` (адрес меняется переменной `BACKEND_URL` в `.env`).
 
@@ -38,6 +40,7 @@ zod-схемы — `packages/schemas` ([README](README.md#монорепа)). К
 bun run dev        # dev-сервер, /api/v1 проксируется на бэкенд
 bun run check      # oxfmt --check, oxlint, tsc во всех пакетах
 bun run build      # сборка, клиент — в apps/client/dist/
+bun run orval      # spec/openapi.json → клиент BFF к Go и zod-схемы (orval.config.ts)
 bun run generate   # spec/openapi.json → apps/client/src/api/schema.ts
 ```
 

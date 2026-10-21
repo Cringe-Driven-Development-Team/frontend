@@ -32,8 +32,8 @@ bun run dev
 | Каталог | Назначение |
 | --- | --- |
 | `apps/client` | Vite-клиент |
-| `apps/bff` | BFF, пока пустой |
-| `packages/schemas` | схемы API, пока пустой |
+| `apps/bff` | BFF: клиент к Go из контракта (Orval) |
+| `packages/schemas` | zod-схемы операций Go (Orval) |
 
 Зависимости и команды объединены Bun workspaces и Turborepo.
 
