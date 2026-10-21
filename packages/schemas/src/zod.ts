@@ -9,10 +9,6 @@ import * as zod from 'zod';
 /**
  * @summary Регистрация
  */
-export const RegisterUserHeader = zod.object({
-  "X-CSRF-Token": zod.string().optional().describe('Значение cookie __Host-csrf')
-})
-
 export const registerUserBodyLoginMin = 3;
 export const registerUserBodyLoginMax = 32;
 
@@ -32,18 +28,22 @@ export const RegisterUserBody = zod.object({
 
 
 export const RegisterUserResponse = zod.object({
+  "user": zod.object({
   "id": zod.int().min(1).describe('ID'),
   "login": zod.string()
+}),
+  "tokens": zod.object({
+  "access_token": zod.string(),
+  "access_expires_in": zod.int().describe('Срок жизни access-токена, секунды'),
+  "refresh_token": zod.string(),
+  "refresh_expires_in": zod.int().describe('Срок жизни refresh-токена, секунды')
+})
 })
 
 
 /**
  * @summary Вход
  */
-export const LoginUserHeader = zod.object({
-  "X-CSRF-Token": zod.string().optional().describe('Значение cookie __Host-csrf')
-})
-
 export const loginUserBodyLoginMin = 3;
 export const loginUserBodyLoginMax = 32;
 
@@ -63,26 +63,39 @@ export const LoginUserBody = zod.object({
 
 
 export const LoginUserResponse = zod.object({
+  "user": zod.object({
   "id": zod.int().min(1).describe('ID'),
   "login": zod.string()
+}),
+  "tokens": zod.object({
+  "access_token": zod.string(),
+  "access_expires_in": zod.int().describe('Срок жизни access-токена, секунды'),
+  "refresh_token": zod.string(),
+  "refresh_expires_in": zod.int().describe('Срок жизни refresh-токена, секунды')
+})
 })
 
 
 /**
  * @summary Обновление токенов
  */
-export const RefreshTokenHeader = zod.object({
-  "X-CSRF-Token": zod.string().optional().describe('Значение cookie __Host-csrf')
+export const RefreshTokenBody = zod.object({
+  "refresh_token": zod.string()
 })
 
-export const RefreshTokenResponse = zod.void()
+export const RefreshTokenResponse = zod.object({
+  "access_token": zod.string(),
+  "access_expires_in": zod.int().describe('Срок жизни access-токена, секунды'),
+  "refresh_token": zod.string(),
+  "refresh_expires_in": zod.int().describe('Срок жизни refresh-токена, секунды')
+})
 
 
 /**
  * @summary Выход
  */
-export const LogoutUserHeader = zod.object({
-  "X-CSRF-Token": zod.string().optional().describe('Значение cookie __Host-csrf')
+export const LogoutUserBody = zod.object({
+  "refresh_token": zod.string()
 })
 
 export const LogoutUserResponse = zod.void()
@@ -108,10 +121,6 @@ export const GetCurrentUserResponse = zod.object({
 
 export const CreateCellParams = zod.object({
   "id": zod.int().min(1).describe('ID блокнота')
-})
-
-export const CreateCellHeader = zod.object({
-  "X-CSRF-Token": zod.string().optional().describe('Значение cookie __Host-csrf')
 })
 
 export const createCellBodyIndexMin = 0;
@@ -184,10 +193,6 @@ export const ListNotebooksResponse = zod.array(ListNotebooksResponseItem)
 /**
  * @summary Создание блокнота
  */
-export const CreateNotebookHeader = zod.object({
-  "X-CSRF-Token": zod.string().optional().describe('Значение cookie __Host-csrf')
-})
-
 export const createNotebookBodyNameMax = 128;
 
 
@@ -227,10 +232,6 @@ export const deleteCellPathIndexMin = 0;
 export const DeleteCellParams = zod.object({
   "id": zod.int().min(1).describe('ID блокнота'),
   "index": zod.int().min(deleteCellPathIndexMin).describe('Порядковый номер блока в блокноте, с нуля')
-})
-
-export const DeleteCellHeader = zod.object({
-  "X-CSRF-Token": zod.string().optional().describe('Значение cookie __Host-csrf')
 })
 
 export const DeleteCellResponse = zod.void()

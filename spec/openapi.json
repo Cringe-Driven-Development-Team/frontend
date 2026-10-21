@@ -26,18 +26,7 @@
         "tags": [
           "auth"
         ],
-        "parameters": [
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "description": "Значение cookie __Host-csrf",
-            "required": false,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "content": {
             "application/json": {
@@ -54,19 +43,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "tokens": {
+                      "$ref": "#/components/schemas/TokenPair"
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "tokens"
+                  ]
                 }
               }
             },
-            "headers": {
-              "Set-Cookie": {
-                "required": false,
-                "description": "",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "headers": {}
           },
           "400": {
             "description": "Невалидный запрос",
@@ -80,7 +73,7 @@
             "headers": {}
           },
           "403": {
-            "description": "CSRF-токен не прошёл проверку",
+            "description": "S2S-ключ не принят",
             "content": {
               "application/json": {
                 "schema": {
@@ -125,18 +118,7 @@
         "tags": [
           "auth"
         ],
-        "parameters": [
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "description": "Значение cookie __Host-csrf",
-            "required": false,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "content": {
             "application/json": {
@@ -153,19 +135,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/User"
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "tokens": {
+                      "$ref": "#/components/schemas/TokenPair"
+                    }
+                  },
+                  "required": [
+                    "user",
+                    "tokens"
+                  ]
                 }
               }
             },
-            "headers": {
-              "Set-Cookie": {
-                "required": false,
-                "description": "",
-                "schema": {
-                  "type": "string"
-                }
-              }
-            }
+            "headers": {}
           },
           "400": {
             "description": "Невалидный запрос",
@@ -190,7 +176,7 @@
             "headers": {}
           },
           "403": {
-            "description": "CSRF-токен не прошёл проверку",
+            "description": "S2S-ключ не принят",
             "content": {
               "application/json": {
                 "schema": {
@@ -224,40 +210,29 @@
         "tags": [
           "auth"
         ],
-        "parameters": [
-          {
-            "name": "refresh_token",
-            "in": "cookie",
-            "description": "Refresh-токен (HttpOnly-cookie, Path=/api/v1/auth)",
-            "required": true,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "description": "Значение cookie __Host-csrf",
-            "required": false,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
-          "204": {
+          "200": {
             "description": "Выданы новые токены, старый refresh-токен погашен",
-            "headers": {
-              "Set-Cookie": {
-                "required": false,
-                "description": "",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/TokenPair"
                 }
               }
-            }
+            },
+            "headers": {}
+          },
+          "400": {
+            "description": "Невалидный запрос",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
           },
           "401": {
             "description": "Нет авторизации",
@@ -271,7 +246,7 @@
             "headers": {}
           },
           "403": {
-            "description": "CSRF-токен не прошёл проверку",
+            "description": "S2S-ключ не принят",
             "content": {
               "application/json": {
                 "schema": {
@@ -293,7 +268,25 @@
             "headers": {}
           }
         },
-        "security": []
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refresh_token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "refresh_token"
+                ]
+              }
+            }
+          },
+          "required": true
+        }
       }
     },
     "/auth/logout": {
@@ -305,40 +298,22 @@
         "tags": [
           "auth"
         ],
-        "parameters": [
-          {
-            "name": "refresh_token",
-            "in": "cookie",
-            "description": "Refresh-токен (HttpOnly-cookie, Path=/api/v1/auth)",
-            "required": true,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "description": "Значение cookie __Host-csrf",
-            "required": false,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "204": {
-            "description": "Сессия удалена, cookie погашена",
-            "headers": {
-              "Set-Cookie": {
-                "required": false,
-                "description": "Cookie `refresh_token` с истёкшим сроком",
+            "description": "Сессия удалена, refresh-токен погашен",
+            "headers": {}
+          },
+          "400": {
+            "description": "Невалидный запрос",
+            "content": {
+              "application/json": {
                 "schema": {
-                  "type": "string"
+                  "$ref": "#/components/schemas/Error"
                 }
               }
-            }
+            },
+            "headers": {}
           },
           "401": {
             "description": "Нет авторизации",
@@ -352,7 +327,7 @@
             "headers": {}
           },
           "403": {
-            "description": "CSRF-токен не прошёл проверку",
+            "description": "S2S-ключ не принят",
             "content": {
               "application/json": {
                 "schema": {
@@ -374,7 +349,29 @@
             "headers": {}
           }
         },
-        "security": []
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refresh_token": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "refresh_token"
+                ]
+              }
+            }
+          },
+          "required": true
+        }
       }
     },
     "/users/me": {
@@ -401,6 +398,17 @@
           },
           "401": {
             "description": "Нет авторизации",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "403": {
+            "description": "S2S-ключ не принят",
             "content": {
               "application/json": {
                 "schema": {
@@ -450,16 +458,6 @@
               "format": "int64",
               "minimum": 1
             }
-          },
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "description": "Значение cookie __Host-csrf",
-            "required": false,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
@@ -507,7 +505,7 @@
             "headers": {}
           },
           "403": {
-            "description": "CSRF-токен не прошёл проверку",
+            "description": "S2S-ключ не принят",
             "content": {
               "application/json": {
                 "schema": {
@@ -615,6 +613,17 @@
             },
             "headers": {}
           },
+          "403": {
+            "description": "S2S-ключ не принят",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
+          },
           "404": {
             "description": "Не найдено",
             "content": {
@@ -681,6 +690,17 @@
             },
             "headers": {}
           },
+          "403": {
+            "description": "S2S-ключ не принят",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
+          },
           "500": {
             "description": "Внутренняя ошибка",
             "content": {
@@ -707,18 +727,7 @@
         "tags": [
           "notebooks"
         ],
-        "parameters": [
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "description": "Значение cookie __Host-csrf",
-            "required": false,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "requestBody": {
           "content": {
             "application/json": {
@@ -765,7 +774,7 @@
             "headers": {}
           },
           "403": {
-            "description": "CSRF-токен не прошёл проверку",
+            "description": "S2S-ключ не принят",
             "content": {
               "application/json": {
                 "schema": {
@@ -826,16 +835,6 @@
               "type": "integer",
               "minimum": 0
             }
-          },
-          {
-            "name": "X-CSRF-Token",
-            "in": "header",
-            "description": "Значение cookie __Host-csrf",
-            "required": false,
-            "example": "",
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "responses": {
@@ -866,7 +865,7 @@
             "headers": {}
           },
           "403": {
-            "description": "CSRF-токен не прошёл проверку",
+            "description": "S2S-ключ не принят",
             "content": {
               "application/json": {
                 "schema": {
@@ -1024,6 +1023,7 @@
               "login_taken",
               "unauthorized",
               "csrf_invalid",
+              "s2s_forbidden",
               "not_found",
               "not_implemented",
               "internal"
@@ -1101,6 +1101,31 @@
         },
         "required": [
           "name"
+        ]
+      },
+      "TokenPair": {
+        "type": "object",
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "access_expires_in": {
+            "type": "integer",
+            "description": "Срок жизни access-токена, секунды"
+          },
+          "refresh_token": {
+            "type": "string"
+          },
+          "refresh_expires_in": {
+            "type": "integer",
+            "description": "Срок жизни refresh-токена, секунды"
+          }
+        },
+        "required": [
+          "access_token",
+          "access_expires_in",
+          "refresh_token",
+          "refresh_expires_in"
         ]
       }
     },

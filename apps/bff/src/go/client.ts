@@ -91,6 +91,7 @@ export const ErrorCode = {
   login_taken: 'login_taken',
   unauthorized: 'unauthorized',
   csrf_invalid: 'csrf_invalid',
+  s2s_forbidden: 's2s_forbidden',
   not_found: 'not_found',
   not_implemented: 'not_implemented',
   internal: 'internal',
@@ -130,6 +131,15 @@ export interface CreateNotebookRequest {
   name: string;
 }
 
+export interface TokenPair {
+  access_token: string;
+  /** Срок жизни access-токена, секунды */
+  access_expires_in: number;
+  refresh_token: string;
+  /** Срок жизни refresh-токена, секунды */
+  refresh_expires_in: number;
+}
+
 export type BadRequestResponse = Error;
 
 export type UnauthorizedResponse = Error;
@@ -142,8 +152,26 @@ export type InternalErrorResponse = Error;
 
 export type NotFoundResponse = Error;
 
+export type RegisterUser201 = {
+  user: User;
+  tokens: TokenPair;
+};
+
+export type LoginUser200 = {
+  user: User;
+  tokens: TokenPair;
+};
+
+export type RefreshTokenBody = {
+  refresh_token: string;
+};
+
+export type LogoutUserBody = {
+  refresh_token: string;
+};
+
 export type registerUserResponse201 = {
-  data: User
+  data: RegisterUser201
   status: 201
 }
 
@@ -215,7 +243,7 @@ return bearerFetch<registerUserResponse>(getRegisterUserUrl(),
 
 
 export type loginUserResponse200 = {
-  data: User
+  data: LoginUser200
   status: 200
 }
 
@@ -286,9 +314,14 @@ return bearerFetch<loginUserResponse>(getLoginUserUrl(),
 
 
 
-export type refreshTokenResponse204 = {
-  data: void
-  status: 204
+export type refreshTokenResponse200 = {
+  data: TokenPair
+  status: 200
+}
+
+export type refreshTokenResponse400 = {
+  data: Error
+  status: 400
 }
 
 export type refreshTokenResponse401 = {
@@ -306,10 +339,10 @@ export type refreshTokenResponse500 = {
   status: 500
 }
 
-export type refreshTokenResponseSuccess = (refreshTokenResponse204) & {
+export type refreshTokenResponseSuccess = (refreshTokenResponse200) & {
   headers: Headers;
 };
-export type refreshTokenResponseError = (refreshTokenResponse401 | refreshTokenResponse403 | refreshTokenResponse500) & {
+export type refreshTokenResponseError = (refreshTokenResponse400 | refreshTokenResponse401 | refreshTokenResponse403 | refreshTokenResponse500) & {
   headers: Headers;
 };
 
@@ -326,14 +359,28 @@ export const getRefreshTokenUrl = () => {
 /**
  * @summary Обновление токенов
  */
-export const refreshToken = async ( options?: Parameters<typeof bearerFetch>[1]): Promise<refreshTokenResponse> => {
+export const refreshToken = async (refreshTokenBody: RefreshTokenBody, options?: Parameters<typeof bearerFetch>[1]): Promise<refreshTokenResponse> => {
 
-  return bearerFetch<refreshTokenResponse>(getRefreshTokenUrl(),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return bearerFetch<refreshTokenResponse>(getRefreshTokenUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(refreshTokenBody)
   }
 );}
 
@@ -342,6 +389,11 @@ export const refreshToken = async ( options?: Parameters<typeof bearerFetch>[1])
 export type logoutUserResponse204 = {
   data: void
   status: 204
+}
+
+export type logoutUserResponse400 = {
+  data: Error
+  status: 400
 }
 
 export type logoutUserResponse401 = {
@@ -362,7 +414,7 @@ export type logoutUserResponse500 = {
 export type logoutUserResponseSuccess = (logoutUserResponse204) & {
   headers: Headers;
 };
-export type logoutUserResponseError = (logoutUserResponse401 | logoutUserResponse403 | logoutUserResponse500) & {
+export type logoutUserResponseError = (logoutUserResponse400 | logoutUserResponse401 | logoutUserResponse403 | logoutUserResponse500) & {
   headers: Headers;
 };
 
@@ -379,14 +431,28 @@ export const getLogoutUserUrl = () => {
 /**
  * @summary Выход
  */
-export const logoutUser = async ( options?: Parameters<typeof bearerFetch>[1]): Promise<logoutUserResponse> => {
+export const logoutUser = async (logoutUserBody: LogoutUserBody, options?: Parameters<typeof bearerFetch>[1]): Promise<logoutUserResponse> => {
 
-  return bearerFetch<logoutUserResponse>(getLogoutUserUrl(),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return bearerFetch<logoutUserResponse>(getLogoutUserUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(logoutUserBody)
   }
 );}
 
@@ -402,6 +468,11 @@ export type getCurrentUserResponse401 = {
   status: 401
 }
 
+export type getCurrentUserResponse403 = {
+  data: Error
+  status: 403
+}
+
 export type getCurrentUserResponse500 = {
   data: Error
   status: 500
@@ -410,7 +481,7 @@ export type getCurrentUserResponse500 = {
 export type getCurrentUserResponseSuccess = (getCurrentUserResponse200) & {
   headers: Headers;
 };
-export type getCurrentUserResponseError = (getCurrentUserResponse401 | getCurrentUserResponse500) & {
+export type getCurrentUserResponseError = (getCurrentUserResponse401 | getCurrentUserResponse403 | getCurrentUserResponse500) & {
   headers: Headers;
 };
 
@@ -538,6 +609,11 @@ export type getNotebookResponse401 = {
   status: 401
 }
 
+export type getNotebookResponse403 = {
+  data: Error
+  status: 403
+}
+
 export type getNotebookResponse404 = {
   data: Error
   status: 404
@@ -551,7 +627,7 @@ export type getNotebookResponse500 = {
 export type getNotebookResponseSuccess = (getNotebookResponse200) & {
   headers: Headers;
 };
-export type getNotebookResponseError = (getNotebookResponse400 | getNotebookResponse401 | getNotebookResponse404 | getNotebookResponse500) & {
+export type getNotebookResponseError = (getNotebookResponse400 | getNotebookResponse401 | getNotebookResponse403 | getNotebookResponse404 | getNotebookResponse500) & {
   headers: Headers;
 };
 
@@ -591,6 +667,11 @@ export type listNotebooksResponse401 = {
   status: 401
 }
 
+export type listNotebooksResponse403 = {
+  data: Error
+  status: 403
+}
+
 export type listNotebooksResponse500 = {
   data: Error
   status: 500
@@ -599,7 +680,7 @@ export type listNotebooksResponse500 = {
 export type listNotebooksResponseSuccess = (listNotebooksResponse200) & {
   headers: Headers;
 };
-export type listNotebooksResponseError = (listNotebooksResponse401 | listNotebooksResponse500) & {
+export type listNotebooksResponseError = (listNotebooksResponse401 | listNotebooksResponse403 | listNotebooksResponse500) & {
   headers: Headers;
 };
 
