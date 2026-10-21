@@ -17,6 +17,11 @@ export default defineConfig({
         output: {
             target: 'packages/schemas/src/zod.ts',
             client: 'zod',
+            // additionalProperties: false в контракте Orval сам не переносит: тело с лишним
+            // полем (опечаткой) прошло бы, потеряв это поле. Строго — там, где так в контракте.
+            override: {
+                operations: { createCell: { zod: { strict: { body: true } } } },
+            },
         },
     },
 });
