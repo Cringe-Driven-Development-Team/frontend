@@ -120,7 +120,7 @@ backend#41 до мержа:
   каждый вызов Go, если нет — не ставит (одна VPS). В таблице переменных
   [«Сервиса»](https://docs.cellestial.ru/modules/2/tracks/bff/service#переменные-окружения) её нет,
   поэтому страницу трека правят отдельным PR в `docs` со строкой `Part of
-  Cringe-Driven-Development-Team/frontend#2`. Значение ключа не логируется.
+Cringe-Driven-Development-Team/frontend#2`. Значение ключа не логируется.
 - **Таймауты.** Вызов Go обрывается через 5 с (`AbortSignal.timeout`). Graceful shutdown ждёт
   текущие запросы до 10 с, `stop_grace_period` в локальном Compose — 15 с.
 - **Сервер.** `Bun.serve({ port, fetch: app.fetch })` с сохранённым `server`: на SIGTERM/SIGINT
