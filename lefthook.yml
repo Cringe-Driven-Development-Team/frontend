@@ -1,0 +1,12 @@
+# Хуки ставит `bun install` (скрипт prepare), вручную — `bunx lefthook install`.
+pre-commit:
+    piped: true
+    jobs:
+        # файлы из ignorePatterns в oxfmt.config.ts oxfmt пропускает и при явной передаче;
+        # git add здесь, а не stage_fixed: тот индексирует только после всех заданий, и check
+        # проверял бы неотформатированное
+        - name: fmt
+          glob: '*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,json5,md,mdx,css,scss,less,html,vue,yaml,yml,toml,graphql}'
+          run: bunx oxfmt --no-error-on-unmatched-pattern {staged_files} && git add {staged_files}
+        - name: check
+          run: bun scripts/hooks/check-staged.ts

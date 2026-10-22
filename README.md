@@ -51,6 +51,10 @@ bun run dev
 Формат коммита: `<тип>: <описание>` либо `<тип>(<область>): <описание>`.
 Используйте `feat`, `fix`, `refactor`, `style`, `test`, `docs` или `chore`.
 
+Перед коммитом git-хук форматирует индексированные файлы и запускает `bun run check`; при ошибке
+коммит не создаётся. Хук ставит `bun install`, поэтому после `git switch` он уже на месте. Если хук
+не сработал — `bunx lefthook install`.
+
 ## Команда
 
 Ерофей [Гаранин](https://github.com/ManInTheCoat), Денис [Истратов](https://github.com/iredtea-dev),

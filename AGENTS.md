@@ -51,6 +51,14 @@ bun run generate   # spec/openapi.json → apps/client/src/api/schema.ts
 
 Перед тем как сказать «готово» — `bun run check` и `bun run build` должны проходить.
 
+Хук `pre-commit` ([lefthook.yml](lefthook.yml)) ставит `bun install`. Он форматирует индексированные
+файлы через `oxfmt`, возвращает их в индекс и запускает `bun run check` по тому, что уходит в коммит:
+неиндексированные правки и новые файлы на время проверки убираются в `.git/check-staged/` и потом
+возвращаются. Ошибка проверки — коммит не создаётся: исправить причину и закоммитить снова.
+`git commit --no-verify` хук обходит — не использовать. Обязательная проверка — `Check` в CI.
+Если lefthook пишет «Unable to restore previously hidden unstaged changes», `oxfmt` поправил строки,
+которые есть и в неиндексированных правках: они лежат в `git stash list` под именем `lefthook auto backup`.
+
 ## Структура `apps/client/src/`
 
 Импорты из другой папки `src` — через алиасы (`@components/...`, `@modules/clsx`, `@stores/...`),
