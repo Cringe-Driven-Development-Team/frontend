@@ -1,0 +1,6 @@
+[marketplaces.cdd]
+source_type = "git"
+source = "https://github.com/Cringe-Driven-Development-Team/agent-plugins.git"
+
+[plugins."cdd-tasks@cdd"]
+enabled = true
