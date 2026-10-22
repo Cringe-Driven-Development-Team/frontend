@@ -3,15 +3,12 @@
 ![Главная страница Cellestial со списком блокнотов](.github/assets/cellestial-home.png)
 
 Frontend проекта «Colab» (Cellestial) команды «Cringe Driven Development».
-Разработка, задачи и PR — в [командном frontend](https://github.com/Cringe-Driven-Development-Team/frontend).
-[Учебная копия](https://github.com/frontend-park-mail-ru/2026_2_Cringe_Driven_Development)
-автоматически получает те же коммиты `main`.
 
 [![Сервис cellestial.ru](https://img.shields.io/badge/cellestial.ru-7A5AF8?style=for-the-badge&logo=googlechrome&logoColor=white)](https://cellestial.ru)
 [![Доска задач](https://img.shields.io/badge/Доска_задач-1F6FEB?style=for-the-badge&logo=github&logoColor=white)](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1)
 [![Макеты в Figma](https://img.shields.io/badge/Макеты-F24E1E?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com/design/7iaVDGiwzQk2vZIB5ogVlq/Colab)
 [![Документация](https://img.shields.io/badge/Документация-5C73E7?style=for-the-badge&logo=vitepress&logoColor=white)](https://docs.cellestial.ru/project-context)
-[![Бэкенд](https://img.shields.io/badge/Бэкенд-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://github.com/Cringe-Driven-Development-Team/backend)
+[![Бэкенд](https://img.shields.io/badge/Бэкенд-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://github.com/go-park-mail-ru/2026_2_Cringe_Driven_Development)
 
 ## Быстрый старт
 
@@ -41,19 +38,15 @@ bun run dev
 
 - [Локальная разработка и правила кода](docs/local-development.md) — команды, структура, JSDoc.
 - [Контракт API в Apidog](docs/api-contract.md) — синхронизация спецификации и генерация типов.
-- [CI, учебная копия и выкатка](docs/release.md) — релизы, CD, откат и диагностика.
+- [CI и выкатка](docs/release.md) — релизы, CD, откат и диагностика.
 - [Контекст проекта](https://docs.cellestial.ru/project-context) — общая архитектура и планы.
 - [AGENTS.md](AGENTS.md) — локальные правила для агента.
 
 ## Как работать с задачами
 
-Создавайте задачи и PR в [командном frontend](https://github.com/Cringe-Driven-Development-Team/frontend),
-берите задачи на общей [доске](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1):
-выберите карточку из `Ready`, назначьте себя в `Assignees` и переведите её в `In progress`.
-Для задачи `#N` создайте ветку `web-N` и PR в `main` с заголовком `WEB-N: <название>`
-и строкой `Closes #N` в описании. PR проходит ревью ментора; после merge задача
-закроется автоматически. Правила описания задач и межрепозиторных связей — в
-[CONTRIBUTING организации](https://github.com/Cringe-Driven-Development-Team/.github/blob/main/CONTRIBUTING.md).
+Задачи команды собраны на общей [доске](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1).
+Правила оформления задач и ревью — в
+[CONTRIBUTING команды](https://github.com/Cringe-Driven-Development-Team/.github/blob/main/CONTRIBUTING.md).
 
 Формат коммита: `<тип>: <описание>` либо `<тип>(<область>): <описание>`.
 Используйте `feat`, `fix`, `refactor`, `style`, `test`, `docs` или `chore`.
