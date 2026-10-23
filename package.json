@@ -9,6 +9,7 @@
     "scripts": {
         "dev": "turbo run dev",
         "build": "turbo run build",
+        "image": "turbo run build && docker build -f apps/bff/Dockerfile -t cdd-bff:local .",
         "lint": "turbo run lint lint:scripts",
         "typecheck": "turbo run typecheck typecheck:scripts",
         "test": "turbo run test",
