@@ -1,3 +1,13 @@
+import {
+    CreateCellResponse,
+    CreateNotebookResponse,
+    GetCurrentUserResponse,
+    GetNotebookResponse,
+    ListNotebooksResponse,
+    LoginUserResponse,
+    RegisterUserResponse,
+} from '@cdd/schemas';
+
 import type { Session } from '../session/session.ts';
 import {
     createCell,
@@ -18,7 +28,7 @@ import {
     type TokenPair,
     type User,
 } from './client.ts';
-import { GoError, unwrap } from './errors.ts';
+import { unwrap } from './errors.ts';
 
 /** Вызовы Go от имени сессии. */
 export type Go = {
@@ -39,21 +49,30 @@ export type Go = {
  */
 export function createGo(session: Session): Go {
     return {
-        getCurrentUser: async () => unwrap<User>(await session.call(getCurrentUser), [200]),
+        getCurrentUser: async () =>
+            unwrap(await session.call(getCurrentUser), [200], GetCurrentUserResponse),
         listNotebooks: async () =>
-            unwrap<NotebookSummary[]>(await session.call(listNotebooks), [200]),
+            unwrap(await session.call(listNotebooks), [200], ListNotebooksResponse),
         getNotebook: async (id) =>
-            unwrap<Notebook>(await session.call((init) => getNotebook(id, init)), [200]),
+            unwrap(await session.call((init) => getNotebook(id, init)), [200], GetNotebookResponse),
         createNotebook: async (body) =>
-            unwrap<Notebook>(await session.call((init) => createNotebook(body, init)), [201]),
+            unwrap(
+                await session.call((init) => createNotebook(body, init)),
+                [201],
+                CreateNotebookResponse,
+            ),
         createCell: async (id, body) =>
-            unwrap<Cell>(await session.call((init) => createCell(id, body, init)), [201]),
+            unwrap(
+                await session.call((init) => createCell(id, body, init)),
+                [201],
+                CreateCellResponse,
+            ),
         deleteCell: async (id, index) => {
-            unwrap<void>(await session.call((init) => deleteCell(id, index, init)), [204]);
+            unwrap(await session.call((init) => deleteCell(id, index, init)), [204]);
         },
         // refresh-токен читается в момент вызова: call мог его только что обновить
         logout: async () => {
-            unwrap<void>(
+            unwrap(
                 await session.call((init) =>
                     logoutUser({ refresh_token: session.refreshToken ?? '' }, init),
                 ),
@@ -65,19 +84,6 @@ export function createGo(session: Session): Go {
 
 /** Пользователь и пара токенов после входа или регистрации. */
 export type AuthResult = { user: User; tokens: TokenPair };
-
-const authResult = (data: unknown): AuthResult => {
-    const v = data as Partial<AuthResult>;
-    if (
-        typeof v.user !== 'object' ||
-        v.user === null ||
-        typeof v.tokens !== 'object' ||
-        v.tokens === null
-    ) {
-        throw new GoError('unexpected', 'Go вернул ответ входа не того вида');
-    }
-    return v as AuthResult;
-};
 
 const withRequestId = (requestId?: string): RequestInit => ({
     headers: requestId ? { 'X-Request-ID': requestId } : {},
@@ -92,7 +98,7 @@ export const publicGo = {
      * @returns пользователь и токены
      */
     register: async (body: Credentials, requestId?: string): Promise<AuthResult> =>
-        authResult(unwrap<unknown>(await registerUser(body, withRequestId(requestId)), [201])),
+        unwrap(await registerUser(body, withRequestId(requestId)), [201], RegisterUserResponse),
     /**
      * Вход в Go.
      * @param body логин и пароль
@@ -100,5 +106,5 @@ export const publicGo = {
      * @returns пользователь и токены
      */
     login: async (body: Credentials, requestId?: string): Promise<AuthResult> =>
-        authResult(unwrap<unknown>(await loginUser(body, withRequestId(requestId)), [200])),
+        unwrap(await loginUser(body, withRequestId(requestId)), [200], LoginUserResponse),
 };

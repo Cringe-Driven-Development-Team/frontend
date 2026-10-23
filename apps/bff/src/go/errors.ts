@@ -1,3 +1,5 @@
+import type { z } from 'zod';
+
 /** Вид сбоя обращения к Go. */
 export type GoErrorKind = 'http' | 'network' | 'timeout' | 'unexpected';
 
@@ -32,24 +34,31 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null;
 
 /**
- * Достаёт тело успешного ответа Orval-клиента. Статус вне `ok` — `GoError('http')` с `code` из
- * тела `Error`; статус из `ok`, но тело не JSON-объект или массив — `GoError('unexpected')`.
- * Ответ без тела (204) возвращает `undefined`.
+ * Достаёт тело успешного ответа Orval-клиента и проверяет его zod-схемой ответа операции из
+ * `@cdd/schemas`. Статус вне `ok` — `GoError('http')` с `code` из тела `Error`; статус из `ok`, но
+ * тело не по схеме — `GoError('unexpected')`. Без схемы (ответ 204) возвращает `undefined`. Лишние
+ * поля ответа схема отбрасывает.
  * @param res ответ Orval-клиента
  * @param ok успешные статусы операции по контракту
- * @returns тело ответа
+ * @param schema схема тела успешного ответа
+ * @returns тело ответа, проверенное схемой
  */
-export function unwrap<T>(res: { status: number; data: unknown }, ok: number[]): T {
+export function unwrap<T = undefined>(
+    res: { status: number; data: unknown },
+    ok: number[],
+    schema?: z.ZodType<T>,
+): T {
     if (!ok.includes(res.status)) {
         const code =
             isObject(res.data) && typeof res.data.code === 'string' ? res.data.code : undefined;
         throw new GoError('http', `Go ответил ${res.status}`, { status: res.status, code });
     }
-    if (res.status === 204) return undefined as T;
-    if (!isObject(res.data)) {
-        throw new GoError('unexpected', `Go ответил ${res.status} с телом не того вида`, {
+    if (!schema) return undefined as T;
+    const parsed = schema.safeParse(res.data);
+    if (!parsed.success) {
+        throw new GoError('unexpected', `Go ответил ${res.status} с телом не по контракту`, {
             status: res.status,
         });
     }
-    return res.data as T;
+    return parsed.data;
 }

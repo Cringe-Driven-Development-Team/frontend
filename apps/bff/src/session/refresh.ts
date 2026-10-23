@@ -1,5 +1,7 @@
+import { RefreshTokenResponse } from '@cdd/schemas';
+
 import { refreshToken, type TokenPair } from '../go/client.ts';
-import { GoError, unwrap } from '../go/errors.ts';
+import { unwrap } from '../go/errors.ts';
 import type { SessionData } from './crypto.ts';
 
 /** Сессия закончилась: Go отказал в refresh или повторно ответил 401. Cookie удаляется. */
@@ -16,26 +18,12 @@ const inflight = new Map<string, Promise<SessionData>>();
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
-const isTokenPair = (value: unknown): value is TokenPair => {
-    if (typeof value !== 'object' || value === null) return false;
-    const v = value as Record<string, unknown>;
-    return (
-        typeof v.access_token === 'string' &&
-        typeof v.refresh_token === 'string' &&
-        Number.isInteger(v.access_expires_in) &&
-        Number.isInteger(v.refresh_expires_in)
-    );
-};
-
 /**
- * Сессия из пары токенов Go: сроки — от текущего момента. Пара не того вида —
- * `GoError('unexpected')`.
+ * Сессия из пары токенов Go (уже проверенной схемой ответа): сроки — от текущего момента.
  * @param tokens пара токенов из ответа Go
  * @returns токены и сроки сессии
  */
-export function toSessionData(tokens: unknown): SessionData {
-    if (!isTokenPair(tokens))
-        throw new GoError('unexpected', 'Go вернул пару токенов не того вида');
+export function toSessionData(tokens: TokenPair): SessionData {
     const t = now();
     return {
         access: tokens.access_token,
@@ -69,7 +57,7 @@ export async function refreshTokens(refresh: string, requestId?: string): Promis
             { headers: requestId ? { 'X-Request-ID': requestId } : {} },
         );
         if (res.status === 401) throw new SessionEnded();
-        return toSessionData(unwrap<unknown>(res, [200]));
+        return toSessionData(unwrap(res, [200], RefreshTokenResponse));
     })();
     inflight.set(id, pending);
     pending.then(
