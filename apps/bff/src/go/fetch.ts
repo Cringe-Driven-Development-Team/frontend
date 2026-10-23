@@ -1,17 +1,36 @@
-// Адрес Go: на одной VPS — сервис api в сети Compose, на двух — приватный адрес VPS2
-const goApiUrl = process.env.GO_API_URL ?? 'http://api:8080/api/v1';
+import { env } from '../env.ts';
+import { GoError } from './errors.ts';
+
+const GO_TIMEOUT_MS = 5000;
 
 /**
- * Мутатор клиента Go, сгенерированного Orval (`orval.config.ts`): дописывает адрес Go к пути
- * операции и отдаёт ответ в форме, которую ждёт клиент. `Authorization: Bearer <access>` передаёт
- * вызывающий код в заголовках запроса.
+ * Мутатор клиента Go, сгенерированного Orval (`orval.config.ts`): дописывает адрес Go
+ * (`GO_API_URL`) к пути операции, ставит таймаут 5 с и `X-BFF-Key` (если задан `BFF_KEY`) и
+ * отдаёт ответ в форме клиента. `Authorization` и `X-Request-ID` передаёт вызывающий код. Таймаут
+ * и сетевой сбой — `GoError` вида `timeout` и `network`.
  * @param path путь операции из контракта Go, например `/notebooks/1/cells`
  * @param init параметры запроса: метод, заголовки, тело
  * @returns статус, заголовки и тело ответа (JSON, иначе текст; без тела — `undefined`)
  */
 export const bearerFetch = async <T>(path: string, init: RequestInit): Promise<T> => {
-    const response = await fetch(`${goApiUrl}${path}`, init);
-    const text = await response.text();
+    const headers = new Headers(init.headers);
+    if (env.BFF_KEY) headers.set('X-BFF-Key', env.BFF_KEY);
+    const timeout = AbortSignal.timeout(GO_TIMEOUT_MS);
+    const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+
+    let response: Response;
+    let text: string;
+    try {
+        response = await fetch(`${env.GO_API_URL}${path}`, { ...init, headers, signal });
+        text = await response.text();
+    } catch (err) {
+        const name = err instanceof Error ? err.name : '';
+        if (name === 'TimeoutError' || name === 'AbortError') {
+            throw new GoError('timeout', `Go не ответил за ${GO_TIMEOUT_MS} мс`);
+        }
+        throw new GoError('network', 'Go недоступен');
+    }
+
     let data: unknown;
     if (text !== '') {
         try {

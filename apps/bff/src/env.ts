@@ -10,7 +10,8 @@ const schema = z.object({
             (value) =>
                 Buffer.from(value, 'base64').length === 32 && /^[A-Za-z0-9+/]+=*$/.test(value),
         ),
-    APP_ORIGIN: z.url().refine((value) => new URL(value).origin === value),
+    // canParse: refine выполняется и после неудачной проверки url, new URL бросил бы со значением
+    APP_ORIGIN: z.url().refine((value) => URL.canParse(value) && new URL(value).origin === value),
     GO_API_URL: z.url(),
     // без preprocess пустой PORT стал бы 0
     PORT: z.preprocess(optional, z.coerce.number().int().min(1).max(65535).default(3000)),
@@ -18,7 +19,7 @@ const schema = z.object({
     HTML_TEMPLATE: z.preprocess(optional, z.string().default('/app/client/index.html')),
 });
 
-function parse(): z.infer<typeof schema> & { sessionKey: Uint8Array } {
+function parse(): z.infer<typeof schema> & { sessionKey: Uint8Array<ArrayBuffer> } {
     const result = schema.safeParse(process.env);
     if (!result.success) {
         // только имена: значения могут быть секретами
