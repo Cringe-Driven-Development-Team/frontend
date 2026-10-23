@@ -2,6 +2,9 @@
     "name": "@cdd/bff",
     "private": true,
     "type": "module",
+    "exports": {
+        ".": "./src/types.ts"
+    },
     "scripts": {
         "build": "bun build src/index.ts --target bun --outfile dist/bff.js",
         "start": "bun src/index.ts",
@@ -10,6 +13,7 @@
     },
     "dependencies": {
         "@cdd/schemas": "workspace:*",
+        "@trpc/server": "^11.19.0",
         "hono": "^4.13.13",
         "zod": "^4.6.7"
     }

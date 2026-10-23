@@ -1,9 +1,14 @@
 // Точка входа BFF: запросы принимаются только после проверки конфигурации, шаблона и public.
 import { dirname, join } from 'node:path';
 
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+
 import { createApp } from './app.ts';
+import { createContext } from './context.ts';
 import { env } from './env.ts';
+import { logTrpcError } from './log.ts';
 import { loadPublicFiles } from './public.ts';
+import { appRouter } from './router/index.ts';
 import { loadTemplate } from './template.ts';
 
 const STOP_TIMEOUT_MS = 10_000;
@@ -19,7 +24,18 @@ async function start(): Promise<void> {
         process.exit(1);
     }
 
-    const app = createApp({ template, publicFiles });
+    const app = createApp({
+        template,
+        publicFiles,
+        trpc: (req) =>
+            fetchRequestHandler({
+                endpoint: '/api/trpc',
+                req,
+                router: appRouter,
+                createContext,
+                onError: logTrpcError,
+            }),
+    });
     // HEAD — тот же ответ GET: Bun сам отбросит тело и сохранит Content-Length. Hono превращал бы HEAD
     // в ответ без тела с Content-Length: 0. Исходный метод — в env Hono, для access-лога.
     const server = Bun.serve({

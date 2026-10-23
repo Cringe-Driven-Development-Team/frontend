@@ -21,6 +21,8 @@ export interface Session {
     readonly active: boolean;
     /** Текущий refresh-токен — для тела `POST /auth/logout`. */
     readonly refreshToken: string | undefined;
+    /** `X-Request-ID` запроса: из входящего заголовка или новый. */
+    readonly requestId: string;
     /** Новая сессия после login или register. */
     start(tokens: TokenPair): Promise<void>;
     /** Завершить сессию: cookie удаляется. */
@@ -43,7 +45,7 @@ class RequestSession implements Session {
     // undefined — cookie не меняется, null — удалить, строка — записать
     private cookie: string | null | undefined;
     private legacy = false;
-    private readonly requestId: string;
+    readonly requestId: string;
 
     constructor(data: SessionData | null, clear: boolean, requestId: string) {
         this.data = data;

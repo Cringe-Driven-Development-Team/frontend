@@ -1,4 +1,7 @@
+import type { TRPCError } from '@trpc/server';
 import type { MiddlewareHandler } from 'hono';
+
+import { appCodeOf } from './errors.ts';
 
 const TRPC_PREFIX = '/api/trpc/';
 
@@ -26,3 +29,22 @@ export const accessLog: MiddlewareHandler = async (c, next) => {
         }),
     );
 };
+
+/**
+ * Лог ошибок tRPC: процедура, код и `appCode`; стек — только у неожиданных (`INTERNAL_SERVER_ERROR`).
+ * Вход процедуры, cookie и заголовки не пишутся.
+ * @param opts ошибка и путь процедуры от адаптера tRPC
+ */
+export function logTrpcError(opts: { error: TRPCError; path: string | undefined }): void {
+    const { error, path } = opts;
+    const internal = error.code === 'INTERNAL_SERVER_ERROR';
+    console.error(
+        JSON.stringify({
+            time: new Date().toISOString(),
+            procedure: path,
+            code: error.code,
+            appCode: appCodeOf(error),
+            stack: internal ? (error.cause?.stack ?? error.stack) : undefined,
+        }),
+    );
+}
