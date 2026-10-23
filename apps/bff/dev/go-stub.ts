@@ -37,7 +37,7 @@ let nextNotebookId = 1;
 let refreshCalls = 0;
 let fail: { mode: FailMode; count: number } | null = null;
 
-const json = (body: unknown, status = 200) => Response.json(body, { status });
+const json = (data: unknown, status = 200) => Response.json(data, { status });
 const err = (status: number, code: string, message: string) => json({ code, message }, status);
 const token = () =>
     crypto.randomUUID().replaceAll('-', '') + crypto.randomUUID().replaceAll('-', '');
@@ -89,6 +89,9 @@ async function body(req: Request): Promise<Record<string, unknown> | null> {
         return null;
     }
 }
+
+// блокнот без владельца — как отдаёт Go
+const publicNb = ({ userId: _userId, ...rest }: Notebook) => rest;
 
 async function api(req: Request, path: string): Promise<Response> {
     if (BFF_KEY && req.headers.get('x-bff-key') !== BFF_KEY) {
@@ -150,7 +153,6 @@ async function api(req: Request, path: string): Promise<Response> {
     }
 
     const own = notebooks.filter((n) => n.userId === user.id);
-    const publicNb = ({ userId: _userId, ...rest }: Notebook) => rest;
 
     if (path === '/notebooks') {
         if (m === 'GET') {
