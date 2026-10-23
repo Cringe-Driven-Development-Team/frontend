@@ -5,11 +5,9 @@ import { existsSync } from 'node:fs';
 import { mkdir, rename, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-function git(...args: string[]): Buffer {
-    const res = Bun.spawnSync(['git', ...args], { stderr: 'inherit' });
-    if (!res.success) throw new Error(`git ${args.join(' ')}: код ${res.exitCode}`);
-    return res.stdout;
-}
+import { git as gitArgs } from './format.ts';
+
+const git = (...args: string[]): Buffer => gitArgs(args);
 
 async function run(cmd: string[]): Promise<number> {
     const proc = Bun.spawn(cmd, { stdio: ['inherit', 'inherit', 'inherit'] });

@@ -2,11 +2,15 @@
 pre-commit:
     piped: true
     jobs:
-        # файлы из ignorePatterns в oxfmt.config.ts oxfmt пропускает и при явной передаче;
-        # git add здесь, а не stage_fixed: тот индексирует только после всех заданий, и check
-        # проверял бы неотформатированное
+        # форматируется индекс, а не рабочий каталог: неиндексированные правки (git add -p) не
+        # задеваются, даже если формат меняет те же строки; файлы из ignorePatterns oxfmt не трогает
         - name: fmt
-          glob: '*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc,json5,md,mdx,css,scss,less,html,vue,yaml,yml,toml,graphql}'
-          run: bunx oxfmt --no-error-on-unmatched-pattern {staged_files} && git add {staged_files}
+          run: bun scripts/hooks/format-staged.ts
         - name: check
           run: bun scripts/hooks/check-staged.ts
+
+# рабочий каталог — к закоммиченному формату, если он отличается только форматированием
+post-commit:
+    jobs:
+        - name: fmt-worktree
+          run: bun scripts/hooks/sync-formatted.ts
