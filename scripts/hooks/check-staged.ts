@@ -31,26 +31,39 @@ async function main(): Promise<number> {
     if (patch.length === 0 && untracked.length === 0) return run(check);
 
     const patchFile = join(backup, 'unstaged.patch');
-    await mkdir(join(backup, 'untracked'), { recursive: true });
-    await Bun.write(patchFile, patch);
-    for (const file of untracked) {
-        const to = join(backup, 'untracked', file);
-        await mkdir(dirname(to), { recursive: true });
-        await rename(file, to);
-    }
-    if (patch.length > 0) git('restore', '--worktree', '--', ':/');
-
-    // Ctrl+C получает и сама проверка: дождаться её и вернуть правки
+    const moved: string[] = [];
+    let worktreeReset = false;
+    // Ctrl+C получает и сама проверка: дождаться её и вернуть правки. Обработчик и finally —
+    // до первой правки рабочего каталога: прерывание на любом шаге возвращает то, что успели убрать
     process.on('SIGINT', () => {});
     try {
+        await mkdir(join(backup, 'untracked'), { recursive: true });
+        await Bun.write(patchFile, patch);
+        for (const file of untracked) {
+            const to = join(backup, 'untracked', file);
+            await mkdir(dirname(to), { recursive: true });
+            await rename(file, to);
+            moved.push(file);
+        }
+        if (patch.length > 0) {
+            // до вызова: прерванный restore мог успеть откатить часть файлов
+            worktreeReset = true;
+            git('restore', '--worktree', '--', ':/');
+        }
         return await run(check);
     } finally {
-        for (const file of untracked) {
-            await mkdir(dirname(file), { recursive: true });
-            await rename(join(backup, 'untracked', file), file);
+        let restored = true;
+        try {
+            for (const file of moved) {
+                await mkdir(dirname(file), { recursive: true });
+                await rename(join(backup, 'untracked', file), file);
+            }
+            if (worktreeReset) git('apply', '--binary', patchFile);
+        } catch (error) {
+            restored = false;
+            console.error(`Не удалось вернуть правки (${String(error)}): они лежат в ${backup}`);
         }
-        if (patch.length > 0) git('apply', '--binary', patchFile);
-        await rm(backup, { recursive: true });
+        if (restored) await rm(backup, { recursive: true });
     }
 }
 
