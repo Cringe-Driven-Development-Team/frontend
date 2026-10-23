@@ -5,6 +5,7 @@ import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
 
 import { createApp } from './app.ts';
 import { createContext } from './context.ts';
+import { createHtmlHandler } from './html.ts';
 import { env } from './env.ts';
 import { logTrpcError } from './log.ts';
 import { loadPublicFiles } from './public.ts';
@@ -27,6 +28,7 @@ async function start(): Promise<void> {
     const app = createApp({
         template,
         publicFiles,
+        html: createHtmlHandler(template),
         trpc: (req) =>
             fetchRequestHandler({
                 endpoint: '/api/trpc',
