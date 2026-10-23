@@ -1,0 +1,59 @@
+import { Hono } from 'hono';
+
+import { accessLog } from './log.ts';
+
+/** Что приложению нужно от запуска: шаблон, публичные файлы и обработчики, которые есть. */
+export type AppDeps = {
+    template: string;
+    publicFiles: Map<string, Bun.BunFile>;
+    trpc?: (req: Request) => Promise<Response>;
+    html?: (req: Request) => Promise<Response>;
+};
+
+const notFound = (): Response =>
+    new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
+
+/**
+ * Приложение Hono. Порядок маршрутов: `/health`, tRPC, остальные `/api` (404, в Go не уходят),
+ * публичные файлы, HTML для GET/HEAD с `Accept: text/html`, остальное — 404. HEAD сюда приходит как
+ * GET (`index.ts`), тело отбрасывает Bun.
+ * @param deps шаблон, публичные файлы и обработчики tRPC и HTML
+ * @returns приложение для `Bun.serve`
+ */
+export function createApp(deps: AppDeps): Hono {
+    const app = new Hono();
+    app.use(accessLog);
+
+    app.get('/health', (c) => c.text('ok'));
+
+    app.all('/api/trpc', (c) => (deps.trpc ? deps.trpc(c.req.raw) : notFound()));
+    app.all('/api/trpc/*', (c) => (deps.trpc ? deps.trpc(c.req.raw) : notFound()));
+    app.all('/api', notFound);
+    app.all('/api/*', notFound);
+
+    for (const [name, file] of deps.publicFiles) {
+        app.get(`/${name}`, () => new Response(file));
+    }
+
+    app.get('*', (c) => {
+        if (!c.req.header('Accept')?.includes('text/html')) return notFound();
+        if (deps.html) return deps.html(c.req.raw);
+        return c.html(deps.template, 200, { 'Cache-Control': 'private, no-store' });
+    });
+
+    app.notFound(notFound);
+    app.onError((err, c) => {
+        console.error(
+            JSON.stringify({
+                time: new Date().toISOString(),
+                path: c.req.path,
+                error: err.message,
+            }),
+        );
+        return new Response('Internal Server Error', {
+            status: 500,
+            headers: { 'Content-Type': 'text/plain' },
+        });
+    });
+    return app;
+}

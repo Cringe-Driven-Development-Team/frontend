@@ -1,0 +1,39 @@
+import { z } from 'zod';
+
+// пустая переменная окружения — то же, что отсутствующая
+const optional = (value: unknown): unknown => (value === '' ? undefined : value);
+
+const schema = z.object({
+    SESSION_KEY: z
+        .string()
+        .refine(
+            (value) =>
+                Buffer.from(value, 'base64').length === 32 && /^[A-Za-z0-9+/]+=*$/.test(value),
+        ),
+    APP_ORIGIN: z.url().refine((value) => new URL(value).origin === value),
+    GO_API_URL: z.url(),
+    // без preprocess пустой PORT стал бы 0
+    PORT: z.preprocess(optional, z.coerce.number().int().min(1).max(65535).default(3000)),
+    BFF_KEY: z.preprocess(optional, z.string().optional()),
+    HTML_TEMPLATE: z.preprocess(optional, z.string().default('/app/client/index.html')),
+});
+
+function parse(): z.infer<typeof schema> & { sessionKey: Uint8Array } {
+    const result = schema.safeParse(process.env);
+    if (!result.success) {
+        // только имена: значения могут быть секретами
+        const names = [...new Set(result.error.issues.map((issue) => issue.path.join('.')))];
+        console.error(`Неверная конфигурация: ${names.join(', ')}`);
+        process.exit(1);
+    }
+    return {
+        ...result.data,
+        sessionKey: new Uint8Array(Buffer.from(result.data.SESSION_KEY, 'base64')),
+    };
+}
+
+/**
+ * Конфигурация BFF из переменных окружения. Проверяется при импорте: неверная конфигурация
+ * завершает процесс с кодом 1 и пишет в stderr только имена переменных.
+ */
+export const env = parse();
