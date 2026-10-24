@@ -245,8 +245,7 @@ describe('RPC', () => {
 
     test('запрос, начатый до logout и завершённый после, не возвращает cookie сессии', async () => {
         const tokens = goTokens();
-        let release = () => {};
-        const held = new Promise<void>((resolve) => (release = resolve));
+        const { promise: held, resolve: release } = Promise.withResolvers<void>();
         let me = 0;
         useGo({
             ...tokens.routes,
