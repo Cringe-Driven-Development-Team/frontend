@@ -1,23 +1,45 @@
+import type { RouterInputs } from '@cdd/bff';
 import { create } from '@cdd-team/zustand';
-import { api, type ApiErrorCode, type Credentials, type User } from '@api/client';
+import { isRpcError, switchSession, trpc, type User } from '@api/trpc';
 
-/** unknown — сессию ещё проверяем, guest — не вошёл, authed — вошёл. */
-export type SessionStatus = 'unknown' | 'guest' | 'authed';
+/** guest — не вошёл, authed — вошёл. Известен с первого рендера: его задаёт первый HTML. */
+export type SessionStatus = 'guest' | 'authed';
 
 interface SessionState {
     status: SessionStatus;
-    /** Текущий пользователь; null, пока статус не authed */
+    /** Текущий пользователь; null у гостя */
     user: User | null;
 }
 
-/** Стор сессии. */
-export const useSessionStore = create<SessionState>()(() => ({ status: 'unknown', user: null }));
+/** Логин и пароль для входа и регистрации. */
+export type Credentials = RouterInputs['auth']['login'];
 
-/** Ошибка входа или регистрации: код бэкенда или network — сервер недоступен. */
+/** Стор сессии. До первого рендера его заполняет {@link initSession}. */
+export const useSessionStore = create<SessionState>()(() => ({ status: 'guest', user: null }));
+
+/** Сессия закончилась (BFF ответил `UNAUTHORIZED`): пользователь — гость. */
+export function loseSession(): void {
+    useSessionStore.setState(GUEST);
+}
+
+/**
+ * Состояние сессии из первого HTML: без запросов, до первого рендера.
+ * @param user пользователь из bootstrap или null для гостя
+ */
+export function initSession(user: User | null): void {
+    useSessionStore.setState(user ? { status: 'authed', user } : GUEST);
+}
+
+/**
+ * Ошибка входа или регистрации. code — `appCode` от Go, validation_error — ещё и ошибки полей
+ * проверки BFF, network — BFF недоступен или ответил не по протоколу.
+ */
 export interface AuthError {
-    code: ApiErrorCode | 'network';
-    /** Текст из ответа бэкенда */
+    code: string;
+    /** Текст из ответа BFF */
     message?: string;
+    /** Ошибки полей формы */
+    fields?: Partial<Record<keyof Credentials, string>>;
 }
 
 /** Итог входа или регистрации. */
@@ -25,48 +47,22 @@ export type AuthResult = { ok: true } | { ok: false; error: AuthError };
 
 const GUEST: SessionState = { status: 'guest', user: null };
 
-let restoring: Promise<void> | undefined;
-
 /**
- * Проверка сессии: refresh-cookie меняется на access-токен, затем запрашивается пользователь.
- * Если refresh не прошёл — гость.
+ * Ошибка входа или регистрации из ошибки процедуры.
+ * @param error пойманная ошибка
+ * @returns ошибка для формы
  */
-async function doRestore(): Promise<void> {
-    try {
-        const refreshed = await api.POST('/auth/refresh');
-        if (!refreshed.response.ok) {
-            useSessionStore.setState(GUEST);
-            return;
-        }
-        const { data } = await api.GET('/users/me');
-        useSessionStore.setState(data ? { status: 'authed', user: data } : GUEST);
-    } catch {
-        useSessionStore.setState(GUEST);
+function toAuthError(error: unknown): AuthError {
+    if (!isRpcError(error)) return { code: 'network' };
+    const { appCode, zodError } = error.data ?? {};
+    if (zodError) {
+        const fields = zodError.fieldErrors as Partial<Record<keyof Credentials, string[]>>;
+        return {
+            code: 'validation_error',
+            fields: { login: fields.login?.[0], password: fields.password?.[0] },
+        };
     }
-}
-
-/**
- * Восстанавливает сессию при старте. Проверка запускается один раз, повторные вызовы ждут её же.
- * @returns промис, который выполнится, когда статус перестанет быть unknown
- */
-export function restoreSession(): Promise<void> {
-    if (!restoring) {
-        restoring = doRestore();
-    }
-    return restoring;
-}
-
-/**
- * Ошибка из тела ответа. Ответ без JSON с кодом приходит не от бэкенда, а от прокси,
- * когда бэкенд недоступен.
- * @param body тело ответа с ошибкой
- * @returns ошибка
- */
-function toAuthError(body: unknown): AuthError {
-    if (typeof body === 'object' && body !== null && 'code' in body) {
-        return body as AuthError;
-    }
-    return { code: 'network' };
+    return { code: appCode ?? 'unknown', message: error.message };
 }
 
 /**
@@ -76,43 +72,40 @@ function toAuthError(body: unknown): AuthError {
  */
 export async function login(credentials: Credentials): Promise<AuthResult> {
     try {
-        const { data, error } = await api.POST('/auth/login', { body: credentials });
-        if (!data) return { ok: false, error: toAuthError(error) };
-        useSessionStore.setState({ status: 'authed', user: data });
+        const user = await switchSession(() => trpc.auth.login.mutate(credentials));
+        useSessionStore.setState({ status: 'authed', user });
         return { ok: true };
-    } catch {
-        return { ok: false, error: { code: 'network' } };
+    } catch (error) {
+        return { ok: false, error: toAuthError(error) };
     }
 }
 
 /**
- * Выход.
- * 401 значит, что refresh уже недействителен, — пользователь и так вышел.
- * @returns true, если вышли
- */
-export async function logout(): Promise<boolean> {
-    try {
-        const { response } = await api.POST('/auth/logout');
-        if (!response.ok && response.status !== 401) return false;
-    } catch {
-        return false;
-    }
-    useSessionStore.setState(GUEST);
-    return true;
-}
-
-/**
- * Регистрация. Бэкенд сразу выдаёт токены, поэтому после неё пользователь уже вошёл.
+ * Регистрация. BFF сразу ставит cookie сессии, поэтому после неё пользователь уже вошёл.
  * @param credentials логин и пароль
  * @returns итог регистрации
  */
 export async function register(credentials: Credentials): Promise<AuthResult> {
     try {
-        const { data, error } = await api.POST('/auth/register', { body: credentials });
-        if (!data) return { ok: false, error: toAuthError(error) };
-        useSessionStore.setState({ status: 'authed', user: data });
+        const user = await switchSession(() => trpc.auth.register.mutate(credentials));
+        useSessionStore.setState({ status: 'authed', user });
         return { ok: true };
-    } catch {
-        return { ok: false, error: { code: 'network' } };
+    } catch (error) {
+        return { ok: false, error: toAuthError(error) };
     }
+}
+
+/**
+ * Выход. Сначала отвечают уже отправленные запросы сессии, новые не стартуют (`switchSession`).
+ * BFF отвечает успехом и без сессии; сбой сети — не выход.
+ * @returns true, если BFF подтвердил выход
+ */
+export async function logout(): Promise<boolean> {
+    try {
+        await switchSession(() => trpc.auth.logout.mutate());
+    } catch {
+        return false;
+    }
+    useSessionStore.setState(GUEST);
+    return true;
 }

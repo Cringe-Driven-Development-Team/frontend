@@ -1,6 +1,6 @@
 import { useEffect, useState } from '@cdd-team/react';
 
-import { api, type Cell as CellData, type Notebook } from '@api/client';
+import { isRpcError, trpc, type Cell as CellData, type Notebook } from '@api/trpc';
 import logoMarkUrl from '@assets/logo-mark.svg';
 import { buttonClassName } from '@components/Button/Button';
 import { Cell, CellSkeleton, cellDomId } from '@components/Cell/Cell';
@@ -36,11 +36,10 @@ type PageState =
 async function loadNotebook(id: number): Promise<Notebook | 'missing' | undefined> {
     if (!Number.isInteger(id)) return 'missing';
     try {
-        const { data, response } = await api.GET('/notebooks/{id}', { params: { path: { id } } });
-        if (data) return data;
-        return response.status === 404 || response.status === 400 ? 'missing' : undefined;
-    } catch {
-        return undefined;
+        return await trpc.notebooks.get.query({ id });
+    } catch (error) {
+        const code = isRpcError(error) ? error.data?.code : undefined;
+        return code === 'NOT_FOUND' || code === 'BAD_REQUEST' ? 'missing' : undefined;
     }
 }
 
@@ -52,11 +51,7 @@ async function loadNotebook(id: number): Promise<Notebook | 'missing' | undefine
  */
 async function createCell(id: number, kind: CellKind): Promise<CellData | undefined> {
     try {
-        const { data } = await api.POST('/notebooks/{id}/cells', {
-            params: { path: { id } },
-            body: { kind },
-        });
-        return data;
+        return await trpc.cells.create.mutate({ notebookId: id, kind });
     } catch {
         return undefined;
     }
@@ -70,10 +65,8 @@ async function createCell(id: number, kind: CellKind): Promise<CellData | undefi
  */
 async function deleteCell(id: number, index: number): Promise<boolean> {
     try {
-        const { response } = await api.DELETE('/notebooks/{id}/cells/{index}', {
-            params: { path: { id, index } },
-        });
-        return response.ok;
+        await trpc.cells.delete.mutate({ notebookId: id, index });
+        return true;
     } catch {
         return false;
     }

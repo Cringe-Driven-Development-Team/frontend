@@ -19,8 +19,10 @@ bun install
 bun run dev
 ```
 
-`bun run dev` запускает клиент и проксирует `/api/v1` на бэкенд по адресу
-`http://127.0.0.1:8080`. Другой адрес задаётся переменной `BACKEND_URL` в `.env`.
+`bun run dev` запускает клиент (Vite) и BFF на одном origin `https://localhost:5173`: HTML страниц
+и `/api/trpc` отдаёт BFF, Go для него — Cloud Mock Apidog. При первом запуске mkcert один раз
+спросит пароль, чтобы доверять локальному сертификату —
+[«Клиент через BFF»](docs/local-development.md#клиент-через-bff).
 Перед PR выполните `bun run check` и `bun run build`.
 Подробности — в [локальной разработке](docs/local-development.md).
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from '@cdd-team/react';
 
-import { api, type NotebookSummary } from '@api/client';
+import { trpc, type NotebookSummary } from '@api/trpc';
 import { Button } from '@components/Button/Button';
 import { Header } from '@components/Header/Header';
 import { Logo } from '@components/Logo/Logo';
@@ -29,8 +29,8 @@ type ListState =
  */
 async function loadNotebooks(): Promise<NotebookSummary[] | undefined> {
     try {
-        const { data } = await api.GET('/notebooks');
-        return data?.toSorted((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
+        const notebooks = await trpc.notebooks.list.query();
+        return notebooks.toSorted((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at));
     } catch {
         return undefined;
     }

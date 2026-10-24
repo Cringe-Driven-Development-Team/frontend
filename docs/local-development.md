@@ -1,8 +1,7 @@
 # Локальная разработка фронтенда
 
-Нужен Bun версии не ниже 1.4.0. Команды запускаются из корня репозитория.
-Для проксирования `/api/v1` локальный бэкенд по умолчанию ожидается на
-`http://127.0.0.1:8080`; адрес можно изменить переменной `BACKEND_URL` в `.env`.
+Нужен Bun версии не ниже 1.4.0. Команды запускаются из корня репозитория. `bun run dev` —
+клиент и BFF сразу ([«Клиент через BFF»](#клиент-через-bff)).
 
 ```bash
 bun install
@@ -28,7 +27,7 @@ bun run build
 
 | Команда                                             | Что делает                                                       |
 | --------------------------------------------------- | ---------------------------------------------------------------- |
-| `bun run dev`                                       | dev-сервер клиента, `/api/v1` проксируется на бэкенд             |
+| `bun run dev`                                       | клиент и BFF на `https://localhost:5173` — «Клиент через BFF»    |
 | `bun run build`                                     | сборка всех пакетов, клиент — в `apps/client/dist`               |
 | `bun run check`                                     | `oxfmt --check`, `oxlint` и `tsc` во всех пакетах и в `scripts/` |
 | `bun run lint`, `bun run typecheck`, `bun run test` | по отдельности, тоже во всех пакетах                             |
@@ -59,8 +58,8 @@ bun run build
 
 Go для локального запуска — Cloud Mock Apidog: ответы ручек и ошибок заданы там mock expectations по
 контракту. Адрес — в Apidog, проект → Mock → Cloud Mock: `https://mock.apidog.com/m1/<проект>-<ветка>-default`,
-без `/api/v1` — мок отдаёт пути ручек от корня. В код и конфиги репозитория он не записывается:
-передаётся переменной `GO_API_URL`.
+без `/api/v1` — мок отдаёт пути ручек от корня. BFF получает его переменной `GO_API_URL`; адрес
+мока main — значение по умолчанию у `bun run dev` (`apps/bff/src/dev.ts`).
 
 ```sh
 bun run build
@@ -84,8 +83,33 @@ curl localhost:3000/health
 `bun run test`: `apps/bff/test/` — весь обработчик BFF против Go с управляемыми ответами
 (`test/fake-go.ts`), без сервера и сети.
 
-Контракт Go в Apidog уже целевой для BFF, а клиент до #5 работает по старой схеме: обновлять
-`spec/openapi.json` — `bun run apidog && bun run orval`, без `generate` и `sync` (`AGENTS.md`, «Источники»).
+## Клиент через BFF
+
+`bun run dev` из корня запускает `turbo run dev`, а он — клиент и BFF на одном origin
+`https://localhost:5173`: Vite собирает и обновляет модули (HMR), HTML страниц и `/api/trpc` отдаёт
+BFF — с пользователем в `<script id="bootstrap">` и cookie сессии. Без `.env` и ручных шагов:
+
+- Vite (`apps/client`) — HTTPS на `localhost:5173`, сертификат выпускает
+  [`vite-plugin-mkcert`](https://github.com/liuweiGL/vite-plugin-mkcert). `/api/trpc` проксируется в
+  BFF; запрос страницы (`Accept: text/html`) плагин `bff-html` из `vite.config.ts` отдаёт ответом BFF
+  с его `Set-Cookie`, добавив клиент HMR (`transformIndexHtml`). Адрес BFF — `BFF_URL`, по умолчанию
+  `http://127.0.0.1:3000`.
+- BFF (`apps/bff`, `bun --watch src/dev.ts`) — шаблон `apps/client/index.html`,
+  `APP_ORIGIN=https://localhost:5173`, Go — Cloud Mock Apidog
+  (`https://mock.apidog.com/m1/1382426-0-default`), постоянный dev-ключ сессии: она переживает
+  перезапуск `--watch`. Любое из этого перекрывается корневым `.env` (`GO_API_URL`, `SESSION_KEY`, …).
+
+Cookie сессии — `Secure` и с префиксом `__Host-`: нужен HTTPS, ради dev атрибуты не ослабляются.
+При первом запуске плагин скачивает mkcert в `~/.vite-plugin-mkcert`, создаёт локальный CA и
+добавляет его в доверенные — macOS один раз спросит пароль. Дальше сертификат берётся из того же
+каталога.
+
+Cloud Mock отвечает фиксированно (раздел «BFF» выше): `denis` / `password123` — вход,
+`wrong-password` — неверный пароль. Против своего Go — `GO_API_URL=http://127.0.0.1:8080/api/v1`
+в `.env`.
+
+Контракт Go обновляется `bun run sync` (`bun run apidog && bun run orval`): клиент контракт Go не
+читает, типы процедур берёт из `@cdd/bff`.
 
 ## Документация кода
 
@@ -111,4 +135,4 @@ curl localhost:3000/health
 Оба правила — командный плагин
 [`@cdd-team/oxlint-plugin-jsdoc`](https://github.com/Cringe-Driven-Development-Team/frontend-packages/tree/main/packages/oxlint-plugin-jsdoc):
 в `oxlint` правил `require-jsdoc` и `check-param-names` нет. Сами теги линт не требует: `@param` и `@returns` пишутся там, где описание что-то добавляет
-к имени и типу. Сгенерированный `apps/client/src/api/schema.ts` линт не проверяет
+к имени и типу. Сгенерированные Orval файлы линт не проверяет

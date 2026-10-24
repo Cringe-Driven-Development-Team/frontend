@@ -12,7 +12,6 @@ export default defineConfig({
         '**/dist/**',
         '.turbo/**',
         'spec/**',
-        'apps/client/src/api/schema.ts',
         'apps/bff/src/go/client.ts',
         'packages/schemas/src/zod.ts',
     ],

@@ -119,10 +119,18 @@ export function AuthForm({ mode }: AuthFormProps) {
                 setServerErrors({ login: message });
                 setFocusRequest({ field: 'login' });
                 break;
-            case 'validation_error':
+            case 'validation_error': {
+                // ошибки полей от BFF — у полей, ошибка без поля — в снекбаре
+                const fields = result.error.fields ?? {};
+                if (fields.login || fields.password) {
+                    setServerErrors(fields);
+                    setFocusRequest({ field: fields.login ? 'login' : 'password' });
+                    break;
+                }
                 showSnackbar(message);
                 setFocusRequest({ field: 'password' });
                 break;
+            }
             default:
                 showSnackbar(message, { label: 'Повторить', onClick: () => void send() });
                 setFocusRequest({ field: 'password' });
