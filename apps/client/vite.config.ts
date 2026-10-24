@@ -1,7 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
 import { defineConfig, loadEnv, type Plugin } from 'vite';
+import mkcert from 'vite-plugin-mkcert';
 
 /**
  * Адрес без слеша в конце; без протокола считается https.
@@ -13,10 +11,6 @@ const toUrl = (url: string) =>
 
 // .env лежит в корне монорепы: его же читают скрипты apidog и release
 const envDir = '../..';
-
-// сертификат локального HTTPS (docs/local-development.md, «Клиент через BFF»): cookie сессии BFF — Secure
-const CERT = resolve(envDir, '.cert/localhost.pem');
-const CERT_KEY = resolve(envDir, '.cert/localhost-key.pem');
 
 // заголовки браузера, нужные BFF для HTML: сессия, тип ответа и признаки CSRF
 const HTML_REQUEST_HEADERS = ['accept', 'cookie', 'sec-fetch-site', 'user-agent', 'x-request-id'];
@@ -64,7 +58,6 @@ export default defineConfig(({ mode }) => {
     // STATIC_URL — адрес static (картинки и шрифты), BFF_URL — адрес локального BFF
     const { RELEASE_SHA: sha, CDN_URL: cdn, STATIC_URL, BFF_URL } = loadEnv(mode, envDir, '');
     const bffUrl = BFF_URL || 'http://127.0.0.1:3000';
-    const https = existsSync(CERT) && existsSync(CERT_KEY);
     const cdnUrl = cdn && toUrl(cdn);
     const staticUrl = toUrl(STATIC_URL || 'https://static.cellestial.ru');
 
@@ -79,11 +72,12 @@ export default defineConfig(({ mode }) => {
             host: 'localhost',
             port: 5173,
             strictPort: true,
-            https: https ? { cert: readFileSync(CERT), key: readFileSync(CERT_KEY) } : undefined,
             proxy: { '/api/trpc': bffUrl },
         },
         build: { outDir: 'dist', sourcemap: true },
         plugins: [
+            // локальный HTTPS: cookie сессии BFF — Secure; сертификат выпускает и доверяет mkcert
+            mkcert({ hosts: ['localhost', '127.0.0.1'] }),
             bffHtml(bffUrl),
             {
                 // var() не работает внутри url() и в @font-face: адрес static подставляется

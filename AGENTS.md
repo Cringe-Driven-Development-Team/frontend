@@ -62,9 +62,11 @@ zod-схемы — `packages/schemas` ([README](README.md#монорепа)). К
   `packages/schemas/src/zod.ts`) руками не править. Клиент Go не вызывает: только процедуры BFF. Orval и zod — по задаче frontend#45, исключение из правила про внешние библиотеки;
   так же Hono, `@trpc/server` и `serialize-javascript` в `apps/bff` — по задаче frontend#2,
   `@trpc/client` в `apps/client` — по задаче frontend#5 (с ним `@trpc/server`: `observable` для своего link
-  и типы; в бандл идёт только то, что берёт сам `@trpc/client`).
+  и типы; в бандл идёт только то, что берёт сам `@trpc/client`), `vite-plugin-mkcert` — локальный
+  HTTPS dev по решению команды в frontend#5.
 - Бэкенд: https://github.com/Cringe-Driven-Development-Team/backend. Клиент ходит только в BFF;
-  BFF — в Go по `GO_API_URL` (локально — Cloud Mock Apidog, [локальные правила](docs/local-development.md#клиент-через-bff)).
+  BFF — в Go по `GO_API_URL` (локально по умолчанию — Cloud Mock Apidog,
+  [локальные правила](docs/local-development.md#клиент-через-bff)).
 
 ## Команды
 
@@ -128,6 +130,7 @@ vite берёт их оттуда.
   `data.appCode`, ошибки полей — `data.zodError`; на `message` поведение не завязывать.
   `UNAUTHORIZED` защищённой процедуры транспорт сам переводит в гостя и ведёт на `/login`;
   `FORBIDDEN`, `BAD_GATEWAY` и сбой сети сессию не завершают.
-- Выход — `logout()` из `@stores/session`: транспорт не пускает новые защищённые запросы, ждёт ответа
-  уже отправленных и только затем вызывает `auth.logout`. Ответ на запрос прежней сессии приходит
+- Вход, регистрация и выход — `login()`, `register()`, `logout()` из `@stores/session` через
+  `switchSession`: транспорт не пускает новые защищённые запросы, ждёт ответа уже отправленных и
+  только затем вызывает `auth.*` — поздний `Set-Cookie` прежней сессии не перепишет новую cookie. Ответ на запрос прежней сессии приходит
   ошибкой `SESSION_CHANGED` и в интерфейс не попадает.

@@ -8,7 +8,7 @@
     "scripts": {
         "build": "bun build src/index.ts --target bun --outfile dist/bff.js",
         "start": "bun src/index.ts",
-        "dev": "HTML_TEMPLATE=../client/index.html APP_ORIGIN=https://localhost:5173 bun --env-file=../../.env --watch src/index.ts",
+        "dev": "bun --env-file=../../.env --watch src/dev.ts",
         "lint": "oxlint",
         "typecheck": "tsc --noEmit",
         "test": "bun test",
