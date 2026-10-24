@@ -61,17 +61,18 @@ zod-схемы — `packages/schemas` ([README](README.md#монорепа)). К
   (`bun run apidog` + `bun run orval` + `bun run generate`); спеку и сгенерированное
   (`apps/bff/src/go/client.ts`, `packages/schemas/src/zod.ts`, `apps/client/src/api/schema.ts`)
   руками не править. Orval и zod — по задаче frontend#45, исключение из правила про внешние библиотеки;
-  так же Hono, `@trpc/server` и `serialize-javascript` в `apps/bff` — по задаче frontend#2.
+  так же Hono, `@trpc/server` и `serialize-javascript` в `apps/bff` — по задаче frontend#2,
+  `@trpc/client` в `apps/client` — по задаче frontend#5.
   До frontend#5: контракт в Apidog — уже целевой для BFF, а клиент работает по старому
   `apps/client/src/api/schema.ts`. Обновлять — `bun run apidog && bun run orval`; `bun run generate`
   и `bun run sync` (он включает generate) не запускать — перегенерирует схему клиента и сломает его.
-- Бэкенд: https://github.com/Cringe-Driven-Development-Team/backend, локально на
-  `http://127.0.0.1:8080` (адрес меняется переменной `BACKEND_URL` в `.env`).
+- Бэкенд: https://github.com/Cringe-Driven-Development-Team/backend. Клиент ходит только в BFF;
+  BFF — в Go по `GO_API_URL` (локально — Cloud Mock Apidog, [локальные правила](docs/local-development.md#клиент-через-bff)).
 
 ## Команды
 
 ```bash
-bun run dev        # dev-сервер, /api/v1 проксируется на бэкенд
+bun run dev        # клиент (Vite, HTTPS) и BFF: HTML и /api/trpc — через BFF
 bun run check      # oxfmt --check, oxlint, tsc во всех пакетах
 bun run build      # сборка, клиент — в apps/client/dist/
 bun run orval      # spec/openapi.json → клиент BFF к Go и zod-схемы (orval.config.ts)
@@ -118,10 +119,12 @@ vite берёт их оттуда.
 
 ## Сессия и авторизация
 
-- Access- и refresh-токен живут в HttpOnly-cookie (refresh — с `Path=/api/v1/auth`), фронт их
-  не читает. После 401 клиент сам делает `POST /auth/refresh` и повторяет запрос.
-  В `localStorage` токены не писать.
-- POST, PUT, PATCH и DELETE несут `X-CSRF-Token` со значением cookie `__Host-csrf`: его ставит
-  middleware клиента, в вызовах `api.*` заголовок не передавать.
-- Статус сессии: `unknown` → `guest` | `authed`. Маршруты `_guest` (`/login`, `/register`)
-  и `_auth` (остальные) проверяют его в `beforeLoad` и делают `redirect`.
+- Сессия — в HttpOnly-cookie BFF, токены Go клиент не видит; refresh, повторы после 401 и удаление
+  cookie делает BFF. В `localStorage` токены не писать, cookie не читать.
+- Все вызовы — через один клиент `trpc` из `@api/trpc` (`@trpc/client`, `httpBatchLink` на
+  `/api/trpc`): он ставит `X-CSRF: 1` и `credentials: 'same-origin'`. Второй транспорт не заводить.
+  Типы входов и ответов — `RouterInputs` / `RouterOutputs` из `@cdd/bff` через `import type`.
+- Пользователь — из `<script id="bootstrap">` первого HTML (`src/bootstrap.ts`), до первого
+  рендера. Статус сессии сразу `guest` | `authed`, запроса при старте нет. Сломанный bootstrap —
+  ошибка запуска, гостем она не прикрывается. Маршруты `_guest` (`/login`, `/register`) и `_auth`
+  (остальные) проверяют статус в `beforeLoad` и делают `redirect`.

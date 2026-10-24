@@ -1,8 +1,7 @@
 # Локальная разработка фронтенда
 
-Нужен Bun версии не ниже 1.4.0. Команды запускаются из корня репозитория.
-Для проксирования `/api/v1` локальный бэкенд по умолчанию ожидается на
-`http://127.0.0.1:8080`; адрес можно изменить переменной `BACKEND_URL` в `.env`.
+Нужен Bun версии не ниже 1.4.0. Команды запускаются из корня репозитория. Перед первым
+`bun run dev` — `.env` и сертификат из раздела [«Клиент через BFF»](#клиент-через-bff).
 
 ```bash
 bun install
@@ -28,7 +27,7 @@ bun run build
 
 | Команда                                             | Что делает                                                       |
 | --------------------------------------------------- | ---------------------------------------------------------------- |
-| `bun run dev`                                       | dev-сервер клиента, `/api/v1` проксируется на бэкенд             |
+| `bun run dev`                                       | клиент и BFF на `https://localhost:5173` — «Клиент через BFF»    |
 | `bun run build`                                     | сборка всех пакетов, клиент — в `apps/client/dist`               |
 | `bun run check`                                     | `oxfmt --check`, `oxlint` и `tsc` во всех пакетах и в `scripts/` |
 | `bun run lint`, `bun run typecheck`, `bun run test` | по отдельности, тоже во всех пакетах                             |
@@ -83,6 +82,38 @@ curl localhost:3000/health
 состояние Go (одновременный refresh, повтор после 401, сбои и таймауты Go), проверяют тесты
 `bun run test`: `apps/bff/test/` — весь обработчик BFF против Go с управляемыми ответами
 (`test/fake-go.ts`), без сервера и сети.
+
+## Клиент через BFF
+
+Браузер ходит в BFF и в dev, на одном origin `https://localhost:5173`: Vite собирает и обновляет
+модули (HMR), HTML страниц и `/api/trpc` отдаёт BFF — с пользователем в `<script id="bootstrap">`
+и cookie сессии. `bun run dev` запускает оба (`turbo run dev`):
+
+- Vite (`apps/client`) — HTTPS на `localhost:5173`. `/api/trpc` проксируется в BFF, запрос
+  страницы (`Accept: text/html`) плагин `bff-html` из `vite.config.ts` отдаёт ответом BFF с его
+  `Set-Cookie`, добавив клиент HMR (`transformIndexHtml`). Адрес BFF — `BFF_URL`, по умолчанию
+  `http://127.0.0.1:3000`.
+- BFF (`apps/bff`, `bun --watch`) — шаблон `apps/client/index.html`,
+  `APP_ORIGIN=https://localhost:5173`; остальное — из корневого `.env`.
+
+Cookie сессии — `Secure` и с префиксом `__Host-`: нужен HTTPS, ради dev атрибуты не ослабляются.
+Сертификат — [mkcert](https://github.com/FiloSottile/mkcert), один раз:
+
+```sh
+brew install mkcert && mkcert -install
+mkdir -p .cert && mkcert -cert-file .cert/localhost.pem -key-file .cert/localhost-key.pem localhost 127.0.0.1
+```
+
+Без файлов в `.cert/` (каталог в `.gitignore`) Vite поднимается по HTTP, и браузер cookie сессии
+не примет. В корневой `.env`:
+
+```sh
+SESSION_KEY=<openssl rand -base64 32>
+GO_API_URL=https://mock.apidog.com/m1/1382426-0-default
+```
+
+Cloud Mock отвечает фиксированно (раздел «BFF» выше): `denis` / `password123` — вход,
+`wrong-password` — неверный пароль. Против своего Go — `GO_API_URL=http://127.0.0.1:8080/api/v1`.
 
 Контракт Go в Apidog уже целевой для BFF, а клиент до #5 работает по старой схеме: обновлять
 `spec/openapi.json` — `bun run apidog && bun run orval`, без `generate` и `sync` (`AGENTS.md`, «Источники»).
