@@ -60,7 +60,7 @@ bun run dev
 
 ## Команда
 
-Ерофей [Гаранин](https://github.com/ManInTheCoat), Денис [Истратов](https://github.com/iredtea-dev),
+Ерофей [Гаранин](https://github.com/ManInTheCoat), Денис [Истратов](https://github.com/iRedTea),
 Дарья [Шпакова](https://github.com/GrayMouse9), Валентин [Кунев](https://github.com/MrDuckVC).
 Менторы: [Ярослав Михалёв](https://github.com/YarikMix) (frontend),
 [Александр Батовкин](https://github.com/blackHATred) (backend),
