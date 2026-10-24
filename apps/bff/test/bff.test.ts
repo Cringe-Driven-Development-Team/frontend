@@ -228,43 +228,6 @@ describe('RPC', () => {
         expect((await rpc('notebooks.list', { cookie: c })).status).toBe(502);
     });
 
-    test('после logout старая cookie не получает сессию из кеша refresh', async () => {
-        const tokens = goTokens();
-        useGo({ ...tokens.routes, 'GET /users/me': () => Response.json(USER) });
-        const old = await cookie(tokens.issue(), now() - 1);
-        const first = await rpc('users.me', { cookie: old });
-        const fresh = newSession(first);
-        expect(fresh).toBeDefined();
-        const logout = await rpc('auth.logout', { body: {}, cookie: fresh });
-        expect(logout.status).toBe(200);
-        expect(cleared(logout)).toBe(true);
-        const after = await rpc('users.me', { cookie: old });
-        expect(after.status).toBe(401);
-        expect(newSession(after)).toBeUndefined();
-    });
-
-    test('запрос, начатый до logout и завершённый после, не возвращает cookie сессии', async () => {
-        const tokens = goTokens();
-        const { promise: held, resolve: release } = Promise.withResolvers<void>();
-        let me = 0;
-        useGo({
-            ...tokens.routes,
-            'GET /users/me': async () => {
-                if (++me === 2) await held;
-                return Response.json(USER);
-            },
-        });
-        const old = await cookie(tokens.issue(), now() - 1);
-        const both = [rpc('users.me', { cookie: old }), rpc('users.me', { cookie: old })];
-        const first = await Promise.race(both);
-        const logout = await rpc('auth.logout', { body: {}, cookie: newSession(first) });
-        expect(logout.status).toBe(200);
-        release();
-        const late = (await Promise.all(both)).find((r) => r !== first);
-        expect(newSession(late!)).toBeUndefined();
-        expect(cleared(late!)).toBe(true);
-    });
-
     test('logout без сессии — успех без Go; при сбое Go — всё равно успех и удаление cookie', async () => {
         useGo({ 'POST /auth/logout': () => goError(500, 'internal') });
         const guest = await rpc('auth.logout', { body: {} });

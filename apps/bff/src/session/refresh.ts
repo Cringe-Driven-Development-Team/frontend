@@ -13,37 +13,8 @@ export class SessionEnded extends Error {
 }
 
 const CACHE_MS = 10_000;
-// одновременные refresh одного токена (HTML и RPC) — один вызов Go
+// одновременные refresh одного токена (HTML и RPC, вкладки) — один вызов Go
 const inflight = new Map<string, Promise<SessionData>>();
-// refresh-токены вышедших сессий: их пара не выдаётся ни из кеша, ни в Set-Cookie запроса, который
-// был в пути во время выхода. Срок — дольше самого долгого запроса (до четырёх вызовов Go по 5 с)
-const revoked = new Map<string, number>();
-const REVOKED_MS = 30_000;
-
-/**
- * Вышла ли сессия с этим refresh-токеном.
- * @param refresh refresh-токен сессии
- * @returns `true`, если после выхода не прошло `REVOKED_MS`
- */
-export function isRevoked(refresh: string): boolean {
-    return (revoked.get(refresh) ?? 0) > Date.now();
-}
-
-/**
- * Выход: пара с этим refresh-токеном больше не выдаётся — ни из кеша refresh, ни в `Set-Cookie`
- * запроса, начатого до выхода.
- * @param refresh refresh-токен сессии, которая вышла
- */
-export function revokeRefresh(refresh: string): void {
-    const t = Date.now();
-    // срок у всех записей один, Map хранит порядок вставки: просроченные — в начале
-    for (const [token, until] of revoked) {
-        if (until > t) break;
-        revoked.delete(token);
-    }
-    revoked.delete(refresh);
-    revoked.set(refresh, t + REVOKED_MS);
-}
 
 const now = (): number => Math.floor(Date.now() / 1000);
 
@@ -77,12 +48,9 @@ async function sha256(value: string): Promise<string> {
  */
 export async function refreshTokens(refresh: string, requestId?: string): Promise<SessionData> {
     const id = await sha256(refresh);
-    const data = await (inflight.get(id) ?? start(id, refresh, requestId));
-    if (isRevoked(data.refresh)) throw new SessionEnded();
-    return data;
-}
+    const cached = inflight.get(id);
+    if (cached) return cached;
 
-function start(id: string, refresh: string, requestId?: string): Promise<SessionData> {
     const pending = (async () => {
         const res = await refreshToken(
             { refresh_token: refresh },
@@ -92,9 +60,9 @@ function start(id: string, refresh: string, requestId?: string): Promise<Session
         return toSessionData(unwrap(res, [200], RefreshTokenResponse));
     })();
     inflight.set(id, pending);
-    const forget = () => {
-        if (inflight.get(id) === pending) inflight.delete(id);
-    };
-    pending.then(() => setTimeout(forget, CACHE_MS), forget);
+    pending.then(
+        () => setTimeout(() => inflight.delete(id), CACHE_MS),
+        () => inflight.delete(id),
+    );
     return pending;
 }

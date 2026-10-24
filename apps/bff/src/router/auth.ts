@@ -1,7 +1,6 @@
 import { LoginUserBody, RegisterUserBody } from '@cdd/schemas';
 
 import { publicGo } from '../go/api.ts';
-import { revokeRefresh } from '../session/refresh.ts';
 import { optionalSessionProcedure, publicProcedure, router } from '../trpc.ts';
 
 /** Вход, регистрация и выход. Токены Go остаются в cookie сессии, клиенту — только пользователь. */
@@ -21,9 +20,6 @@ export const auth = router({
     // выход всегда успешен: отзыв refresh в Go — по возможности, cookie удаляется в любом случае
     logout: optionalSessionProcedure.mutation(async ({ ctx }) => {
         if (ctx.session.active) await ctx.go.logout().catch(() => undefined);
-        // refresh-токен читается после logout: перед ним call мог обновить пару
-        const refresh = ctx.session.refreshToken;
-        if (refresh) revokeRefresh(refresh);
         ctx.session.end();
         ctx.session.clearLegacy();
         return { ok: true as const };
