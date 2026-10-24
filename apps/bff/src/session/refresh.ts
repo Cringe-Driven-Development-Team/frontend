@@ -13,36 +13,36 @@ export class SessionEnded extends Error {
 }
 
 const CACHE_MS = 10_000;
-// одновременные refresh одного токена (HTML и RPC, вкладки) — один вызов Go. from — исходный
-// refresh-токен (для отзыва цепочки при выходе), result — пара после успеха
-type Entry = { from: string; pending: Promise<SessionData>; result?: SessionData };
-const inflight = new Map<string, Entry>();
-// refresh-токены вышедших сессий: результат из кеша с ними больше не выдаётся (срок — с запасом
-// на кеш и запрос, который был в пути во время выхода)
+// одновременные refresh одного токена (HTML и RPC) — один вызов Go
+const inflight = new Map<string, Promise<SessionData>>();
+// refresh-токены вышедших сессий: их пара не выдаётся ни из кеша, ни в Set-Cookie запроса, который
+// был в пути во время выхода. Срок — дольше самого долгого запроса (до четырёх вызовов Go по 5 с)
 const revoked = new Map<string, number>();
-const REVOKED_MS = 2 * CACHE_MS;
-
-const isRevoked = (refresh: string): boolean => {
-    const until = revoked.get(refresh);
-    if (until === undefined) return false;
-    if (until > Date.now()) return true;
-    revoked.delete(refresh);
-    return false;
-};
+const REVOKED_MS = 30_000;
 
 /**
- * Выход: refresh-токен сессии и вся цепочка, из которой он получен через кеш, больше не выдаются.
- * Иначе запрос другой вкладки со старой cookie, пришедший после выхода, получил бы из кеша пару
- * этой сессии и снова поставил cookie.
+ * Вышла ли сессия с этим refresh-токеном.
+ * @param refresh refresh-токен сессии
+ * @returns `true`, если после выхода не прошло `REVOKED_MS`
+ */
+export function isRevoked(refresh: string): boolean {
+    return (revoked.get(refresh) ?? 0) > Date.now();
+}
+
+/**
+ * Выход: пара с этим refresh-токеном больше не выдаётся — ни из кеша refresh, ни в `Set-Cookie`
+ * запроса, начатого до выхода.
  * @param refresh refresh-токен сессии, которая вышла
  */
 export function revokeRefresh(refresh: string): void {
-    revoked.set(refresh, Date.now() + REVOKED_MS);
-    for (const [id, entry] of inflight) {
-        if (entry.result?.refresh !== refresh) continue;
-        inflight.delete(id);
-        revokeRefresh(entry.from);
+    const t = Date.now();
+    // срок у всех записей один, Map хранит порядок вставки: просроченные — в начале
+    for (const [token, until] of revoked) {
+        if (until > t) break;
+        revoked.delete(token);
     }
+    revoked.delete(refresh);
+    revoked.set(refresh, t + REVOKED_MS);
 }
 
 const now = (): number => Math.floor(Date.now() / 1000);
@@ -77,13 +77,12 @@ async function sha256(value: string): Promise<string> {
  */
 export async function refreshTokens(refresh: string, requestId?: string): Promise<SessionData> {
     const id = await sha256(refresh);
-    const entry = inflight.get(id) ?? start(id, refresh, requestId);
-    const data = await entry.pending;
+    const data = await (inflight.get(id) ?? start(id, refresh, requestId));
     if (isRevoked(data.refresh)) throw new SessionEnded();
     return data;
 }
 
-function start(id: string, refresh: string, requestId?: string): Entry {
+function start(id: string, refresh: string, requestId?: string): Promise<SessionData> {
     const pending = (async () => {
         const res = await refreshToken(
             { refresh_token: refresh },
@@ -92,18 +91,10 @@ function start(id: string, refresh: string, requestId?: string): Entry {
         if (res.status === 401) throw new SessionEnded();
         return toSessionData(unwrap(res, [200], RefreshTokenResponse));
     })();
-    const entry: Entry = { from: refresh, pending };
-    inflight.set(id, entry);
-    pending.then(
-        (result) => {
-            entry.result = result;
-            setTimeout(() => {
-                if (inflight.get(id) === entry) inflight.delete(id);
-            }, CACHE_MS);
-        },
-        () => {
-            if (inflight.get(id) === entry) inflight.delete(id);
-        },
-    );
-    return entry;
+    inflight.set(id, pending);
+    const forget = () => {
+        if (inflight.get(id) === pending) inflight.delete(id);
+    };
+    pending.then(() => setTimeout(forget, CACHE_MS), forget);
+    return pending;
 }

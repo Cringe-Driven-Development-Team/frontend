@@ -8,7 +8,7 @@ import {
     sessionCookie,
 } from './cookies.ts';
 import { openSession, sealSession, type SessionData } from './crypto.ts';
-import { SessionEnded, refreshTokens, toSessionData } from './refresh.ts';
+import { SessionEnded, isRevoked, refreshTokens, toSessionData } from './refresh.ts';
 
 // refresh заранее, чтобы access не истёк по дороге к Go
 const REFRESH_BEFORE_S = 30;
@@ -85,6 +85,8 @@ class RequestSession implements Session {
     }
 
     setCookies(headers: Headers): void {
+        // сессия вышла, пока запрос был в пути: её cookie не выдаётся
+        if (this.data && isRevoked(this.data.refresh)) this.end();
         const own = [SESSION_COOKIE, ...LEGACY_COOKIE_NAMES].map((name) => `${name}=`);
         const others = headers.getSetCookie().filter((c) => !own.some((p) => c.startsWith(p)));
         headers.delete('Set-Cookie');
