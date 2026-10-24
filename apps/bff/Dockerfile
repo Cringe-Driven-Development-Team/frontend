@@ -1,5 +1,5 @@
 # Образ BFF: сборки BFF и клиента одного коммита. Собирается из корня монорепы: bun run image
-FROM oven/bun:1.4.2-alpine
+FROM oven/bun:1.4.4-alpine
 WORKDIR /app
 COPY apps/bff/dist/bff.js /app/bff.js
 COPY apps/client/dist/index.html /app/client/index.html

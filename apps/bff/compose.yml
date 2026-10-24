@@ -7,7 +7,7 @@ services:
     # Заглушка Go по целевому контракту; порты не публикуются, служебные ручки —
     # docker compose -f apps/bff/compose.yml exec go-stub wget -qO- 127.0.0.1:8080/__stub/stats
     go-stub:
-        image: oven/bun:1.4.2-alpine
+        image: oven/bun:1.4.4-alpine
         working_dir: /stub
         command: ['bun', 'go-stub.ts']
         environment:
