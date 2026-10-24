@@ -1,0 +1,32 @@
+import { TRPCError } from '@trpc/server';
+import type { FetchCreateContextFnOptions } from '@trpc/server/adapters/fetch';
+
+import { env } from './env.ts';
+import { AppCodeError } from './errors.ts';
+import { createSession, type Session } from './session/session.ts';
+
+/** Контекст процедур: сессия запроса и заголовки ответа для её `Set-Cookie`. */
+export type Context = { session: Session; resHeaders: Headers };
+
+const csrfInvalid = (): TRPCError =>
+    new TRPCError({ code: 'FORBIDDEN', message: 'CSRF', cause: new AppCodeError('csrf_invalid') });
+
+/**
+ * Контекст tRPC. CSRF проверяется до чтения сессии и вызовов Go: `X-CSRF: 1` на каждом RPC, у POST
+ * ещё `Origin` равен `APP_ORIGIN`, а `Sec-Fetch-Site`, если есть, — `same-origin`. Отказ —
+ * `FORBIDDEN` с `appCode: csrf_invalid`.
+ * @param opts запрос и заголовки ответа от адаптера tRPC
+ * @returns контекст процедур
+ */
+export async function createContext({
+    req,
+    resHeaders,
+}: FetchCreateContextFnOptions): Promise<Context> {
+    if (req.headers.get('X-CSRF') !== '1') throw csrfInvalid();
+    if (req.method === 'POST') {
+        if (req.headers.get('Origin') !== env.APP_ORIGIN) throw csrfInvalid();
+        const site = req.headers.get('Sec-Fetch-Site');
+        if (site !== null && site !== 'same-origin') throw csrfInvalid();
+    }
+    return { session: await createSession(req), resHeaders };
+}

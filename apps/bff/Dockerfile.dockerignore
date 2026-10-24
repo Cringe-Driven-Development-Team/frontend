@@ -1,0 +1,4 @@
+# В контекст сборки — только то, что копирует Dockerfile
+*
+!apps/bff/dist/bff.js
+!apps/client/dist/index.html

@@ -1,0 +1,16 @@
+# Локальный запуск BFF из образа (docs/local-development.md, «BFF»). Go — по GO_API_URL, например
+# Cloud Mock Apidog:
+#   bun run image
+#   SESSION_KEY=$(openssl rand -base64 32) GO_API_URL=<адрес Cloud Mock> docker compose -f apps/bff/compose.yml up -d
+name: cdd-bff
+
+services:
+    bff:
+        image: cdd-bff:local
+        environment:
+            SESSION_KEY: ${SESSION_KEY:?SESSION_KEY is required, e.g. openssl rand -base64 32}
+            APP_ORIGIN: http://localhost:3000
+            GO_API_URL: ${GO_API_URL:?GO_API_URL is required, e.g. Apidog Cloud Mock base URL}
+        ports:
+            - '127.0.0.1:3000:3000'
+        stop_grace_period: 15s

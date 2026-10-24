@@ -82,25 +82,6 @@ export interface Credentials {
   password: string;
 }
 
-export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
-
-
-export const ErrorCode = {
-  validation_error: 'validation_error',
-  invalid_credentials: 'invalid_credentials',
-  login_taken: 'login_taken',
-  unauthorized: 'unauthorized',
-  csrf_invalid: 'csrf_invalid',
-  not_found: 'not_found',
-  not_implemented: 'not_implemented',
-  internal: 'internal',
-} as const;
-
-export interface Error {
-  code: ErrorCode;
-  message: string;
-}
-
 /**
  * Вид блока
  */
@@ -130,11 +111,65 @@ export interface CreateNotebookRequest {
   name: string;
 }
 
+export type ErrorCode = typeof ErrorCode[keyof typeof ErrorCode];
+
+
+export const ErrorCode = {
+  validation_error: 'validation_error',
+  invalid_credentials: 'invalid_credentials',
+  login_taken: 'login_taken',
+  unauthorized: 'unauthorized',
+  not_found: 'not_found',
+  not_implemented: 'not_implemented',
+  internal: 'internal',
+  csrf_invalid: 'csrf_invalid',
+  s2s_forbidden: 's2s_forbidden',
+} as const;
+
+export interface Error {
+  code: ErrorCode;
+  message: string;
+}
+
+export interface TokenPair {
+  /**
+     * Access-токен для Authorization Bearer
+     * @minLength 1
+     */
+  access_token: string;
+  /**
+     * Срок действия выданного access-токена в секундах
+     * @minimum 1
+     */
+  access_expires_in: number;
+  /**
+     * Refresh-токен; при обновлении заменяется новым
+     * @minLength 1
+     */
+  refresh_token: string;
+  /**
+     * Срок действия выданного refresh-токена в секундах
+     * @minimum 1
+     */
+  refresh_expires_in: number;
+}
+
+export interface AuthResponse {
+  user: User;
+  tokens: TokenPair;
+}
+
+export interface RefreshTokenRequest {
+  /**
+     * Refresh-токен текущей сессии.
+     * @minLength 1
+     */
+  refresh_token: string;
+}
+
 export type BadRequestResponse = Error;
 
 export type UnauthorizedResponse = Error;
-
-export type ForbiddenResponse = Error;
 
 export type ConflictResponse = Error;
 
@@ -142,8 +177,10 @@ export type InternalErrorResponse = Error;
 
 export type NotFoundResponse = Error;
 
+export type ForbiddenResponse = Error;
+
 export type registerUserResponse201 = {
-  data: User
+  data: AuthResponse
   status: 201
 }
 
@@ -185,6 +222,7 @@ export const getRegisterUserUrl = () => {
 }
 
 /**
+ * Создаёт пользователя и новую сессию. Возвращает пользователя и пару токенов в JSON. Cookie не устанавливает.
  * @summary Регистрация
  */
 export const registerUser = async (credentials: Credentials, options?: Parameters<typeof bearerFetch>[1]): Promise<registerUserResponse> => {
@@ -215,7 +253,7 @@ return bearerFetch<registerUserResponse>(getRegisterUserUrl(),
 
 
 export type loginUserResponse200 = {
-  data: User
+  data: AuthResponse
   status: 200
 }
 
@@ -257,6 +295,7 @@ export const getLoginUserUrl = () => {
 }
 
 /**
+ * Проверяет учётные данные и создаёт новую сессию. Возвращает пользователя и пару токенов в JSON. Cookie не устанавливает.
  * @summary Вход
  */
 export const loginUser = async (credentials: Credentials, options?: Parameters<typeof bearerFetch>[1]): Promise<loginUserResponse> => {
@@ -286,9 +325,14 @@ return bearerFetch<loginUserResponse>(getLoginUserUrl(),
 
 
 
-export type refreshTokenResponse204 = {
-  data: void
-  status: 204
+export type refreshTokenResponse200 = {
+  data: TokenPair
+  status: 200
+}
+
+export type refreshTokenResponse400 = {
+  data: Error
+  status: 400
 }
 
 export type refreshTokenResponse401 = {
@@ -306,10 +350,10 @@ export type refreshTokenResponse500 = {
   status: 500
 }
 
-export type refreshTokenResponseSuccess = (refreshTokenResponse204) & {
+export type refreshTokenResponseSuccess = (refreshTokenResponse200) & {
   headers: Headers;
 };
-export type refreshTokenResponseError = (refreshTokenResponse401 | refreshTokenResponse403 | refreshTokenResponse500) & {
+export type refreshTokenResponseError = (refreshTokenResponse400 | refreshTokenResponse401 | refreshTokenResponse403 | refreshTokenResponse500) & {
   headers: Headers;
 };
 
@@ -324,16 +368,31 @@ export const getRefreshTokenUrl = () => {
 }
 
 /**
+ * Обменивает действующий refresh-токен на новую пару. После успешного обновления старый refresh-токен недействителен. Bearer не требуется. Cookie не читает и не устанавливает.
  * @summary Обновление токенов
  */
-export const refreshToken = async ( options?: Parameters<typeof bearerFetch>[1]): Promise<refreshTokenResponse> => {
+export const refreshToken = async (refreshTokenRequest: RefreshTokenRequest, options?: Parameters<typeof bearerFetch>[1]): Promise<refreshTokenResponse> => {
 
-  return bearerFetch<refreshTokenResponse>(getRefreshTokenUrl(),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return bearerFetch<refreshTokenResponse>(getRefreshTokenUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(refreshTokenRequest)
   }
 );}
 
@@ -342,6 +401,11 @@ export const refreshToken = async ( options?: Parameters<typeof bearerFetch>[1])
 export type logoutUserResponse204 = {
   data: void
   status: 204
+}
+
+export type logoutUserResponse400 = {
+  data: Error
+  status: 400
 }
 
 export type logoutUserResponse401 = {
@@ -362,7 +426,7 @@ export type logoutUserResponse500 = {
 export type logoutUserResponseSuccess = (logoutUserResponse204) & {
   headers: Headers;
 };
-export type logoutUserResponseError = (logoutUserResponse401 | logoutUserResponse403 | logoutUserResponse500) & {
+export type logoutUserResponseError = (logoutUserResponse400 | logoutUserResponse401 | logoutUserResponse403 | logoutUserResponse500) & {
   headers: Headers;
 };
 
@@ -377,16 +441,31 @@ export const getLogoutUserUrl = () => {
 }
 
 /**
+ * Требует действующий access-токен в Authorization Bearer. Отзывает refresh-сессию, указанную в JSON-теле. Возвращает 204 без тела. Cookie не читает и не устанавливает.
  * @summary Выход
  */
-export const logoutUser = async ( options?: Parameters<typeof bearerFetch>[1]): Promise<logoutUserResponse> => {
+export const logoutUser = async (refreshTokenRequest: RefreshTokenRequest, options?: Parameters<typeof bearerFetch>[1]): Promise<logoutUserResponse> => {
 
-  return bearerFetch<logoutUserResponse>(getLogoutUserUrl(),
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return bearerFetch<logoutUserResponse>(getLogoutUserUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(refreshTokenRequest)
   }
 );}
 
@@ -402,6 +481,11 @@ export type getCurrentUserResponse401 = {
   status: 401
 }
 
+export type getCurrentUserResponse403 = {
+  data: Error
+  status: 403
+}
+
 export type getCurrentUserResponse500 = {
   data: Error
   status: 500
@@ -410,7 +494,7 @@ export type getCurrentUserResponse500 = {
 export type getCurrentUserResponseSuccess = (getCurrentUserResponse200) & {
   headers: Headers;
 };
-export type getCurrentUserResponseError = (getCurrentUserResponse401 | getCurrentUserResponse500) & {
+export type getCurrentUserResponseError = (getCurrentUserResponse401 | getCurrentUserResponse403 | getCurrentUserResponse500) & {
   headers: Headers;
 };
 
@@ -523,6 +607,71 @@ return bearerFetch<createCellResponse>(getCreateCellUrl(id),
 
 
 
+export type deleteCellResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteCellResponse400 = {
+  data: Error
+  status: 400
+}
+
+export type deleteCellResponse401 = {
+  data: Error
+  status: 401
+}
+
+export type deleteCellResponse403 = {
+  data: Error
+  status: 403
+}
+
+export type deleteCellResponse404 = {
+  data: Error
+  status: 404
+}
+
+export type deleteCellResponse500 = {
+  data: Error
+  status: 500
+}
+
+export type deleteCellResponseSuccess = (deleteCellResponse204) & {
+  headers: Headers;
+};
+export type deleteCellResponseError = (deleteCellResponse400 | deleteCellResponse401 | deleteCellResponse403 | deleteCellResponse404 | deleteCellResponse500) & {
+  headers: Headers;
+};
+
+export type deleteCellResponse = (deleteCellResponseSuccess | deleteCellResponseError)
+
+export const getDeleteCellUrl = (id: number,
+    index: number,) => {
+
+
+
+
+  return `/notebooks/${id}/cells/${index}`
+}
+
+/**
+ * @summary Удаление блока
+ */
+export const deleteCell = async (id: number,
+    index: number, options?: Parameters<typeof bearerFetch>[1]): Promise<deleteCellResponse> => {
+
+  return bearerFetch<deleteCellResponse>(getDeleteCellUrl(id,index),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
 export type getNotebookResponse200 = {
   data: Notebook
   status: 200
@@ -538,6 +687,11 @@ export type getNotebookResponse401 = {
   status: 401
 }
 
+export type getNotebookResponse403 = {
+  data: Error
+  status: 403
+}
+
 export type getNotebookResponse404 = {
   data: Error
   status: 404
@@ -551,7 +705,7 @@ export type getNotebookResponse500 = {
 export type getNotebookResponseSuccess = (getNotebookResponse200) & {
   headers: Headers;
 };
-export type getNotebookResponseError = (getNotebookResponse400 | getNotebookResponse401 | getNotebookResponse404 | getNotebookResponse500) & {
+export type getNotebookResponseError = (getNotebookResponse400 | getNotebookResponse401 | getNotebookResponse403 | getNotebookResponse404 | getNotebookResponse500) & {
   headers: Headers;
 };
 
@@ -591,6 +745,11 @@ export type listNotebooksResponse401 = {
   status: 401
 }
 
+export type listNotebooksResponse403 = {
+  data: Error
+  status: 403
+}
+
 export type listNotebooksResponse500 = {
   data: Error
   status: 500
@@ -599,7 +758,7 @@ export type listNotebooksResponse500 = {
 export type listNotebooksResponseSuccess = (listNotebooksResponse200) & {
   headers: Headers;
 };
-export type listNotebooksResponseError = (listNotebooksResponse401 | listNotebooksResponse500) & {
+export type listNotebooksResponseError = (listNotebooksResponse401 | listNotebooksResponse403 | listNotebooksResponse500) & {
   headers: Headers;
 };
 
@@ -696,70 +855,5 @@ return bearerFetch<createNotebookResponse>(getCreateNotebookUrl(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
     body: JSON.stringify(createNotebookRequest)
-  }
-);}
-
-
-
-export type deleteCellResponse204 = {
-  data: void
-  status: 204
-}
-
-export type deleteCellResponse400 = {
-  data: Error
-  status: 400
-}
-
-export type deleteCellResponse401 = {
-  data: Error
-  status: 401
-}
-
-export type deleteCellResponse403 = {
-  data: Error
-  status: 403
-}
-
-export type deleteCellResponse404 = {
-  data: Error
-  status: 404
-}
-
-export type deleteCellResponse500 = {
-  data: Error
-  status: 500
-}
-
-export type deleteCellResponseSuccess = (deleteCellResponse204) & {
-  headers: Headers;
-};
-export type deleteCellResponseError = (deleteCellResponse400 | deleteCellResponse401 | deleteCellResponse403 | deleteCellResponse404 | deleteCellResponse500) & {
-  headers: Headers;
-};
-
-export type deleteCellResponse = (deleteCellResponseSuccess | deleteCellResponseError)
-
-export const getDeleteCellUrl = (id: number,
-    index: number,) => {
-
-
-
-
-  return `/notebooks/${id}/cells/${index}`
-}
-
-/**
- * @summary Удаление блока
- */
-export const deleteCell = async (id: number,
-    index: number, options?: Parameters<typeof bearerFetch>[1]): Promise<deleteCellResponse> => {
-
-  return bearerFetch<deleteCellResponse>(getDeleteCellUrl(id,index),
-  {
-    ...options,
-    method: 'DELETE'
-
-
   }
 );}

@@ -36,7 +36,11 @@ zod-схемы — `packages/schemas` ([README](README.md#монорепа)). К
 - API: контракт в Apidog, локальная копия — `spec/openapi.json`. Обновить — `bun run sync`
   (`bun run apidog` + `bun run orval` + `bun run generate`); спеку и сгенерированное
   (`apps/bff/src/go/client.ts`, `packages/schemas/src/zod.ts`, `apps/client/src/api/schema.ts`)
-  руками не править. Orval и zod — по задаче frontend#45, исключение из правила про внешние библиотеки.
+  руками не править. Orval и zod — по задаче frontend#45, исключение из правила про внешние библиотеки;
+  так же Hono, `@trpc/server` и `serialize-javascript` в `apps/bff` — по задаче frontend#2.
+  До frontend#5: контракт в Apidog — уже целевой для BFF, а клиент работает по старому
+  `apps/client/src/api/schema.ts`. Обновлять — `bun run apidog && bun run orval`; `bun run generate`
+  и `bun run sync` (он включает generate) не запускать — перегенерирует схему клиента и сломает его.
 - Бэкенд: https://github.com/Cringe-Driven-Development-Team/backend, локально на
   `http://127.0.0.1:8080` (адрес меняется переменной `BACKEND_URL` в `.env`).
 

@@ -29,7 +29,7 @@ bun run dev
 | Каталог | Назначение |
 | --- | --- |
 | `apps/client` | Vite-клиент |
-| `apps/bff` | BFF: клиент к Go из контракта (Orval) |
+| `apps/bff` | BFF: Hono + tRPC под Bun, сессия, пользователь в первом HTML; образ и Compose — [docs/local-development.md](docs/local-development.md#bff) |
 | `packages/schemas` | zod-схемы операций Go (Orval) |
 
 Зависимости и команды объединены Bun workspaces и Turborepo.
