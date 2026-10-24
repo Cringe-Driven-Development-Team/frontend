@@ -115,24 +115,20 @@ export function onSessionLost(handler: () => void): void {
 }
 
 /**
- * Новая сессия после входа или регистрации: ответы запросов прежней в интерфейс не попадут.
+ * Смена сессии — вход, регистрация или выход. Новые защищённые запросы не стартуют, `call`
+ * отправляется после того, как ответили уже отправленные: их `Set-Cookie` браузер применяет раньше,
+ * чем `call` поставит или удалит cookie, и прежняя сессия её не перезапишет. После успеха ответы
+ * прежней сессии в интерфейс не попадают. Ошибка `call` — сессия остаётся прежней.
+ * @param call вызов `auth.login`, `auth.register` или `auth.logout`
+ * @returns ответ `call`
  */
-export function startSession(): void {
-    generation++;
-}
-
-/**
- * Выход: новые защищённые запросы не стартуют, `logout` отправляется после того, как ответили
- * уже отправленные, — их `Set-Cookie` приходит раньше, чем выход удалит cookie. После успеха
- * ответы прежней сессии в интерфейс не попадают. Ошибка `logout` — сессия остаётся прежней.
- * @param logout вызов `auth.logout`
- */
-export async function endSession(logout: () => Promise<unknown>): Promise<void> {
+export async function switchSession<T>(call: () => Promise<T>): Promise<T> {
     closing = true;
     try {
         while (inflight.size > 0) await Promise.allSettled(inflight);
-        await logout();
+        const result = await call();
         generation++;
+        return result;
     } finally {
         closing = false;
     }

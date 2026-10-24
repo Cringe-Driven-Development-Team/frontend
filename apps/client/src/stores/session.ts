@@ -1,6 +1,6 @@
 import type { RouterInputs } from '@cdd/bff';
 import { create } from '@cdd-team/zustand';
-import { endSession, isRpcError, startSession, trpc, type User } from '@api/trpc';
+import { isRpcError, switchSession, trpc, type User } from '@api/trpc';
 
 /** guest — не вошёл, authed — вошёл. Известен с первого рендера: его задаёт первый HTML. */
 export type SessionStatus = 'guest' | 'authed';
@@ -72,8 +72,7 @@ function toAuthError(error: unknown): AuthError {
  */
 export async function login(credentials: Credentials): Promise<AuthResult> {
     try {
-        const user = await trpc.auth.login.mutate(credentials);
-        startSession();
+        const user = await switchSession(() => trpc.auth.login.mutate(credentials));
         useSessionStore.setState({ status: 'authed', user });
         return { ok: true };
     } catch (error) {
@@ -88,8 +87,7 @@ export async function login(credentials: Credentials): Promise<AuthResult> {
  */
 export async function register(credentials: Credentials): Promise<AuthResult> {
     try {
-        const user = await trpc.auth.register.mutate(credentials);
-        startSession();
+        const user = await switchSession(() => trpc.auth.register.mutate(credentials));
         useSessionStore.setState({ status: 'authed', user });
         return { ok: true };
     } catch (error) {
@@ -98,13 +96,13 @@ export async function register(credentials: Credentials): Promise<AuthResult> {
 }
 
 /**
- * Выход. Сначала отвечают уже отправленные запросы сессии, новые не стартуют (`endSession`).
+ * Выход. Сначала отвечают уже отправленные запросы сессии, новые не стартуют (`switchSession`).
  * BFF отвечает успехом и без сессии; сбой сети — не выход.
  * @returns true, если BFF подтвердил выход
  */
 export async function logout(): Promise<boolean> {
     try {
-        await endSession(() => trpc.auth.logout.mutate());
+        await switchSession(() => trpc.auth.logout.mutate());
     } catch {
         return false;
     }
