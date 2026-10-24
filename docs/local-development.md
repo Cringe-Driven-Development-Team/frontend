@@ -85,7 +85,7 @@ curl localhost:3000/health
 
 ## Клиент через BFF
 
-`bun run dev` из корня запускает `turbo run dev`, а он — клиент и BFF на одном origin
+`bun run dev` из корня запускает `turbo watch dev`, а он — клиент и BFF на одном origin
 `https://localhost:5173`: Vite собирает и обновляет модули (HMR), HTML страниц и `/api/trpc` отдаёт
 BFF — с пользователем в `<script id="bootstrap">` и cookie сессии. Без `.env` и ручных шагов:
 
@@ -94,10 +94,13 @@ BFF — с пользователем в `<script id="bootstrap">` и cookie с�
   BFF; запрос страницы (`Accept: text/html`) плагин `bff-html` из `vite.config.ts` отдаёт ответом BFF
   с его `Set-Cookie`, добавив клиент HMR (`transformIndexHtml`). Адрес BFF — `BFF_URL`, по умолчанию
   `http://127.0.0.1:3000`.
-- BFF (`apps/bff`, `bun --watch src/dev.ts`) — шаблон `apps/client/index.html`,
+- BFF (`apps/bff`, `src/dev.ts`) — шаблон `apps/client/index.html`,
   `APP_ORIGIN=https://localhost:5173`, Go — Cloud Mock Apidog
   (`https://mock.apidog.com/m1/1382426-0-default`), постоянный dev-ключ сессии: она переживает
-  перезапуск `--watch`. Любое из этого перекрывается корневым `.env` (`GO_API_URL`, `SESSION_KEY`, …).
+  перезапуск BFF. Любое из этого перекрывается корневым `.env` (`GO_API_URL`, `SESSION_KEY`, …).
+  Перезапускает BFF `turbo watch`: при изменении файлов `apps/bff` и пакетов, которые он
+  импортирует (`packages/schemas`). `bun --watch` для этого не годится: на Windows он не следит за
+  файлами вне `apps/bff`. Vite при этом не перезапускается, клиент обновляет HMR.
 
 Cookie сессии — `Secure` и с префиксом `__Host-`: нужен HTTPS, ради dev атрибуты не ослабляются.
 При первом запуске плагин скачивает mkcert в `~/.vite-plugin-mkcert`, создаёт локальный CA и

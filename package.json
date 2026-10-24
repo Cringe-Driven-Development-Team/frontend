@@ -8,7 +8,7 @@
     "type": "module",
     "scripts": {
         "prepare": "lefthook install",
-        "dev": "turbo run dev",
+        "dev": "turbo watch dev",
         "build": "turbo run build",
         "image": "turbo run build && docker build -f apps/bff/Dockerfile -t cdd-bff:local .",
         "lint": "turbo run lint lint:scripts",
