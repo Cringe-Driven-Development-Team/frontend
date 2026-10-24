@@ -1,0 +1,329 @@
+// Сценарии BFF против Go с управляемыми ответами (test/fake-go.ts): через весь обработчик —
+// Hono, CSRF, tRPC, сессию, HTML — без сервера и сети.
+import { afterEach, describe, expect, test } from 'bun:test';
+
+import { createBff } from '../src/bff.ts';
+import { renderBootstrap } from '../src/html.ts';
+import { SESSION_COOKIE } from '../src/session/cookies.ts';
+import { sealSession } from '../src/session/crypto.ts';
+import { loadTemplate } from '../src/template.ts';
+import { type GoRoute, fakeGo, goError, goTokens, hang } from './fake-go.ts';
+
+const ORIGIN = 'http://localhost:3000';
+const RPC = {
+    'X-CSRF': '1',
+    Origin: ORIGIN,
+    'Sec-Fetch-Site': 'same-origin',
+    'Content-Type': 'application/json',
+};
+const USER = { id: 1, login: 'denis' };
+const template = await loadTemplate(process.env.HTML_TEMPLATE ?? '');
+const bff = createBff(template, new Map());
+
+let go: ReturnType<typeof fakeGo> | undefined;
+afterEach(() => go?.restore());
+const useGo = (routes: Record<string, GoRoute>) => (go = fakeGo(routes));
+
+const now = (): number => Math.floor(Date.now() / 1000);
+
+/** Cookie сессии с токенами из Go; access по умолчанию свежий (без refresh перед вызовом). */
+async function cookie(
+    tokens: { access_token: string; refresh_token: string },
+    accessExp = now() + 900,
+    refreshExp = now() + 3600,
+): Promise<string> {
+    return sealSession({
+        access: tokens.access_token,
+        refresh: tokens.refresh_token,
+        accessExp,
+        refreshExp,
+    });
+}
+
+function rpc(
+    proc: string,
+    opts: { body?: unknown; cookie?: string; headers?: Record<string, string> } = {},
+) {
+    const post = opts.body !== undefined;
+    const headers: Record<string, string> = { ...RPC, ...opts.headers };
+    if (opts.cookie) headers.Cookie = `${SESSION_COOKIE}=${opts.cookie}`;
+    return bff(
+        new Request(`${ORIGIN}/api/trpc/${proc}`, {
+            method: post ? 'POST' : 'GET',
+            headers,
+            body: post ? JSON.stringify(opts.body) : undefined,
+        }),
+    );
+}
+
+function page(sessionCookie?: string) {
+    const headers: Record<string, string> = { Accept: 'text/html' };
+    if (sessionCookie) headers.Cookie = `${SESSION_COOKIE}=${sessionCookie}`;
+    return bff(new Request(`${ORIGIN}/notebooks/1`, { headers }));
+}
+
+const sessionSetCookie = (res: Response): string | undefined =>
+    res.headers.getSetCookie().find((c) => c.startsWith(`${SESSION_COOKIE}=`));
+const newSession = (res: Response): string | undefined => {
+    const c = sessionSetCookie(res);
+    const value = c?.split(';')[0]?.slice(SESSION_COOKIE.length + 1);
+    return value || undefined;
+};
+const cleared = (res: Response): boolean => /Max-Age=0/.test(sessionSetCookie(res) ?? '');
+const errorOf = async (res: Response) =>
+    ((await res.json()) as { error: { data: unknown } }).error.data as {
+        code: string;
+        appCode?: string;
+        zodError?: { fieldErrors: Record<string, string[]> };
+    };
+const bootstrap = async (res: Response) =>
+    JSON.parse(
+        /<script id="bootstrap" type="application\/json">(.*?)<\/script>/s.exec(
+            await res.text(),
+        )?.[1] ?? 'null',
+    );
+const goPaths = () => go?.calls.map((c) => `${c.method} ${c.path}`) ?? [];
+
+describe('RPC', () => {
+    test('login: клиенту только пользователь, токены — в cookie сессии, заголовки браузера в Go не уходят', async () => {
+        const tokens = goTokens();
+        useGo({ 'POST /auth/login': () => Response.json({ user: USER, tokens: tokens.issue() }) });
+        const res = await rpc('auth.login', {
+            body: { login: 'denis', password: 'password123' },
+            headers: { Cookie: 'other=1', 'X-Request-ID': 'req-1' },
+        });
+        expect(res.status).toBe(200);
+        const text = await res.text();
+        expect(JSON.parse(text).result.data).toEqual(USER);
+        expect(text).not.toContain('token');
+        expect(sessionSetCookie(res)).toMatch(
+            /Max-Age=3600; Path=\/; HttpOnly; Secure; SameSite=Lax$/,
+        );
+        const legacy = res.headers.getSetCookie().filter((c) => !c.startsWith(SESSION_COOKIE));
+        expect(legacy.map((c) => c.split('=')[0])).toEqual([
+            'access_token',
+            'refresh_token',
+            '__Host-csrf',
+        ]);
+        const call = go?.calls[0];
+        expect(call?.headers.get('X-Request-ID')).toBe('req-1');
+        expect(call?.headers.has('Cookie')).toBe(false);
+        expect(call?.headers.has('X-CSRF')).toBe(false);
+    });
+
+    test('без сессии — UNAUTHORIZED, Go не вызывается', async () => {
+        useGo({});
+        const res = await rpc('notebooks.list');
+        expect(res.status).toBe(401);
+        expect(go?.calls).toHaveLength(0);
+    });
+
+    test.each([
+        ['без X-CSRF', 'notebooks.list', { 'X-CSRF': '' }],
+        ['чужой Origin', 'notebooks.create', { Origin: 'https://evil.example' }],
+        ['без Origin', 'notebooks.create', { Origin: '' }],
+        ['Origin: null', 'notebooks.create', { Origin: 'null' }],
+        ['Origin со слэшем', 'notebooks.create', { Origin: `${ORIGIN}/` }],
+        ['Sec-Fetch-Site: same-site', 'notebooks.create', { 'Sec-Fetch-Site': 'same-site' }],
+    ])('CSRF: %s — FORBIDDEN csrf_invalid, Go не вызывается', async (_name, proc, headers) => {
+        useGo({});
+        const tokens = goTokens();
+        const clean = Object.fromEntries(
+            Object.entries(headers).filter(([, v]) => v !== ''),
+        ) as Record<string, string>;
+        const req = new Request(`${ORIGIN}/api/trpc/${proc}`, {
+            method: proc === 'notebooks.list' ? 'GET' : 'POST',
+            headers: {
+                ...Object.fromEntries(Object.entries(RPC).filter(([k]) => !(k in headers))),
+                ...clean,
+                Cookie: `${SESSION_COOKIE}=${await cookie(tokens.issue())}`,
+            },
+            body: proc === 'notebooks.list' ? undefined : JSON.stringify({ name: 'x' }),
+        });
+        const res = await bff(req);
+        expect(res.status).toBe(403);
+        expect((await errorOf(res)).appCode).toBe('csrf_invalid');
+        expect(go?.calls).toHaveLength(0);
+    });
+
+    test('неверный вход — BAD_REQUEST с ошибками полей', async () => {
+        useGo({});
+        const res = await rpc('auth.login', { body: { login: 'denis', password: 'abc' } });
+        expect(res.status).toBe(400);
+        expect(Object.keys((await errorOf(res)).zodError?.fieldErrors ?? {})).toContain('password');
+    });
+
+    test('три запроса со старой cookie — один refresh, у всех новая сессия', async () => {
+        const tokens = goTokens();
+        useGo({ ...tokens.routes, 'GET /notebooks': () => Response.json([]) });
+        const old = await cookie(tokens.issue(), now() - 1);
+        const res = await Promise.all([1, 2, 3].map(() => rpc('notebooks.list', { cookie: old })));
+        expect(res.map((r) => r.status)).toEqual([200, 200, 200]);
+        expect(goPaths().filter((p) => p === 'POST /auth/refresh')).toHaveLength(1);
+        expect(res.every((r) => newSession(r))).toBe(true);
+    });
+
+    test('батч после истечения access: оба результата, одна Set-Cookie сессии', async () => {
+        const tokens = goTokens();
+        useGo({
+            ...tokens.routes,
+            'GET /users/me': () => Response.json(USER),
+            'GET /notebooks': () => Response.json([]),
+        });
+        const old = await cookie(tokens.issue(), now() - 1);
+        const res = await rpc(`users.me,notebooks.list?batch=1&input=${encodeURIComponent('{}')}`, {
+            cookie: old,
+        });
+        const body = (await res.json()) as unknown[];
+        expect(body.every((r) => 'result' in (r as object))).toBe(true);
+        expect(res.headers.getSetCookie().filter((c) => c.startsWith(SESSION_COOKIE))).toHaveLength(
+            1,
+        );
+        expect(goPaths().filter((p) => p === 'POST /auth/refresh')).toHaveLength(1);
+    });
+
+    test('401 от Go — refresh и один повтор; повторный 401 завершает сессию', async () => {
+        const tokens = goTokens();
+        useGo({ ...tokens.routes, 'GET /notebooks': () => goError(401, 'unauthorized') });
+        const res = await rpc('notebooks.list', { cookie: await cookie(tokens.issue()) });
+        expect(res.status).toBe(401);
+        expect(goPaths()).toEqual(['GET /notebooks', 'POST /auth/refresh', 'GET /notebooks']);
+        expect(cleared(res)).toBe(true);
+    });
+
+    test('отказ refresh — UNAUTHORIZED и удаление cookie', async () => {
+        useGo({ 'POST /auth/refresh': () => goError(401, 'unauthorized') });
+        const res = await rpc('notebooks.list', {
+            cookie: await cookie(goTokens().issue(), now() - 1),
+        });
+        expect(res.status).toBe(401);
+        expect(cleared(res)).toBe(true);
+    });
+
+    test('403 s2s_forbidden на refresh — BAD_GATEWAY, сессия не трогается, повторов нет', async () => {
+        useGo({ 'POST /auth/refresh': () => goError(403, 's2s_forbidden') });
+        const res = await rpc('notebooks.list', {
+            cookie: await cookie(goTokens().issue(), now() - 1),
+        });
+        expect(res.status).toBe(502);
+        expect((await errorOf(res)).appCode).toBe('s2s_forbidden');
+        expect(sessionSetCookie(res)).toBeUndefined();
+        expect(go?.calls).toHaveLength(1);
+    });
+
+    test('5xx Go — BAD_GATEWAY, cookie не меняется', async () => {
+        useGo({ 'GET /notebooks': () => goError(500, 'internal') });
+        const res = await rpc('notebooks.list', { cookie: await cookie(goTokens().issue()) });
+        expect(res.status).toBe(502);
+        expect(sessionSetCookie(res)).toBeUndefined();
+    });
+
+    test('успешный статус с телом не по контракту — BAD_GATEWAY', async () => {
+        useGo({
+            'GET /users/me': () => Response.json({}),
+            'GET /notebooks': () => Response.json({}),
+        });
+        const c = await cookie(goTokens().issue());
+        expect((await rpc('users.me', { cookie: c })).status).toBe(502);
+        expect((await rpc('notebooks.list', { cookie: c })).status).toBe(502);
+    });
+
+    test('после logout старая cookie другой вкладки не получает сессию из кеша refresh', async () => {
+        const tokens = goTokens();
+        useGo({ ...tokens.routes, 'GET /users/me': () => Response.json(USER) });
+        const old = await cookie(tokens.issue(), now() - 1);
+        const first = await rpc('users.me', { cookie: old });
+        const fresh = newSession(first);
+        expect(fresh).toBeDefined();
+        const logout = await rpc('auth.logout', { body: {}, cookie: fresh });
+        expect(logout.status).toBe(200);
+        expect(cleared(logout)).toBe(true);
+        const after = await rpc('users.me', { cookie: old });
+        expect(after.status).toBe(401);
+        expect(newSession(after)).toBeUndefined();
+    });
+
+    test('logout без сессии — успех без Go; при сбое Go — всё равно успех и удаление cookie', async () => {
+        useGo({ 'POST /auth/logout': () => goError(500, 'internal') });
+        const guest = await rpc('auth.logout', { body: {} });
+        expect(guest.status).toBe(200);
+        expect(go?.calls).toHaveLength(0);
+        const res = await rpc('auth.logout', {
+            body: {},
+            cookie: await cookie(goTokens().issue()),
+        });
+        expect(res.status).toBe(200);
+        expect(cleared(res)).toBe(true);
+    });
+
+    test('Go не ответил за 5 с — BAD_GATEWAY', async () => {
+        useGo({ 'GET /notebooks': hang });
+        const started = performance.now();
+        const res = await rpc('notebooks.list', { cookie: await cookie(goTokens().issue()) });
+        expect(res.status).toBe(502);
+        expect(performance.now() - started).toBeGreaterThan(4500);
+    }, 10_000);
+});
+
+describe('HTML', () => {
+    test('гость — { user: null }, Go не вызывается, private no-store', async () => {
+        useGo({});
+        const res = await page();
+        expect(res.status).toBe(200);
+        expect(res.headers.get('Cache-Control')).toBe('private, no-store');
+        expect(await bootstrap(res)).toEqual({ user: null });
+        expect(go?.calls).toHaveLength(0);
+    });
+
+    test('пользователь — только DTO из users/me', async () => {
+        useGo({ 'GET /users/me': () => Response.json({ ...USER, password_hash: 'x' }) });
+        expect(await bootstrap(await page(await cookie(goTokens().issue())))).toEqual({
+            user: USER,
+        });
+    });
+
+    test('истёкший refresh в cookie — гость, cookie удаляется, Go не вызывается', async () => {
+        useGo({});
+        const res = await page(await cookie(goTokens().issue(), now() - 100, now() - 1));
+        expect(await bootstrap(res)).toEqual({ user: null });
+        expect(cleared(res)).toBe(true);
+        expect(go?.calls).toHaveLength(0);
+    });
+
+    test('отказ refresh — гость и удаление cookie', async () => {
+        useGo({ 'POST /auth/refresh': () => goError(401, 'unauthorized') });
+        const res = await page(await cookie(goTokens().issue(), now() - 1));
+        expect(res.status).toBe(200);
+        expect(await bootstrap(res)).toEqual({ user: null });
+        expect(cleared(res)).toBe(true);
+    });
+
+    test('сбой Go — 503 без приложения, сессия не удаляется', async () => {
+        useGo({ 'GET /users/me': () => goError(500, 'internal') });
+        const res = await page(await cookie(goTokens().issue()));
+        expect(res.status).toBe(503);
+        expect(res.headers.get('Cache-Control')).toBe('private, no-store');
+        expect(await res.text()).not.toContain('<script');
+        expect(sessionSetCookie(res)).toBeUndefined();
+    });
+
+    test('удачный refresh и сбой users/me — 503 с новой cookie сессии', async () => {
+        const tokens = goTokens();
+        useGo({ ...tokens.routes, 'GET /users/me': () => goError(500, 'internal') });
+        const res = await page(await cookie(tokens.issue(), now() - 1));
+        expect(res.status).toBe(503);
+        expect(newSession(res)).toBeDefined();
+    });
+
+    test('строки пользователя не создают элементов и восстанавливаются байт в байт', async () => {
+        const user = { id: 7, login: '</script><script>alert(1)</script><!-- "\'&Привет ' };
+        const html = await renderBootstrap(template, { user }, new Headers()).text();
+        let scripts = 0;
+        await new HTMLRewriter()
+            .on('script', { element: () => void scripts++ })
+            .transform(new Response(html))
+            .text();
+        expect(scripts).toBe(2);
+        expect(await bootstrap(new Response(html))).toEqual({ user });
+    });
+});

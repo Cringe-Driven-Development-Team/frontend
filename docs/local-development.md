@@ -57,30 +57,30 @@ bun run build
 Неверная конфигурация или шаблон без ровно одного `<script id="bootstrap" type="application/json">`
 не дают BFF стартовать; в вывод попадают только имена переменных.
 
-Запуск из исходников против заглушки Go (`apps/bff/dev/go-stub.ts` — Go в памяти по целевому
-контракту):
+Go для локального запуска — Cloud Mock Apidog: ответы ручек и ошибок заданы там mock expectations по
+контракту. Адрес — в Apidog, проект → Mock → Cloud Mock (с префиксом `/api/v1`), в код и конфиги
+репозитория он не записывается: передаётся переменной `GO_API_URL`.
 
 ```sh
 bun run build
-STUB_PORT=8099 bun apps/bff/dev/go-stub.ts &
 SESSION_KEY=$(openssl rand -base64 32) APP_ORIGIN=http://localhost:3000 \
-  GO_API_URL=http://127.0.0.1:8099/api/v1 HTML_TEMPLATE=apps/client/dist/index.html \
+  GO_API_URL=<адрес Cloud Mock> HTML_TEMPLATE=apps/client/dist/index.html \
   bun apps/bff/src/index.ts
 ```
 
-Образ и локальный Compose (BFF из образа + заглушка Go; порт заглушки наружу не публикуется):
+Образ и локальный Compose:
 
 ```sh
 bun run image        # turbo run build и docker build -t cdd-bff:local
-SESSION_KEY=$(openssl rand -base64 32) docker compose -f apps/bff/compose.yml up -d
+SESSION_KEY=$(openssl rand -base64 32) GO_API_URL=<адрес Cloud Mock> \
+  docker compose -f apps/bff/compose.yml up -d
 curl localhost:3000/health
-docker compose -f apps/bff/compose.yml exec go-stub wget -qO- 127.0.0.1:8080/__stub/stats
 ```
 
-Заглушка: `STUB_ACCESS_TTL` / `STUB_REFRESH_TTL` — сроки токенов в секундах, `STUB_BFF_KEY` — ожидаемый
-`X-BFF-Key`. Служебные ручки: `GET /__stub/stats` (`refreshCalls`), `GET /__stub/reset`,
-`POST /__stub/fail` с `{ "mode": …, "count": N }`, где `mode` — `500`, `slow` (7 с), `s2s`,
-`refresh401`, `me500`, `me-garbage`.
+Проверка Cloud Mock — `bun run mock:check` (Apidog CLI, раздел ниже). Сценарии, которым нужно
+состояние Go (одновременный refresh, отзыв токена при выходе, сбои и таймауты Go), проверяют тесты
+`bun run test`: `apps/bff/test/` — весь обработчик BFF против Go с управляемыми ответами
+(`test/fake-go.ts`), без сервера и сети.
 
 Контракт Go в Apidog уже целевой для BFF, а клиент до #5 работает по старой схеме: обновлять
 `spec/openapi.json` — `bun run apidog && bun run orval`, без `generate` и `sync` (`AGENTS.md`, «Источники»).
