@@ -1,0 +1,16 @@
+# Хуки ставит `bun install` (скрипт prepare), вручную — `bunx lefthook install`.
+pre-commit:
+    piped: true
+    jobs:
+        # форматируется индекс, а не рабочий каталог: неиндексированные правки (git add -p) не
+        # задеваются, даже если формат меняет те же строки; файлы из ignorePatterns oxfmt не трогает
+        - name: fmt
+          run: bun scripts/hooks/format-staged.ts
+        - name: check
+          run: bun scripts/hooks/check-staged.ts
+
+# рабочий каталог — к закоммиченному формату, если он отличается только форматированием
+post-commit:
+    jobs:
+        - name: fmt-worktree
+          run: bun scripts/hooks/sync-formatted.ts
