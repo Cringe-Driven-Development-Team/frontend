@@ -23,8 +23,7 @@
         "release": "bun scripts/release/index.ts",
         "apidog": "bun scripts/openapi/apidog.ts",
         "orval": "orval --config orval.config.ts",
-        "generate": "bun run --filter @cdd/client generate",
-        "sync": "bun run apidog && bun run orval && bun run generate"
+        "sync": "bun run apidog && bun run orval"
     },
     "devDependencies": {
         "@aws-sdk/client-s3": "^3.1146.0",

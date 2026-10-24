@@ -1,9 +1,11 @@
 import { createRoot } from '@cdd-team/react';
 
+import { onSessionLost } from './api/trpc';
 import { readBootstrap } from './bootstrap';
 import { RouterProvider } from './modules/router';
 import { router } from './router';
-import { initSession } from './stores/session';
+import { initSession, loseSession } from './stores/session';
+import { showToast } from './stores/toast';
 import './styles/tokens.css';
 import './styles/global.css';
 
@@ -20,5 +22,12 @@ try {
     console.error(error);
     container.textContent = 'Не удалось запустить приложение. Обновите страницу.';
 }
+
+// BFF не смог продлить сессию: гость и вход, прежние данные с экрана уходят вместе с маршрутом
+onSessionLost(() => {
+    loseSession();
+    showToast('Сессия закончилась — войдите снова', 'info');
+    void router.navigate({ to: '/login', replace: true });
+});
 
 if (started) createRoot(container).render(<RouterProvider router={router} />);

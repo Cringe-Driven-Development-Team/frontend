@@ -115,8 +115,8 @@ GO_API_URL=https://mock.apidog.com/m1/1382426-0-default
 Cloud Mock отвечает фиксированно (раздел «BFF» выше): `denis` / `password123` — вход,
 `wrong-password` — неверный пароль. Против своего Go — `GO_API_URL=http://127.0.0.1:8080/api/v1`.
 
-Контракт Go в Apidog уже целевой для BFF, а клиент до #5 работает по старой схеме: обновлять
-`spec/openapi.json` — `bun run apidog && bun run orval`, без `generate` и `sync` (`AGENTS.md`, «Источники»).
+Контракт Go обновляется `bun run sync` (`bun run apidog && bun run orval`): клиент контракт Go не
+читает, типы процедур берёт из `@cdd/bff`.
 
 ## Документация кода
 
@@ -142,4 +142,4 @@ Cloud Mock отвечает фиксированно (раздел «BFF» вы�
 Оба правила — командный плагин
 [`@cdd-team/oxlint-plugin-jsdoc`](https://github.com/Cringe-Driven-Development-Team/frontend-packages/tree/main/packages/oxlint-plugin-jsdoc):
 в `oxlint` правил `require-jsdoc` и `check-param-names` нет. Сами теги линт не требует: `@param` и `@returns` пишутся там, где описание что-то добавляет
-к имени и типу. Сгенерированный `apps/client/src/api/schema.ts` линт не проверяет
+к имени и типу. Сгенерированные Orval файлы линт не проверяет

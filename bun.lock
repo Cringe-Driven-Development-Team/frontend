@@ -32,10 +32,10 @@
     "apps/client": {
       "name": "@cdd/client",
       "dependencies": {
-        "@cdd-team/openapi": "^0.2.1",
         "@cdd-team/react": "^1.2.1",
         "@cdd-team/zustand": "^1.0.1",
         "@trpc/client": "^11.19.0",
+        "@trpc/server": "^11.19.0",
       },
       "devDependencies": {
         "@cdd/bff": "workspace:*",
@@ -86,8 +86,6 @@
     "@aws-sdk/xml-builder": ["@aws-sdk/xml-builder@3.972.41", "", { "dependencies": { "@smithy/types": "^4.19.0", "tslib": "^2.6.2" } }, "sha512-ctjVSyCMegrWfXlx6VqzSBFI6UqmQ5ZlnfMhdLIiWmhoH8UAQxSCP5N3OpG7X3k4LnS7ou74C4mt20+bfTW2aQ=="],
 
     "@aws/lambda-invoke-store": ["@aws/lambda-invoke-store@0.3.0", "", {}, "sha512-sl4Bm6yiMNYrZKkqqDFWN0UfnWhlS8ivKxrYl+6t0gCLrqr8y3B2IqZZbFRkfaVVp7C/baApyh71P+LeE1A2sQ=="],
-
-    "@cdd-team/openapi": ["@cdd-team/openapi@0.2.1", "", { "bin": { "openapi-cdd": "dist/bin.js" } }, "sha512-ct7HzmyYblbwuBAbrjYFhZ0/QuKUw/O+Kl2vJW/U6nK/eiy+UKbD8CBrKVv9p7vlZqE8PwH/sKdV9li1oSI77Q=="],
 
     "@cdd-team/oxlint-plugin-jsdoc": ["@cdd-team/oxlint-plugin-jsdoc@0.1.2", "", { "peerDependencies": { "oxlint": ">=1.86.0" } }, "sha512-JeDHB9I0QrA7ueL8tvEEa/nw0q1+yacnOdw5Cn8iKaTFqhDhbqAaaGhYxQxUYWTPnoLcZpPs7yy1vJ8IYDPfig=="],
 

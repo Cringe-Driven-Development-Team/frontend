@@ -1,6 +1,6 @@
 import type { RouterInputs } from '@cdd/bff';
 import { create } from '@cdd-team/zustand';
-import { isRpcError, trpc, type User } from '@api/trpc';
+import { endSession, isRpcError, startSession, trpc, type User } from '@api/trpc';
 
 /** guest — не вошёл, authed — вошёл. Известен с первого рендера: его задаёт первый HTML. */
 export type SessionStatus = 'guest' | 'authed';
@@ -16,6 +16,11 @@ export type Credentials = RouterInputs['auth']['login'];
 
 /** Стор сессии. До первого рендера его заполняет {@link initSession}. */
 export const useSessionStore = create<SessionState>()(() => ({ status: 'guest', user: null }));
+
+/** Сессия закончилась (BFF ответил `UNAUTHORIZED`): пользователь — гость. */
+export function loseSession(): void {
+    useSessionStore.setState(GUEST);
+}
 
 /**
  * Состояние сессии из первого HTML: без запросов, до первого рендера.
@@ -68,6 +73,7 @@ function toAuthError(error: unknown): AuthError {
 export async function login(credentials: Credentials): Promise<AuthResult> {
     try {
         const user = await trpc.auth.login.mutate(credentials);
+        startSession();
         useSessionStore.setState({ status: 'authed', user });
         return { ok: true };
     } catch (error) {
@@ -83,6 +89,7 @@ export async function login(credentials: Credentials): Promise<AuthResult> {
 export async function register(credentials: Credentials): Promise<AuthResult> {
     try {
         const user = await trpc.auth.register.mutate(credentials);
+        startSession();
         useSessionStore.setState({ status: 'authed', user });
         return { ok: true };
     } catch (error) {
@@ -91,12 +98,13 @@ export async function register(credentials: Credentials): Promise<AuthResult> {
 }
 
 /**
- * Выход. BFF отвечает успехом и без сессии; сбой сети — не выход.
+ * Выход. Сначала отвечают уже отправленные запросы сессии, новые не стартуют (`endSession`).
+ * BFF отвечает успехом и без сессии; сбой сети — не выход.
  * @returns true, если BFF подтвердил выход
  */
 export async function logout(): Promise<boolean> {
     try {
-        await trpc.auth.logout.mutate();
+        await endSession(() => trpc.auth.logout.mutate());
     } catch {
         return false;
     }

@@ -57,15 +57,12 @@ zod-схемы — `packages/schemas` ([README](README.md#монорепа)). К
 
 ## Источники
 
-- API: контракт в Apidog, локальная копия — `spec/openapi.json`. Обновить — `bun run sync`
-  (`bun run apidog` + `bun run orval` + `bun run generate`); спеку и сгенерированное
-  (`apps/bff/src/go/client.ts`, `packages/schemas/src/zod.ts`, `apps/client/src/api/schema.ts`)
-  руками не править. Orval и zod — по задаче frontend#45, исключение из правила про внешние библиотеки;
+- API Go: контракт в Apidog, локальная копия — `spec/openapi.json`. Обновить — `bun run sync`
+  (`bun run apidog` + `bun run orval`); спеку и сгенерированное (`apps/bff/src/go/client.ts`,
+  `packages/schemas/src/zod.ts`) руками не править. Клиент Go не вызывает: только процедуры BFF. Orval и zod — по задаче frontend#45, исключение из правила про внешние библиотеки;
   так же Hono, `@trpc/server` и `serialize-javascript` в `apps/bff` — по задаче frontend#2,
-  `@trpc/client` в `apps/client` — по задаче frontend#5.
-  До frontend#5: контракт в Apidog — уже целевой для BFF, а клиент работает по старому
-  `apps/client/src/api/schema.ts`. Обновлять — `bun run apidog && bun run orval`; `bun run generate`
-  и `bun run sync` (он включает generate) не запускать — перегенерирует схему клиента и сломает его.
+  `@trpc/client` в `apps/client` — по задаче frontend#5 (с ним `@trpc/server`: `observable` для своего link
+  и типы; в бандл идёт только то, что берёт сам `@trpc/client`).
 - Бэкенд: https://github.com/Cringe-Driven-Development-Team/backend. Клиент ходит только в BFF;
   BFF — в Go по `GO_API_URL` (локально — Cloud Mock Apidog, [локальные правила](docs/local-development.md#клиент-через-bff)).
 
@@ -76,7 +73,6 @@ bun run dev        # клиент (Vite, HTTPS) и BFF: HTML и /api/trpc — ч
 bun run check      # oxfmt --check, oxlint, tsc во всех пакетах
 bun run build      # сборка, клиент — в apps/client/dist/
 bun run orval      # spec/openapi.json → клиент BFF к Go и zod-схемы (orval.config.ts)
-bun run generate   # spec/openapi.json → apps/client/src/api/schema.ts
 ```
 
 Перед тем как сказать «готово» — `bun run check` и `bun run build` должны проходить.
@@ -96,7 +92,7 @@ bun run generate   # spec/openapi.json → apps/client/src/api/schema.ts
 внутри своей папки — через `./`. Алиасы заданы только в `paths` в `apps/client/tsconfig.json`,
 vite берёт их оттуда.
 
-- `api/` — клиент `@cdd-team/openapi` (единственный экземпляр) и сгенерированная схема.
+- `api/trpc.ts` — клиент BFF `trpc` (единственный экземпляр), типы процедур и учёт сессии в транспорте.
 - `components/` — UI-kit по Components из макета: `Button`, `Input`, `Icon`, `Logo`, `Moon`,
   `Snackbar`, `Toast`, `Space`. Каждый компонент — папка с `.tsx` и `.module.css`.
 - `layouts/RootLayout.tsx` — `<main>` с `<Outlet />`, тост и снекбар. Второй `<main>` на страницах не нужен.
@@ -128,3 +124,10 @@ vite берёт их оттуда.
   рендера. Статус сессии сразу `guest` | `authed`, запроса при старте нет. Сломанный bootstrap —
   ошибка запуска, гостем она не прикрывается. Маршруты `_guest` (`/login`, `/register`) и `_auth`
   (остальные) проверяют статус в `beforeLoad` и делают `redirect`.
+- Ошибки — `TRPCClientError` (`isRpcError` из `@api/trpc`): категория — `data.code`, причина —
+  `data.appCode`, ошибки полей — `data.zodError`; на `message` поведение не завязывать.
+  `UNAUTHORIZED` защищённой процедуры транспорт сам переводит в гостя и ведёт на `/login`;
+  `FORBIDDEN`, `BAD_GATEWAY` и сбой сети сессию не завершают.
+- Выход — `logout()` из `@stores/session`: транспорт не пускает новые защищённые запросы, ждёт ответа
+  уже отправленных и только затем вызывает `auth.logout`. Ответ на запрос прежней сессии приходит
+  ошибкой `SESSION_CHANGED` и в интерфейс не попадает.

@@ -1,4 +1,4 @@
-import type { Cell as CellData } from '@api/client';
+import type { Cell as CellData } from '@api/trpc';
 import { IconButton } from '@components/IconButton/IconButton';
 import { clsx } from '@modules/clsx';
 import styles from './Cell.module.css';

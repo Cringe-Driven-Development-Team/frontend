@@ -7,14 +7,13 @@
         "build": "vite build",
         "preview": "vite preview",
         "lint": "oxlint",
-        "typecheck": "tsc --noEmit",
-        "generate": "openapi-cdd ../../spec/openapi.json -o src/api/schema.ts"
+        "typecheck": "tsc --noEmit"
     },
     "dependencies": {
-        "@cdd-team/openapi": "^0.2.1",
         "@cdd-team/react": "^1.2.1",
         "@cdd-team/zustand": "^1.0.1",
-        "@trpc/client": "^11.19.0"
+        "@trpc/client": "^11.19.0",
+        "@trpc/server": "^11.19.0"
     },
     "devDependencies": {
         "@cdd/bff": "workspace:*",

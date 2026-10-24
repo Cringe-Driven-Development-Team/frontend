@@ -12,7 +12,6 @@ export default defineConfig({
         '**/dist/',
         'node_modules/',
         // сгенерированное: bun run sync
-        '**/src/api/schema.ts',
         'apps/bff/src/go/client.ts',
         'packages/schemas/src/zod.ts',
     ],
