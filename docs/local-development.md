@@ -58,8 +58,9 @@ bun run build
 не дают BFF стартовать; в вывод попадают только имена переменных.
 
 Go для локального запуска — Cloud Mock Apidog: ответы ручек и ошибок заданы там mock expectations по
-контракту. Адрес — в Apidog, проект → Mock → Cloud Mock (с префиксом `/api/v1`), в код и конфиги
-репозитория он не записывается: передаётся переменной `GO_API_URL`.
+контракту. Адрес — в Apidog, проект → Mock → Cloud Mock: `https://mock.apidog.com/m1/<проект>-<ветка>-default`,
+без `/api/v1` — мок отдаёт пути ручек от корня. В код и конфиги репозитория он не записывается:
+передаётся переменной `GO_API_URL`.
 
 ```sh
 bun run build
@@ -77,7 +78,8 @@ SESSION_KEY=$(openssl rand -base64 32) GO_API_URL=<адрес Cloud Mock> \
 curl localhost:3000/health
 ```
 
-Проверка Cloud Mock — `bun run mock:check` (Apidog CLI, раздел ниже). Сценарии, которым нужно
+Проверка Cloud Mock — `GO_API_URL=<адрес Cloud Mock> bun run mock:check` (`apps/bff/test/mock-check.ts`):
+статусы mock expectations и тела ответов по zod-схемам. Сценарии, которым нужно
 состояние Go (одновременный refresh, отзыв токена при выходе, сбои и таймауты Go), проверяют тесты
 `bun run test`: `apps/bff/test/` — весь обработчик BFF против Go с управляемыми ответами
 (`test/fake-go.ts`), без сервера и сети.

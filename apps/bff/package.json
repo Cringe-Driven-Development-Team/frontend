@@ -10,7 +10,8 @@
         "start": "bun src/index.ts",
         "lint": "oxlint",
         "typecheck": "tsc --noEmit",
-        "test": "bun test"
+        "test": "bun test",
+        "mock:check": "bun test/mock-check.ts"
     },
     "dependencies": {
         "@cdd/schemas": "workspace:*",

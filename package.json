@@ -13,6 +13,7 @@
         "lint": "turbo run lint lint:scripts",
         "typecheck": "turbo run typecheck typecheck:scripts",
         "test": "turbo run test",
+        "mock:check": "bun run --filter @cdd/bff mock:check",
         "lint:scripts": "oxlint scripts",
         "typecheck:scripts": "tsc --noEmit -p scripts",
         "fmt": "oxfmt",
