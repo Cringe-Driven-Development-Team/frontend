@@ -82,8 +82,8 @@ docker compose -f apps/bff/compose.yml exec go-stub wget -qO- 127.0.0.1:8080/__s
 `POST /__stub/fail` с `{ "mode": …, "count": N }`, где `mode` — `500`, `slow` (7 с), `s2s`,
 `refresh401`, `me500`, `me-garbage`.
 
-Контракт Go в `spec/openapi.json` пока правлен вручную под BFF: до backend#41 `bun run sync` и
-`bun run generate` не запускать (`AGENTS.md`, «Источники»).
+Контракт Go в Apidog уже целевой для BFF, а клиент до #5 работает по старой схеме: обновлять
+`spec/openapi.json` — `bun run apidog && bun run orval`, без `generate` и `sync` (`AGENTS.md`, «Источники»).
 
 ## Документация кода
 

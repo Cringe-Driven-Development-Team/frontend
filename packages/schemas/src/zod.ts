@@ -7,8 +7,16 @@
 import * as zod from 'zod';
 
 /**
+ * Создаёт пользователя и новую сессию. Возвращает пользователя и пару токенов в JSON. Cookie не устанавливает.
  * @summary Регистрация
  */
+
+
+
+export const RegisterUserHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
+})
+
 export const registerUserBodyLoginMin = 3;
 export const registerUserBodyLoginMax = 32;
 
@@ -27,23 +35,35 @@ export const RegisterUserBody = zod.object({
 
 
 
+
+
+
+
 export const RegisterUserResponse = zod.object({
   "user": zod.object({
   "id": zod.int().min(1).describe('ID'),
   "login": zod.string()
 }),
   "tokens": zod.object({
-  "access_token": zod.string(),
-  "access_expires_in": zod.int().describe('Срок жизни access-токена, секунды'),
-  "refresh_token": zod.string(),
-  "refresh_expires_in": zod.int().describe('Срок жизни refresh-токена, секунды')
+  "access_token": zod.string().min(1).describe('Access-токен для Authorization Bearer'),
+  "access_expires_in": zod.int().min(1).describe('Срок действия выданного access-токена в секундах'),
+  "refresh_token": zod.string().min(1).describe('Refresh-токен; при обновлении заменяется новым'),
+  "refresh_expires_in": zod.int().min(1).describe('Срок действия выданного refresh-токена в секундах')
 })
 })
 
 
 /**
+ * Проверяет учётные данные и создаёт новую сессию. Возвращает пользователя и пару токенов в JSON. Cookie не устанавливает.
  * @summary Вход
  */
+
+
+
+export const LoginUserHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
+})
+
 export const loginUserBodyLoginMin = 3;
 export const loginUserBodyLoginMax = 32;
 
@@ -62,40 +82,72 @@ export const LoginUserBody = zod.object({
 
 
 
+
+
+
+
 export const LoginUserResponse = zod.object({
   "user": zod.object({
   "id": zod.int().min(1).describe('ID'),
   "login": zod.string()
 }),
   "tokens": zod.object({
-  "access_token": zod.string(),
-  "access_expires_in": zod.int().describe('Срок жизни access-токена, секунды'),
-  "refresh_token": zod.string(),
-  "refresh_expires_in": zod.int().describe('Срок жизни refresh-токена, секунды')
+  "access_token": zod.string().min(1).describe('Access-токен для Authorization Bearer'),
+  "access_expires_in": zod.int().min(1).describe('Срок действия выданного access-токена в секундах'),
+  "refresh_token": zod.string().min(1).describe('Refresh-токен; при обновлении заменяется новым'),
+  "refresh_expires_in": zod.int().min(1).describe('Срок действия выданного refresh-токена в секундах')
 })
 })
 
 
 /**
+ * Обменивает действующий refresh-токен на новую пару. После успешного обновления старый refresh-токен недействителен. Bearer не требуется. Cookie не читает и не устанавливает.
  * @summary Обновление токенов
  */
-export const RefreshTokenBody = zod.object({
-  "refresh_token": zod.string()
+
+
+
+export const RefreshTokenHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
 })
 
+
+
+
+export const RefreshTokenBody = zod.object({
+  "refresh_token": zod.string().min(1).describe('Refresh-токен текущей сессии.')
+})
+
+
+
+
+
+
+
 export const RefreshTokenResponse = zod.object({
-  "access_token": zod.string(),
-  "access_expires_in": zod.int().describe('Срок жизни access-токена, секунды'),
-  "refresh_token": zod.string(),
-  "refresh_expires_in": zod.int().describe('Срок жизни refresh-токена, секунды')
+  "access_token": zod.string().min(1).describe('Access-токен для Authorization Bearer'),
+  "access_expires_in": zod.int().min(1).describe('Срок действия выданного access-токена в секундах'),
+  "refresh_token": zod.string().min(1).describe('Refresh-токен; при обновлении заменяется новым'),
+  "refresh_expires_in": zod.int().min(1).describe('Срок действия выданного refresh-токена в секундах')
 })
 
 
 /**
+ * Требует действующий access-токен в Authorization Bearer. Отзывает refresh-сессию, указанную в JSON-теле. Возвращает 204 без тела. Cookie не читает и не устанавливает.
  * @summary Выход
  */
+
+
+
+export const LogoutUserHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
+})
+
+
+
+
 export const LogoutUserBody = zod.object({
-  "refresh_token": zod.string()
+  "refresh_token": zod.string().min(1).describe('Refresh-токен текущей сессии.')
 })
 
 export const LogoutUserResponse = zod.void()
@@ -104,6 +156,13 @@ export const LogoutUserResponse = zod.void()
 /**
  * @summary Текущий пользователь
  */
+
+
+
+export const GetCurrentUserHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
+})
+
 
 
 
@@ -121,6 +180,13 @@ export const GetCurrentUserResponse = zod.object({
 
 export const CreateCellParams = zod.object({
   "id": zod.int().min(1).describe('ID блокнота')
+})
+
+
+
+
+export const CreateCellHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
 })
 
 export const createCellBodyIndexMin = 0;
@@ -146,6 +212,29 @@ export const CreateCellResponse = zod.object({
 
 
 /**
+ * @summary Удаление блока
+ */
+
+export const deleteCellPathIndexMin = 0;
+
+
+
+export const DeleteCellParams = zod.object({
+  "id": zod.int().min(1).describe('ID блокнота'),
+  "index": zod.int().min(deleteCellPathIndexMin).describe('Порядковый номер блока в блокноте, с нуля')
+})
+
+
+
+
+export const DeleteCellHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
+})
+
+export const DeleteCellResponse = zod.void()
+
+
+/**
  * @summary Блокнот
  */
 
@@ -153,6 +242,13 @@ export const CreateCellResponse = zod.object({
 
 export const GetNotebookParams = zod.object({
   "id": zod.int().min(1)
+})
+
+
+
+
+export const GetNotebookHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
 })
 
 
@@ -181,6 +277,13 @@ export const GetNotebookResponse = zod.object({
 
 
 
+export const ListNotebooksHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
+})
+
+
+
+
 export const ListNotebooksResponseItem = zod.object({
   "id": zod.int().min(1),
   "name": zod.string(),
@@ -193,6 +296,13 @@ export const ListNotebooksResponse = zod.array(ListNotebooksResponseItem)
 /**
  * @summary Создание блокнота
  */
+
+
+
+export const CreateNotebookHeader = zod.object({
+  "X-BFF-Key": zod.string().min(1).optional().describe('Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.')
+})
+
 export const createNotebookBodyNameMax = 128;
 
 
@@ -219,19 +329,3 @@ export const CreateNotebookResponse = zod.object({
   "created_at": zod.iso.datetime({"offset":true}),
   "updated_at": zod.iso.datetime({"offset":true})
 }).describe('Блокнот (.ipynb)')
-
-
-/**
- * @summary Удаление блока
- */
-
-export const deleteCellPathIndexMin = 0;
-
-
-
-export const DeleteCellParams = zod.object({
-  "id": zod.int().min(1).describe('ID блокнота'),
-  "index": zod.int().min(deleteCellPathIndexMin).describe('Порядковый номер блока в блокноте, с нуля')
-})
-
-export const DeleteCellResponse = zod.void()

@@ -21,12 +21,24 @@
       "post": {
         "summary": "Регистрация",
         "deprecated": false,
-        "description": "",
+        "description": "Создаёт пользователя и новую сессию. Возвращает пользователя и пару токенов в JSON. Cookie не устанавливает.",
         "operationId": "registerUser",
         "tags": [
           "auth"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -39,23 +51,23 @@
         },
         "responses": {
           "201": {
-            "description": "Пользователь создан, выданы токены",
+            "description": "Пользователь и новая пара токенов",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "user": {
-                      "$ref": "#/components/schemas/User"
-                    },
-                    "tokens": {
-                      "$ref": "#/components/schemas/TokenPair"
-                    }
+                  "$ref": "#/components/schemas/AuthResponse"
+                },
+                "example": {
+                  "user": {
+                    "id": 1,
+                    "login": "example"
                   },
-                  "required": [
-                    "user",
-                    "tokens"
-                  ]
+                  "tokens": {
+                    "access_token": "<access-token>",
+                    "access_expires_in": 900,
+                    "refresh_token": "<refresh-token>",
+                    "refresh_expires_in": 2592000
+                  }
                 }
               }
             },
@@ -73,11 +85,15 @@
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -113,12 +129,24 @@
       "post": {
         "summary": "Вход",
         "deprecated": false,
-        "description": "",
+        "description": "Проверяет учётные данные и создаёт новую сессию. Возвращает пользователя и пару токенов в JSON. Cookie не устанавливает.",
         "operationId": "loginUser",
         "tags": [
           "auth"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -131,23 +159,23 @@
         },
         "responses": {
           "200": {
-            "description": "Вход выполнен, выданы токены",
+            "description": "Пользователь и новая пара токенов",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "user": {
-                      "$ref": "#/components/schemas/User"
-                    },
-                    "tokens": {
-                      "$ref": "#/components/schemas/TokenPair"
-                    }
+                  "$ref": "#/components/schemas/AuthResponse"
+                },
+                "example": {
+                  "user": {
+                    "id": 1,
+                    "login": "example"
                   },
-                  "required": [
-                    "user",
-                    "tokens"
-                  ]
+                  "tokens": {
+                    "access_token": "<access-token>",
+                    "access_expires_in": 900,
+                    "refresh_token": "<refresh-token>",
+                    "refresh_expires_in": 2592000
+                  }
                 }
               }
             },
@@ -176,11 +204,15 @@
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -205,52 +237,95 @@
       "post": {
         "summary": "Обновление токенов",
         "deprecated": false,
-        "description": "",
+        "description": "Обменивает действующий refresh-токен на новую пару. После успешного обновления старый refresh-токен недействителен. Bearer не требуется. Cookie не читает и не устанавливает.",
         "operationId": "refreshToken",
         "tags": [
           "auth"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              },
+              "example": {
+                "refresh_token": "<refresh-token>"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
-            "description": "Выданы новые токены, старый refresh-токен погашен",
+            "description": "Новая пара токенов",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TokenPair"
+                },
+                "example": {
+                  "access_token": "<access-token>",
+                  "access_expires_in": 900,
+                  "refresh_token": "<refresh-token>",
+                  "refresh_expires_in": 2592000
                 }
               }
             },
             "headers": {}
           },
           "400": {
-            "description": "Невалидный запрос",
+            "description": "Тело отсутствует, имеет неверную структуру или refresh_token пуст.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "invalid request body"
                 }
               }
             },
             "headers": {}
           },
           "401": {
-            "description": "Нет авторизации",
+            "description": "Refresh-токен неизвестен, истёк или уже использован.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "unauthorized",
+                  "message": "authentication required"
                 }
               }
             },
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -268,70 +343,89 @@
             "headers": {}
           }
         },
-        "security": [],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "refresh_token": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "refresh_token"
-                ]
-              }
-            }
-          },
-          "required": true
-        }
+        "security": []
       }
     },
     "/auth/logout": {
       "post": {
         "summary": "Выход",
         "deprecated": false,
-        "description": "",
+        "description": "Требует действующий access-токен в Authorization Bearer. Отзывает refresh-сессию, указанную в JSON-теле. Возвращает 204 без тела. Cookie не читает и не устанавливает.",
         "operationId": "logoutUser",
         "tags": [
           "auth"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenRequest"
+              },
+              "example": {
+                "refresh_token": "<refresh-token>"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "204": {
-            "description": "Сессия удалена, refresh-токен погашен",
+            "description": "Refresh-сессия отозвана. Ответ без тела.",
             "headers": {}
           },
           "400": {
-            "description": "Невалидный запрос",
+            "description": "Тело отсутствует, имеет неверную структуру или refresh_token пуст.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "validation_error",
+                  "message": "invalid request body"
                 }
               }
             },
             "headers": {}
           },
           "401": {
-            "description": "Нет авторизации",
+            "description": "Access-токен отсутствует или недействителен, либо refresh-токен недействителен.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "unauthorized",
+                  "message": "authentication required"
                 }
               }
             },
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -353,25 +447,7 @@
           {
             "bearerAuth": []
           }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "refresh_token": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "refresh_token"
-                ]
-              }
-            }
-          },
-          "required": true
-        }
+        ]
       }
     },
     "/users/me": {
@@ -383,7 +459,19 @@
         "tags": [
           "users"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Текущий пользователь",
@@ -408,11 +496,15 @@
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -452,11 +544,21 @@
             "in": "path",
             "description": "ID блокнота",
             "required": true,
-            "example": "",
             "schema": {
               "type": "integer",
               "format": "int64",
               "minimum": 1
+            }
+          },
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
             }
           }
         ],
@@ -505,11 +607,15 @@
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -556,6 +662,121 @@
         ]
       }
     },
+    "/notebooks/{id}/cells/{index}": {
+      "delete": {
+        "summary": "Удаление блока",
+        "deprecated": false,
+        "description": "",
+        "operationId": "deleteCell",
+        "tags": [
+          "notebooks"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID блокнота",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "index",
+            "in": "path",
+            "description": "Порядковый номер блока в блокноте, с нуля",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Блок удалён",
+            "headers": {}
+          },
+          "400": {
+            "description": "Невалидный запрос",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "description": "Нет авторизации",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "403": {
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "404": {
+            "description": "Не найдено",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
+          },
+          "500": {
+            "description": "Внутренняя ошибка",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {}
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/notebooks/{id}": {
       "get": {
         "summary": "Блокнот",
@@ -571,11 +792,21 @@
             "in": "path",
             "description": "",
             "required": true,
-            "example": "",
             "schema": {
               "type": "integer",
               "format": "int64",
               "minimum": 1
+            }
+          },
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
             }
           }
         ],
@@ -614,11 +845,15 @@
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -663,7 +898,19 @@
         "tags": [
           "notebooks"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Блокноты текущего пользователя",
@@ -691,11 +938,15 @@
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -727,7 +978,19 @@
         "tags": [
           "notebooks"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "X-BFF-Key",
+            "in": "header",
+            "description": "Общий секрет BFF и Go API. Обязателен при включённой проверке S2S; в переходном режиме одной VPS может отсутствовать. Проверяется до Bearer и валидации запроса. Отсутствующий или неверный ключ при включённой проверке: 403 s2s_forbidden. При ротации допускаются текущий и предыдущий ключи; значения не журналируются.",
+            "required": false,
+            "example": "<bff-key>",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -774,113 +1037,15 @@
             "headers": {}
           },
           "403": {
-            "description": "S2S-ключ не принят",
+            "description": "При включённой проверке S2S заголовок X-BFF-Key отсутствует или неверен. Проверяется до Bearer и валидации запроса. BFF не должен выполнять refresh или удалять пользовательскую сессию.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "headers": {}
-          },
-          "500": {
-            "description": "Внутренняя ошибка",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "headers": {}
-          }
-        },
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ]
-      }
-    },
-    "/notebooks/{id}/cells/{index}": {
-      "delete": {
-        "summary": "Удаление блока",
-        "deprecated": false,
-        "description": "",
-        "operationId": "deleteCell",
-        "tags": [
-          "notebooks"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "ID блокнота",
-            "required": true,
-            "example": "",
-            "schema": {
-              "type": "integer",
-              "format": "int64",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "index",
-            "in": "path",
-            "description": "Порядковый номер блока в блокноте, с нуля",
-            "required": true,
-            "example": "",
-            "schema": {
-              "type": "integer",
-              "minimum": 0
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Блок удалён",
-            "headers": {}
-          },
-          "400": {
-            "description": "Невалидный запрос",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "headers": {}
-          },
-          "401": {
-            "description": "Нет авторизации",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "headers": {}
-          },
-          "403": {
-            "description": "S2S-ключ не принят",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            },
-            "headers": {}
-          },
-          "404": {
-            "description": "Не найдено",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
                 }
               }
             },
@@ -1012,32 +1177,6 @@
           "password"
         ]
       },
-      "Error": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "enum": [
-              "validation_error",
-              "invalid_credentials",
-              "login_taken",
-              "unauthorized",
-              "csrf_invalid",
-              "s2s_forbidden",
-              "not_found",
-              "not_implemented",
-              "internal"
-            ]
-          },
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "code",
-          "message"
-        ]
-      },
       "Cell": {
         "type": "object",
         "description": "Блок блокнота",
@@ -1103,22 +1242,62 @@
           "name"
         ]
       },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "validation_error",
+              "invalid_credentials",
+              "login_taken",
+              "unauthorized",
+              "not_found",
+              "not_implemented",
+              "internal",
+              "csrf_invalid",
+              "s2s_forbidden"
+            ]
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
       "TokenPair": {
         "type": "object",
         "properties": {
           "access_token": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "description": "Access-токен для Authorization Bearer"
           },
           "access_expires_in": {
             "type": "integer",
-            "description": "Срок жизни access-токена, секунды"
+            "minimum": 1,
+            "description": "Срок действия выданного access-токена в секундах",
+            "format": "int64",
+            "examples": [
+              900
+            ]
           },
           "refresh_token": {
-            "type": "string"
+            "type": "string",
+            "description": "Refresh-токен; при обновлении заменяется новым",
+            "minLength": 1
           },
           "refresh_expires_in": {
             "type": "integer",
-            "description": "Срок жизни refresh-токена, секунды"
+            "description": "Срок действия выданного refresh-токена в секундах",
+            "minimum": 1,
+            "format": "int64",
+            "examples": [
+              2592000
+            ]
           }
         },
         "required": [
@@ -1126,6 +1305,34 @@
           "access_expires_in",
           "refresh_token",
           "refresh_expires_in"
+        ]
+      },
+      "AuthResponse": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "$ref": "#/components/schemas/User"
+          },
+          "tokens": {
+            "$ref": "#/components/schemas/TokenPair"
+          }
+        },
+        "required": [
+          "user",
+          "tokens"
+        ]
+      },
+      "RefreshTokenRequest": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Refresh-токен текущей сессии."
+          }
+        },
+        "required": [
+          "refresh_token"
         ]
       }
     },
@@ -1141,16 +1348,6 @@
         }
       },
       "Unauthorized": {
-        "description": "",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "Forbidden": {
         "description": "",
         "content": {
           "application/json": {
@@ -1189,13 +1386,38 @@
             }
           }
         }
+      },
+      "Forbidden": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "S2SForbidden": {
+                "summary": "S2SForbidden",
+                "value": {
+                  "code": "s2s_forbidden",
+                  "message": "service access forbidden"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "bearerFormat": "JWT",
+        "description": "Access-токен пользователя, передаваемый BFF."
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "access_token"
       }
     }
   },
