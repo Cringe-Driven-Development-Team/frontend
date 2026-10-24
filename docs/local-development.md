@@ -100,7 +100,9 @@ BFF — с пользователем в `<script id="bootstrap">` и cookie с�
 - Vite (`apps/client`) — HTTPS, слушает `127.0.0.1:5173` (с `localhost` на Windows он недоступен);
   открывать `https://localhost:5173` — этот origin BFF ждёт в `APP_ORIGIN`. Сертификат выпускает
   [`vite-plugin-mkcert`](https://github.com/liuweiGL/vite-plugin-mkcert). `/api/trpc` проксируется в
-  BFF; запрос страницы (`Accept: text/html`) плагин `bff-html` из `vite.config.ts` отдаёт ответом BFF
+  BFF; запрос страницы (`Accept: text/html`) плагин
+  [`@cdd-team/vite-plugin-bff-html`](https://github.com/Cringe-Driven-Development-Team/frontend-packages/tree/main/packages/vite-plugin-bff-html)
+  отдаёт ответом BFF
   с его `Set-Cookie`, добавив клиент HMR (`transformIndexHtml`). Адрес BFF — `BFF_URL`, по умолчанию
   `http://127.0.0.1:3000`.
 - BFF (`apps/bff`, `src/dev.ts`) — шаблон `apps/client/index.html`,

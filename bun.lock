@@ -38,6 +38,7 @@
         "@trpc/server": "^11.19.0",
       },
       "devDependencies": {
+        "@cdd-team/vite-plugin-bff-html": "^0.2.0",
         "@cdd/bff": "workspace:*",
         "typescript": "^7.0.2",
         "vite": "^8.3.5",
@@ -91,6 +92,8 @@
     "@cdd-team/oxlint-plugin-jsdoc": ["@cdd-team/oxlint-plugin-jsdoc@0.1.2", "", { "peerDependencies": { "oxlint": ">=1.86.0" } }, "sha512-JeDHB9I0QrA7ueL8tvEEa/nw0q1+yacnOdw5Cn8iKaTFqhDhbqAaaGhYxQxUYWTPnoLcZpPs7yy1vJ8IYDPfig=="],
 
     "@cdd-team/react": ["@cdd-team/react@1.2.1", "", {}, "sha512-YUzDEmHAYR8CtW8xg6vT3EjOq7aX3z8g4aRECYagzr2EhFSXO/HH7YJP5NvzJO/97tgyOFSpR4nS0FFw+59pxA=="],
+
+    "@cdd-team/vite-plugin-bff-html": ["@cdd-team/vite-plugin-bff-html@0.2.0", "", { "peerDependencies": { "vite": "^8.3.3" } }, "sha512-qvdibIWTPZfj/jKP8Gfnjt48m12UCkalroZAoySvgGNuBQVmUwLy4biUwYLLuuwLPzCOGbxm6kIjf3acsdwgNQ=="],
 
     "@cdd-team/zustand": ["@cdd-team/zustand@1.0.1", "", { "peerDependencies": { "@cdd-team/react": "^1.2.1" }, "optionalPeers": ["@cdd-team/react"] }, "sha512-KaKI9ZkjVyEuWbayK5/Glx3VVyk770+X+D+iyLo6CcIwIUSHq9fhRq17QomPUHo7sy9x3VAiGv46KsX0D89HAg=="],
 

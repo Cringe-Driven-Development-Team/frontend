@@ -2,7 +2,8 @@ import { execFileSync, execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
-import { defineConfig, loadEnv, type Plugin } from 'vite';
+import { bffHtml } from '@cdd-team/vite-plugin-bff-html';
+import { defineConfig, loadEnv } from 'vite';
 import mkcert from 'vite-plugin-mkcert';
 
 /**
@@ -63,47 +64,6 @@ function hideForeignMkcert() {
 // .env лежит в корне монорепы: его же читают скрипты apidog и release
 const envDir = '../..';
 
-// заголовки браузера, нужные BFF для HTML: сессия, тип ответа и признаки CSRF
-const HTML_REQUEST_HEADERS = ['accept', 'cookie', 'sec-fetch-site', 'user-agent', 'x-request-id'];
-
-/**
- * HTML страниц в dev — от BFF: пользователь в bootstrap и `Set-Cookie` сессии, как на проде. Vite
- * затем добавляет в него свой клиент HMR и прочие преобразования `index.html`.
- * @param bffUrl адрес локального BFF
- * @returns плагин dev-сервера
- */
-function bffHtml(bffUrl: string): Plugin {
-    return {
-        name: 'bff-html',
-        apply: 'serve',
-        configureServer(server) {
-            server.middlewares.use((req, res, next) => {
-                const page = req.method === 'GET' || req.method === 'HEAD';
-                if (!page || !req.headers.accept?.includes('text/html')) return next();
-                const url = req.originalUrl ?? '/';
-                void (async () => {
-                    const headers = new Headers();
-                    for (const name of HTML_REQUEST_HEADERS) {
-                        const value = req.headers[name];
-                        if (typeof value === 'string') headers.set(name, value);
-                    }
-                    const answer = await fetch(bffUrl + url, { headers });
-                    const html = await server.transformIndexHtml(url, await answer.text());
-                    res.statusCode = answer.status;
-                    for (const [name, value] of answer.headers) {
-                        if (!['content-length', 'content-encoding', 'set-cookie'].includes(name)) {
-                            res.setHeader(name, value);
-                        }
-                    }
-                    const cookies = answer.headers.getSetCookie();
-                    if (cookies.length > 0) res.setHeader('Set-Cookie', cookies);
-                    res.end(req.method === 'HEAD' ? undefined : html);
-                })().catch(next);
-            });
-        },
-    };
-}
-
 export default defineConfig(({ command, mode }) => {
     if (command === 'serve') hideForeignMkcert();
     // RELEASE_SHA и CDN_URL задаёт CI при сборке релиза; без них (локально и в PR) base остаётся '/'
@@ -131,6 +91,8 @@ export default defineConfig(({ command, mode }) => {
         plugins: [
             // локальный HTTPS: cookie сессии BFF — Secure; сертификат выпускает и доверяет mkcert
             mkcert({ hosts: ['localhost', '127.0.0.1'] }),
+            // HTML страниц — от BFF (пользователь в bootstrap и Set-Cookie сессии, как на проде),
+            // Vite добавляет в него клиент HMR; /api/trpc из server.proxy плагин не трогает
             bffHtml(bffUrl),
             {
                 // var() не работает внутри url() и в @font-face: адрес static подставляется

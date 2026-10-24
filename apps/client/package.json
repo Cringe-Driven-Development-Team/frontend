@@ -16,6 +16,7 @@
         "@trpc/server": "^11.19.0"
     },
     "devDependencies": {
+        "@cdd-team/vite-plugin-bff-html": "^0.2.0",
         "@cdd/bff": "workspace:*",
         "typescript": "^7.0.2",
         "vite": "^8.3.5",
