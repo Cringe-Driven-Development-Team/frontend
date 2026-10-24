@@ -1,3 +1,4 @@
+import { PAGES } from '@cdd/bff/pages';
 import { createRoute, redirect } from '@modules/router';
 import { AuthPage } from '@pages/AuthPage/AuthPage';
 import { useSessionStore } from '@stores/session';
@@ -19,11 +20,11 @@ export const guestRoute = createRoute({
 /** Вход: `/login`. */
 export const loginRoute = createRoute({
     getParentRoute: () => guestRoute,
-    path: 'login',
+    path: PAGES.login,
 });
 
 /** Регистрация: `/register`. */
 export const registerRoute = createRoute({
     getParentRoute: () => guestRoute,
-    path: 'register',
+    path: PAGES.register,
 });

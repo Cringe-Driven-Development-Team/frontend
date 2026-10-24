@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 
 import { accessLog } from './log.ts';
+import { isPage } from './pages.ts';
 
 /** Что приложению нужно от запуска: шаблон, публичные файлы и обработчики, которые есть. */
 export type AppDeps = {
@@ -15,7 +16,8 @@ const notFound = (): Response =>
 
 /**
  * Приложение Hono. Порядок маршрутов: `/health`, tRPC, остальные `/api` (404, в Go не уходят),
- * публичные файлы, HTML для GET/HEAD с `Accept: text/html`, остальное — 404. HEAD сюда приходит как
+ * публичные файлы, HTML для GET/HEAD с `Accept: text/html` (на неизвестный адрес — со статусом 404),
+ * остальное — 404. HEAD сюда приходит как
  * GET (`index.ts`), тело отбрасывает Bun.
  * @param deps шаблон, публичные файлы и обработчики tRPC и HTML
  * @returns приложение для `Bun.serve`
@@ -38,7 +40,8 @@ export function createApp(deps: AppDeps): Hono {
     app.get('*', (c) => {
         if (!c.req.header('Accept')?.includes('text/html')) return notFound();
         if (deps.html) return deps.html(c.req.raw);
-        return c.html(deps.template, 200, { 'Cache-Control': 'private, no-store' });
+        const status = isPage(c.req.path) ? 200 : 404;
+        return c.html(deps.template, status, { 'Cache-Control': 'private, no-store' });
     });
 
     app.notFound(notFound);

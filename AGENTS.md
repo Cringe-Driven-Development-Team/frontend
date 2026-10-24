@@ -101,7 +101,9 @@ vite берёт их оттуда.
 - `layouts/RootLayout.tsx` — `<main>` с `<Outlet />`, тост и снекбар. Второй `<main>` на страницах не нужен.
 - `modules/router/` — командный роутер (API как у TanStack Router). Импорт только через
   `@modules/router`, не из внутренних файлов.
-- `pages/` — страницы. `routes/` — маршруты и дерево `routeTree.ts`.
+- `pages/` — страницы. `routes/` — маршруты и дерево `routeTree.ts`. `path` маршрута берётся из
+  `PAGES` (`@cdd/bff/pages`): по этому списку BFF отвечает 404 на неизвестный адрес, поэтому новая
+  страница добавляется сначала в `PAGES`.
 - `stores/` — сторы на `@cdd-team/zustand`: `session`, `toast`, `snackbar`.
 - `styles/tokens.css` — переменные с именами как в макете (`color/bg` → `--color-bg`).
   Глобальные стили — только `styles/global.css` и `styles/tokens.css`.

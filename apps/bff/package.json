@@ -3,7 +3,8 @@
     "private": true,
     "type": "module",
     "exports": {
-        ".": "./src/types.ts"
+        ".": "./src/types.ts",
+        "./pages": "./src/pages.ts"
     },
     "scripts": {
         "build": "bun build src/index.ts --target bun --outfile dist/bff.js",
