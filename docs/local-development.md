@@ -1,7 +1,8 @@
 # Локальная разработка фронтенда
 
-Нужен Bun версии не ниже 1.4.0. Команды запускаются из корня репозитория. `bun run dev` —
-клиент и BFF сразу ([«Клиент через BFF»](#клиент-через-bff)).
+Нужны Bun не ниже 1.4.0 и Node.js не ниже 22.19.0: Vite и `vite-plugin-mkcert` работают в Node.
+Команды запускаются из корня репозитория. `bun run dev` — клиент и BFF сразу
+([«Клиент через BFF»](#клиент-через-bff), там же первый запуск на macOS, Windows и WSL).
 
 ```bash
 bun install
@@ -28,6 +29,7 @@ bun run build
 | Команда                                             | Что делает                                                       |
 | --------------------------------------------------- | ---------------------------------------------------------------- |
 | `bun run dev`                                       | клиент и BFF на `https://localhost:5173` — «Клиент через BFF»    |
+| `bun run dev:trust-windows`                         | только WSL: разово доверить CA mkcert в Windows для Chrome       |
 | `bun run build`                                     | сборка всех пакетов, клиент — в `apps/client/dist`               |
 | `bun run check`                                     | `oxfmt --check`, `oxlint` и `tsc` во всех пакетах и в `scripts/` |
 | `bun run lint`, `bun run typecheck`, `bun run test` | по отдельности, тоже во всех пакетах                             |
@@ -87,9 +89,11 @@ curl localhost:3000/health
 
 `bun run dev` из корня запускает `turbo watch dev`, а он — клиент и BFF на одном origin
 `https://localhost:5173`: Vite собирает и обновляет модули (HMR), HTML страниц и `/api/trpc` отдаёт
-BFF — с пользователем в `<script id="bootstrap">` и cookie сессии. Без `.env` и ручных шагов:
+BFF — с пользователем в `<script id="bootstrap">` и cookie сессии. `.env` не нужен, разовая настройка
+сертификата — в «Первом запуске» ниже:
 
-- Vite (`apps/client`) — HTTPS на `localhost:5173`, сертификат выпускает
+- Vite (`apps/client`) — HTTPS, слушает `127.0.0.1:5173` (с `localhost` на Windows он недоступен);
+  открывать `https://localhost:5173` — этот origin BFF ждёт в `APP_ORIGIN`. Сертификат выпускает
   [`vite-plugin-mkcert`](https://github.com/liuweiGL/vite-plugin-mkcert). `/api/trpc` проксируется в
   BFF; запрос страницы (`Accept: text/html`) плагин `bff-html` из `vite.config.ts` отдаёт ответом BFF
   с его `Set-Cookie`, добавив клиент HMR (`transformIndexHtml`). Адрес BFF — `BFF_URL`, по умолчанию
@@ -104,8 +108,22 @@ BFF — с пользователем в `<script id="bootstrap">` и cookie с�
 
 Cookie сессии — `Secure` и с префиксом `__Host-`: нужен HTTPS, ради dev атрибуты не ослабляются.
 При первом запуске плагин скачивает mkcert в `~/.vite-plugin-mkcert`, создаёт локальный CA и
-добавляет его в доверенные — macOS один раз спросит пароль. Дальше сертификат берётся из того же
-каталога.
+добавляет его в доверенные системы, где запущен Vite. Дальше сертификат берётся из того же каталога.
+Если в `PATH` первым находится другой `mkcert` — например, npm-пакет с тем же именем, — который не
+отвечает на `mkcert -CAROOT`, `vite.config.ts` убирает его каталог из `PATH` dev-сервера, и плагин
+скачивает официальный бинарник.
+
+### Первый запуск
+
+После разовой настройки `bun run dev` поднимает Vite и BFF вместе, без других шагов.
+
+- **macOS.** `bun run dev`, при первом запуске Keychain спросит пароль, чтобы доверять CA.
+- **Windows.** `bun run dev`, при первом запуске Windows спросит подтверждение установки CA.
+- **WSL + Chrome в Windows.** `bun run dev` ставит CA в доверенные Ubuntu, а Chrome смотрит в
+  хранилище Windows. После первого `bun run dev` один раз выполнить `bun run dev:trust-windows`:
+  скрипт проверяет публичный `~/.vite-plugin-mkcert/rootCA.pem` в `CurrentUser\Root` Windows и, если
+  его там нет, после подтверждения добавляет; Windows тоже покажет окно подтверждения. Повторный
+  запуск ничего не меняет. Ключ CA (`rootCA-key.pem`) в Windows не копируется.
 
 Cloud Mock отвечает фиксированно (раздел «BFF» выше): `denis` / `password123` — вход,
 `wrong-password` — неверный пароль. Против своего Go — `GO_API_URL=http://127.0.0.1:8080/api/v1`

@@ -12,7 +12,7 @@ Frontend проекта «Colab» (Cellestial) команды «Cringe Driven De
 
 ## Быстрый старт
 
-Нужен Bun версии не ниже 1.4.0. Команды выполняются из корня репозитория:
+Нужны Bun не ниже 1.4.0 и Node.js не ниже 22.19.0. Команды выполняются из корня репозитория:
 
 ```bash
 bun install
@@ -21,8 +21,8 @@ bun run dev
 
 `bun run dev` запускает клиент (Vite) и BFF на одном origin `https://localhost:5173`: HTML страниц
 и `/api/trpc` отдаёт BFF, Go для него — Cloud Mock Apidog. При первом запуске mkcert один раз
-спросит пароль, чтобы доверять локальному сертификату —
-[«Клиент через BFF»](docs/local-development.md#клиент-через-bff).
+попросит подтвердить доверие локальному сертификату; в WSL с Chrome в Windows после этого нужен
+`bun run dev:trust-windows` — [«Первый запуск»](docs/local-development.md#первый-запуск).
 Перед PR выполните `bun run check` и `bun run build`.
 Подробности — в [локальной разработке](docs/local-development.md).
 

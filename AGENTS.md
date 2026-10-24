@@ -72,6 +72,7 @@ zod-схемы — `packages/schemas` ([README](README.md#монорепа)). К
 
 ```bash
 bun run dev        # клиент (Vite, HTTPS) и BFF: HTML и /api/trpc — через BFF
+bun run dev:trust-windows  # только WSL: разово доверить CA mkcert в Windows
 bun run check      # oxfmt --check, oxlint, tsc во всех пакетах
 bun run build      # сборка, клиент — в apps/client/dist/
 bun run orval      # spec/openapi.json → клиент BFF к Go и zod-схемы (orval.config.ts)
