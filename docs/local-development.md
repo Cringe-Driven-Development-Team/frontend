@@ -87,7 +87,8 @@ curl localhost:3000/health
 Проверка Cloud Mock — `GO_API_URL=<адрес Cloud Mock> bun run mock:check` (`apps/bff/test/mock-check.ts`):
 статусы mock expectations и тела ответов по zod-схемам. Сценарии, которым нужно
 состояние Go (одновременный refresh, повтор после 401, сбои и таймауты Go), проверяют тесты
-`bun run test`: `apps/bff/test/` — весь обработчик BFF против Go с управляемыми ответами
+`bun run test`: `apps/client/test/` — смена сессии в транспорте клиента на настоящем клиенте tRPC
+с управляемым `fetch`; `apps/bff/test/` — весь обработчик BFF против Go с управляемыми ответами
 (`test/fake-go.ts`), без сервера и сети.
 
 ## Клиент через BFF

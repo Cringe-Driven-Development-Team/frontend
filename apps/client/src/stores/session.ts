@@ -97,14 +97,15 @@ export async function register(credentials: Credentials): Promise<AuthResult> {
 
 /**
  * Выход. Сначала отвечают уже отправленные запросы сессии, новые не стартуют (`switchSession`).
- * BFF отвечает успехом и без сессии; сбой сети — не выход.
- * @returns true, если BFF подтвердил выход
+ * BFF отвечает успехом и без сессии; сбой сети — не выход, если только сессия не закончилась, пока
+ * ждали отправленные запросы (тогда `switchSession` уже перевёл в гостя).
+ * @returns true, если пользователь больше не вошёл
  */
 export async function logout(): Promise<boolean> {
     try {
         await switchSession(() => trpc.auth.logout.mutate());
     } catch {
-        return false;
+        return useSessionStore.getState().status === 'guest';
     }
     useSessionStore.setState(GUEST);
     return true;

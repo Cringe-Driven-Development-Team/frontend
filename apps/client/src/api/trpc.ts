@@ -21,8 +21,11 @@ export type RpcError = TRPCClientError<AppRouter>;
 // Защищённые процедуры — все, кроме auth.*: им нужна сессия, их результаты — данные пользователя
 const isProtected = (path: string): boolean => !path.startsWith('auth.');
 
-// Идёт выход: новые защищённые запросы не стартуют
+// Идёт смена сессии: новые защищённые запросы не стартуют
 let closing = false;
+// Во время смены сессии защищённый запрос получил UNAUTHORIZED: BFF уже мог удалить cookie. Если
+// смена не удастся, сессия всё равно потеряна
+let lostWhileClosing = false;
 // Номер сессии: меняется при входе, выходе и её потере. Ответ на запрос прежней сессии в интерфейс
 // не попадает
 let generation = 0;
@@ -63,9 +66,12 @@ const sessionLink: TRPCLink<AppRouter> =
                 error(error) {
                     finish();
                     if (generation !== started) return observer.error(sessionChanged());
-                    if (isUnauthorized(error) && !closing) {
-                        generation++;
-                        sessionLost();
+                    if (isUnauthorized(error)) {
+                        if (closing) lostWhileClosing = true;
+                        else {
+                            generation++;
+                            sessionLost();
+                        }
                     }
                     observer.error(error);
                 },
@@ -118,18 +124,31 @@ export function onSessionLost(handler: () => void): void {
  * Смена сессии — вход, регистрация или выход. Новые защищённые запросы не стартуют, `call`
  * отправляется после того, как ответили уже отправленные: их `Set-Cookie` браузер применяет раньше,
  * чем `call` поставит или удалит cookie, и прежняя сессия её не перезапишет. После успеха ответы
- * прежней сессии в интерфейс не попадают. Ошибка `call` — сессия остаётся прежней.
+ * прежней сессии в интерфейс не попадают. Ошибка `call` — сессия остаётся прежней; но если пока
+ * ждали отправленные, один из них получил `UNAUTHORIZED`, сессии уже нет — срабатывает
+ * {@link onSessionLost}, ошибка `call` всё равно пробрасывается.
  * @param call вызов `auth.login`, `auth.register` или `auth.logout`
  * @returns ответ `call`
  */
 export async function switchSession<T>(call: () => Promise<T>): Promise<T> {
     closing = true;
+    lostWhileClosing = false;
     try {
         while (inflight.size > 0) await Promise.allSettled(inflight);
-        const result = await call();
+        let result: T;
+        try {
+            result = await call();
+        } catch (error) {
+            if (lostWhileClosing) {
+                generation++;
+                sessionLost();
+            }
+            throw error;
+        }
         generation++;
         return result;
     } finally {
         closing = false;
+        lostWhileClosing = false;
     }
 }

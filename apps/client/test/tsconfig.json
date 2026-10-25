@@ -1,0 +1,8 @@
+{
+    // тесты выполняет bun: его типы — только здесь, в src остаются типы браузера и Vite
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "types": ["bun"]
+    },
+    "include": ["."]
+}
