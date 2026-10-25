@@ -1,6 +1,7 @@
+import { PAGES } from '@cdd/bff/pages';
 import { createRoute, redirect } from '@modules/router';
 import { AuthPage } from '@pages/AuthPage/AuthPage';
-import { restoreSession, useSessionStore } from '@stores/session';
+import { useSessionStore } from '@stores/session';
 import { rootRoute } from './root';
 
 /**
@@ -10,8 +11,7 @@ import { rootRoute } from './root';
 export const guestRoute = createRoute({
     getParentRoute: () => rootRoute,
     id: '_guest',
-    beforeLoad: async () => {
-        await restoreSession();
+    beforeLoad: () => {
         if (useSessionStore.getState().status === 'authed') throw redirect({ to: '/' });
     },
     component: AuthPage,
@@ -20,11 +20,11 @@ export const guestRoute = createRoute({
 /** Вход: `/login`. */
 export const loginRoute = createRoute({
     getParentRoute: () => guestRoute,
-    path: 'login',
+    path: PAGES.login,
 });
 
 /** Регистрация: `/register`. */
 export const registerRoute = createRoute({
     getParentRoute: () => guestRoute,
-    path: 'register',
+    path: PAGES.register,
 });

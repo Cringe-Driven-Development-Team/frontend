@@ -8,7 +8,8 @@
     "type": "module",
     "scripts": {
         "prepare": "lefthook install",
-        "dev": "turbo run dev",
+        "dev": "turbo watch dev",
+        "dev:trust-windows": "bun scripts/dev/trust-windows.ts",
         "build": "turbo run build",
         "image": "turbo run build && docker build -f apps/bff/Dockerfile -t cdd-bff:local .",
         "lint": "turbo run lint lint:scripts",
@@ -23,8 +24,7 @@
         "release": "bun scripts/release/index.ts",
         "apidog": "bun scripts/openapi/apidog.ts",
         "orval": "orval --config orval.config.ts",
-        "generate": "bun run --filter @cdd/client generate",
-        "sync": "bun run apidog && bun run orval && bun run generate"
+        "sync": "bun run apidog && bun run orval"
     },
     "devDependencies": {
         "@aws-sdk/client-s3": "^3.1146.0",
@@ -38,7 +38,8 @@
         "typescript": "^7.0.2"
     },
     "engines": {
-        "bun": ">=1.4.0"
+        "bun": ">=1.4.0",
+        "node": ">=22.19.0"
     },
     "packageManager": "bun@1.4.4"
 }

@@ -1,4 +1,4 @@
-import type { NotebookSummary } from '@api/client';
+import type { NotebookSummary } from '@api/trpc';
 import { clsx } from '@modules/clsx';
 import { Link } from '@modules/router';
 import { timeAgo } from '@utils/date';

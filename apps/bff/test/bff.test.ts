@@ -56,10 +56,10 @@ function rpc(
     );
 }
 
-function page(sessionCookie?: string) {
+function page(sessionCookie?: string, path = '/notebooks/1') {
     const headers: Record<string, string> = { Accept: 'text/html' };
     if (sessionCookie) headers.Cookie = `${SESSION_COOKIE}=${sessionCookie}`;
-    return bff(new Request(`${ORIGIN}/notebooks/1`, { headers }));
+    return bff(new Request(`${ORIGIN}${path}`, { headers }));
 }
 
 const sessionSetCookie = (res: Response): string | undefined =>
@@ -258,6 +258,33 @@ describe('HTML', () => {
         expect(res.headers.get('Cache-Control')).toBe('private, no-store');
         expect(await bootstrap(res)).toEqual({ user: null });
         expect(go?.calls).toHaveLength(0);
+    });
+
+    test('страницы клиента — 200, как их сопоставляет роутер клиента', async () => {
+        useGo({});
+        for (const path of ['/', '/login', '/register/', '/Notebooks/42', '/notebooks/a%20b']) {
+            expect((await page(undefined, path)).status, path).toBe(200);
+        }
+    });
+
+    test('неизвестный адрес — то же приложение с bootstrap и статусом 404', async () => {
+        useGo({ 'GET /users/me': () => Response.json(USER) });
+        const session = await cookie(goTokens().issue());
+        for (const path of ['/nope', '/notebooks', '/notebooks/1/cells', '/login/extra']) {
+            const res = await page(session, path);
+            expect(res.status, path).toBe(404);
+            expect(res.headers.get('Content-Type')).toBe('text/html; charset=UTF-8');
+            expect(res.headers.get('Cache-Control')).toBe('private, no-store');
+            expect(await bootstrap(res)).toEqual({ user: USER });
+        }
+    });
+
+    test('HEAD неизвестного адреса — 404 без тела', async () => {
+        useGo({});
+        const res = await bff(
+            new Request(`${ORIGIN}/nope`, { method: 'HEAD', headers: { Accept: 'text/html' } }),
+        );
+        expect(res.status).toBe(404);
     });
 
     test('пользователь — только DTO из users/me', async () => {

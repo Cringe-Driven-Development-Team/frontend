@@ -18,5 +18,5 @@
         "noUncheckedIndexedAccess": true,
         "noImplicitOverride": true
     },
-    "include": ["release", "openapi", "hooks"]
+    "include": ["release", "openapi", "hooks", "dev"]
 }

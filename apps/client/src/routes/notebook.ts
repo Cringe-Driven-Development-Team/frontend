@@ -1,3 +1,4 @@
+import { PAGES } from '@cdd/bff/pages';
 import { createRoute } from '@modules/router';
 import { NotebookPage } from '@pages/NotebookPage/NotebookPage';
 import { authRoute } from './auth';
@@ -5,6 +6,6 @@ import { authRoute } from './auth';
 /** Страница блокнота: `/notebooks/$notebookId`. */
 export const notebookRoute = createRoute({
     getParentRoute: () => authRoute,
-    path: 'notebooks/$notebookId',
+    path: PAGES.notebook,
     component: NotebookPage,
 });

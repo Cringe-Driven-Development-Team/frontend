@@ -1,6 +1,7 @@
 import serialize from 'serialize-javascript';
 
 import { createGo } from './go/api.ts';
+import { isPage } from './pages.ts';
 import { SessionEnded } from './session/refresh.ts';
 import { createSession } from './session/session.ts';
 import type { BootstrapData } from './types.ts';
@@ -22,9 +23,15 @@ export const UNAVAILABLE_HTML =
  * @param template проверенный HTML-шаблон клиента
  * @param data пользователь или `null`
  * @param headers заголовки ответа, уже с `Set-Cookie` сессии
- * @returns ответ 200 с `Cache-Control: private, no-store`
+ * @param status 200 для страницы клиента, 404 для неизвестного адреса
+ * @returns ответ с `Cache-Control: private, no-store`
  */
-export function renderBootstrap(template: string, data: BootstrapData, headers: Headers): Response {
+export function renderBootstrap(
+    template: string,
+    data: BootstrapData,
+    headers: Headers,
+    status = 200,
+): Response {
     const json = serialize(data, { isJSON: true });
     for (const [name, value] of Object.entries(HTML_HEADERS)) headers.set(name, value);
     return new HTMLRewriter()
@@ -33,14 +40,15 @@ export function renderBootstrap(template: string, data: BootstrapData, headers: 
                 el.setInnerContent(json, { html: true });
             },
         })
-        .transform(new Response(template, { status: 200, headers }));
+        .transform(new Response(template, { status, headers }));
 }
 
 /**
  * Обработчик HTML клиента. Без сессии — гость без вызова Go. С сессией — пользователь из Go
  * `GET /users/me` (общий слой сессии: refresh, повтор после 401). Сессия закончилась — гость и
  * cookie удаляется. Сбой Go — 503 без приложения, сессия не удаляется; новая cookie после удачного
- * refresh сохраняется и в 503.
+ * refresh сохраняется и в 503. Адрес, которого нет среди страниц клиента, — то же приложение со
+ * статусом 404: страницу «Не найдено» рисует клиент.
  * @param template проверенный HTML-шаблон клиента
  * @returns обработчик GET-запросов страниц
  */
@@ -64,6 +72,7 @@ export function createHtmlHandler(template: string): (req: Request) => Promise<R
             }
         }
         session.setCookies(headers);
-        return renderBootstrap(template, { user }, headers);
+        const status = isPage(new URL(req.url).pathname) ? 200 : 404;
+        return renderBootstrap(template, { user }, headers, status);
     };
 }

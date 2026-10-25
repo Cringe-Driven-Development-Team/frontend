@@ -1,8 +1,8 @@
 # Локальная разработка фронтенда
 
-Нужен Bun версии не ниже 1.4.0. Команды запускаются из корня репозитория.
-Для проксирования `/api/v1` локальный бэкенд по умолчанию ожидается на
-`http://127.0.0.1:8080`; адрес можно изменить переменной `BACKEND_URL` в `.env`.
+Нужны Bun не ниже 1.4.0 и Node.js не ниже 22.19.0: Vite и `vite-plugin-mkcert` работают в Node.
+Команды запускаются из корня репозитория. `bun run dev` — клиент и BFF сразу
+([«Клиент через BFF»](#клиент-через-bff), там же первый запуск на macOS, Windows и WSL).
 
 ```bash
 bun install
@@ -28,7 +28,8 @@ bun run build
 
 | Команда                                             | Что делает                                                       |
 | --------------------------------------------------- | ---------------------------------------------------------------- |
-| `bun run dev`                                       | dev-сервер клиента, `/api/v1` проксируется на бэкенд             |
+| `bun run dev`                                       | клиент и BFF на `https://localhost:5173` — «Клиент через BFF»    |
+| `bun run dev:trust-windows`                         | только WSL: разово доверить CA mkcert в Windows для Chrome       |
 | `bun run build`                                     | сборка всех пакетов, клиент — в `apps/client/dist`               |
 | `bun run check`                                     | `oxfmt --check`, `oxlint` и `tsc` во всех пакетах и в `scripts/` |
 | `bun run lint`, `bun run typecheck`, `bun run test` | по отдельности, тоже во всех пакетах                             |
@@ -54,13 +55,18 @@ bun run build
 | `BFF_KEY`       | S2S-ключ для Go (`X-BFF-Key`), на двух VPS                                            |
 | `HTML_TEMPLATE` | `index.html` сборки клиента, по умолчанию `/app/client/index.html` (путь в образе)    |
 
+HTML страницы — одно и то же приложение с bootstrap. Статус зависит от адреса: страница клиента —
+200, неизвестный адрес — 404, а страницу «Не найдено» рисует клиент. Список путей страниц —
+`PAGES` в `apps/bff/src/pages.ts` (`@cdd/bff/pages`). Из него же берут `path` маршруты
+`apps/client/src/routes`, поэтому новая страница добавляется туда.
+
 Неверная конфигурация или шаблон без ровно одного `<script id="bootstrap" type="application/json">`
 не дают BFF стартовать; в вывод попадают только имена переменных.
 
 Go для локального запуска — Cloud Mock Apidog: ответы ручек и ошибок заданы там mock expectations по
 контракту. Адрес — в Apidog, проект → Mock → Cloud Mock: `https://mock.apidog.com/m1/<проект>-<ветка>-default`,
-без `/api/v1` — мок отдаёт пути ручек от корня. В код и конфиги репозитория он не записывается:
-передаётся переменной `GO_API_URL`.
+без `/api/v1` — мок отдаёт пути ручек от корня. BFF получает его переменной `GO_API_URL`; адрес
+мока main — значение по умолчанию у `bun run dev` (`apps/bff/src/dev.ts`).
 
 ```sh
 bun run build
@@ -81,11 +87,58 @@ curl localhost:3000/health
 Проверка Cloud Mock — `GO_API_URL=<адрес Cloud Mock> bun run mock:check` (`apps/bff/test/mock-check.ts`):
 статусы mock expectations и тела ответов по zod-схемам. Сценарии, которым нужно
 состояние Go (одновременный refresh, повтор после 401, сбои и таймауты Go), проверяют тесты
-`bun run test`: `apps/bff/test/` — весь обработчик BFF против Go с управляемыми ответами
+`bun run test`: `apps/client/test/` — смена сессии в транспорте клиента на настоящем клиенте tRPC
+с управляемым `fetch`; `apps/bff/test/` — весь обработчик BFF против Go с управляемыми ответами
 (`test/fake-go.ts`), без сервера и сети.
 
-Контракт Go в Apidog уже целевой для BFF, а клиент до #5 работает по старой схеме: обновлять
-`spec/openapi.json` — `bun run apidog && bun run orval`, без `generate` и `sync` (`AGENTS.md`, «Источники»).
+## Клиент через BFF
+
+`bun run dev` из корня запускает `turbo watch dev`, а он — клиент и BFF на одном origin
+`https://localhost:5173`: Vite собирает и обновляет модули (HMR), HTML страниц и `/api/trpc` отдаёт
+BFF — с пользователем в `<script id="bootstrap">` и cookie сессии. `.env` не нужен, разовая настройка
+сертификата — в «Первом запуске» ниже:
+
+- Vite (`apps/client`) — HTTPS, слушает `127.0.0.1:5173` (с `localhost` на Windows он недоступен);
+  открывать `https://localhost:5173` — этот origin BFF ждёт в `APP_ORIGIN`. Сертификат выпускает
+  [`vite-plugin-mkcert`](https://github.com/liuweiGL/vite-plugin-mkcert). `/api/trpc` проксируется в
+  BFF; запрос страницы (`Accept: text/html`) плагин
+  [`@cdd-team/vite-plugin-bff-html`](https://github.com/Cringe-Driven-Development-Team/frontend-packages/tree/main/packages/vite-plugin-bff-html)
+  отдаёт ответом BFF
+  с его `Set-Cookie`, добавив клиент HMR (`transformIndexHtml`). Адрес BFF — `BFF_URL`, по умолчанию
+  `http://127.0.0.1:3000`.
+- BFF (`apps/bff`, `src/dev.ts`) — шаблон `apps/client/index.html`,
+  `APP_ORIGIN=https://localhost:5173`, Go — Cloud Mock Apidog
+  (`https://mock.apidog.com/m1/1382426-0-default`), постоянный dev-ключ сессии: она переживает
+  перезапуск BFF. Любое из этого перекрывается корневым `.env` (`GO_API_URL`, `SESSION_KEY`, …).
+  Перезапускает BFF `turbo watch`: при изменении файлов `apps/bff` и пакетов, которые он
+  импортирует (`packages/schemas`). `bun --watch` для этого не годится: на Windows он не следит за
+  файлами вне `apps/bff`. Vite при этом не перезапускается, клиент обновляет HMR.
+
+Cookie сессии — `Secure` и с префиксом `__Host-`: нужен HTTPS, ради dev атрибуты не ослабляются.
+При первом запуске плагин скачивает mkcert в `~/.vite-plugin-mkcert`, создаёт локальный CA и
+добавляет его в доверенные системы, где запущен Vite. Дальше сертификат берётся из того же каталога.
+Если в `PATH` первым находится другой `mkcert` — например, npm-пакет с тем же именем, — который не
+отвечает на `mkcert -CAROOT`, `vite.config.ts` убирает его каталог из `PATH` dev-сервера, и плагин
+скачивает официальный бинарник.
+
+### Первый запуск
+
+После разовой настройки `bun run dev` поднимает Vite и BFF вместе, без других шагов.
+
+- **macOS.** `bun run dev`, при первом запуске Keychain спросит пароль, чтобы доверять CA.
+- **Windows.** `bun run dev`, при первом запуске Windows спросит подтверждение установки CA.
+- **WSL + Chrome в Windows.** `bun run dev` ставит CA в доверенные Ubuntu, а Chrome смотрит в
+  хранилище Windows. После первого `bun run dev` один раз выполнить `bun run dev:trust-windows`:
+  скрипт проверяет публичный `~/.vite-plugin-mkcert/rootCA.pem` в `CurrentUser\Root` Windows и, если
+  его там нет, после подтверждения добавляет; Windows тоже покажет окно подтверждения. Повторный
+  запуск ничего не меняет. Ключ CA (`rootCA-key.pem`) в Windows не копируется.
+
+Cloud Mock отвечает фиксированно (раздел «BFF» выше): `denis` / `password123` — вход,
+`wrong-password` — неверный пароль. Против своего Go — `GO_API_URL=http://127.0.0.1:8080/api/v1`
+в `.env`.
+
+Контракт Go обновляется `bun run sync` (`bun run apidog && bun run orval`): клиент контракт Go не
+читает, типы процедур берёт из `@cdd/bff`.
 
 ## Документация кода
 
@@ -111,4 +164,4 @@ curl localhost:3000/health
 Оба правила — командный плагин
 [`@cdd-team/oxlint-plugin-jsdoc`](https://github.com/Cringe-Driven-Development-Team/frontend-packages/tree/main/packages/oxlint-plugin-jsdoc):
 в `oxlint` правил `require-jsdoc` и `check-param-names` нет. Сами теги линт не требует: `@param` и `@returns` пишутся там, где описание что-то добавляет
-к имени и типу. Сгенерированный `apps/client/src/api/schema.ts` линт не проверяет
+к имени и типу. Сгенерированные Orval файлы линт не проверяет

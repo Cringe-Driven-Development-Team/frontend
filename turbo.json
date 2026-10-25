@@ -22,6 +22,15 @@
             "cache": false,
             "persistent": true
         },
+        // turbo watch перезапускает BFF при изменении его файлов и пакетов, которые он импортирует
+        // (@cdd/schemas): bun --watch пакеты вне apps/bff на Windows не отслеживает. Без
+        // зависимости от ^typecheck изменение в @cdd/schemas BFF не перезапускает
+        "@cdd/bff#dev": {
+            "dependsOn": ["^typecheck"],
+            "cache": false,
+            "persistent": true,
+            "interruptible": true
+        },
         "//#lint:scripts": {
             "inputs": ["scripts/**", "oxlint.config.ts"]
         },

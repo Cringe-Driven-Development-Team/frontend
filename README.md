@@ -12,15 +12,17 @@ Frontend проекта «Colab» (Cellestial) команды «Cringe Driven De
 
 ## Быстрый старт
 
-Нужен Bun версии не ниже 1.4.0. Команды выполняются из корня репозитория:
+Нужны Bun не ниже 1.4.0 и Node.js не ниже 22.19.0. Команды выполняются из корня репозитория:
 
 ```bash
 bun install
 bun run dev
 ```
 
-`bun run dev` запускает клиент и проксирует `/api/v1` на бэкенд по адресу
-`http://127.0.0.1:8080`. Другой адрес задаётся переменной `BACKEND_URL` в `.env`.
+`bun run dev` запускает клиент (Vite) и BFF на одном origin `https://localhost:5173`: HTML страниц
+и `/api/trpc` отдаёт BFF, Go для него — Cloud Mock Apidog. При первом запуске mkcert один раз
+попросит подтвердить доверие локальному сертификату; в WSL с Chrome в Windows после этого нужен
+`bun run dev:trust-windows` — [«Первый запуск»](docs/local-development.md#первый-запуск).
 Перед PR выполните `bun run check` и `bun run build`.
 Подробности — в [локальной разработке](docs/local-development.md).
 
@@ -58,7 +60,7 @@ bun run dev
 
 ## Команда
 
-Ерофей [Гаранин](https://github.com/ManInTheCoat), Денис [Истратов](https://github.com/iredtea-dev),
+Ерофей [Гаранин](https://github.com/ManInTheCoat), Денис [Истратов](https://github.com/iRedTea),
 Дарья [Шпакова](https://github.com/GrayMouse9), Валентин [Кунев](https://github.com/MrDuckVC).
 Менторы: [Ярослав Михалёв](https://github.com/YarikMix) (frontend),
 [Александр Батовкин](https://github.com/blackHATred) (backend),
