@@ -1,6 +1,6 @@
 // Смена сессии на настоящем клиенте tRPC: fetch управляется тестом, BFF не нужен.
 import { afterEach, beforeEach, expect, mock, test } from 'bun:test';
-import { onSessionLost, switchSession, trpc } from '@api/trpc';
+import { SESSION_CHANGED, onSessionLost, switchSession, trpc } from '@api/trpc';
 import { logout, useSessionStore } from '@stores/session';
 
 type Answer = { status: number; body: unknown };
@@ -107,4 +107,35 @@ test('факт потери не переживает смену сессии: �
     answers.set('auth.logout', networkError);
     expect(await logout()).toBe(false);
     expect(sessionLost).not.toHaveBeenCalled();
+});
+
+test('перекрывающиеся смены сессии идут по очереди: потеря сессии не теряется, запросы не пропускаются', async () => {
+    const list = held(unauthorized);
+    const firstLogout = held({ status: 500, body: [] });
+    answers.set('notebooks.list', list.answer);
+    answers.set('auth.logout', firstLogout.answer);
+    const listed = trpc.notebooks.list.query().catch(() => undefined);
+    await Bun.sleep(0);
+
+    const first = switchSession(() => trpc.auth.logout.mutate()).catch(() => 'first failed');
+    list.release();
+    await listed;
+    await Bun.sleep(0);
+
+    // второй вызов, пока первый auth.logout ещё в пути
+    let secondStarted = false;
+    const second = switchSession(() => {
+        secondStarted = true;
+        return Promise.reject(new Error('второй выход не удался'));
+    }).catch(() => 'second failed');
+    await Bun.sleep(0);
+    expect(secondStarted).toBe(false);
+    // первая смена ещё идёт: новый защищённый запрос не стартует
+    await expect(trpc.users.me.query()).rejects.toThrow(SESSION_CHANGED);
+
+    firstLogout.release();
+    expect(await first).toBe('first failed');
+    expect(await second).toBe('second failed');
+    expect(secondStarted).toBe(true);
+    expect(sessionLost).toHaveBeenCalledTimes(1);
 });

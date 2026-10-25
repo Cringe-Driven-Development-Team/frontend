@@ -26,6 +26,9 @@ let closing = false;
 // Во время смены сессии защищённый запрос получил UNAUTHORIZED: BFF уже мог удалить cookie. Если
 // смена не удастся, сессия всё равно потеряна
 let lostWhileClosing = false;
+// Очередь смен сессии: следующая начинается после завершения предыдущей, иначе её начало сбросило бы
+// lostWhileClosing, а конец — снял бы closing, пока предыдущая ещё идёт
+let switching: Promise<unknown> = Promise.resolve();
 // Номер сессии: меняется при входе, выходе и её потере. Ответ на запрос прежней сессии в интерфейс
 // не попадает
 let generation = 0;
@@ -126,11 +129,18 @@ export function onSessionLost(handler: () => void): void {
  * чем `call` поставит или удалит cookie, и прежняя сессия её не перезапишет. После успеха ответы
  * прежней сессии в интерфейс не попадают. Ошибка `call` — сессия остаётся прежней; но если пока
  * ждали отправленные, один из них получил `UNAUTHORIZED`, сессии уже нет — срабатывает
- * {@link onSessionLost}, ошибка `call` всё равно пробрасывается.
+ * {@link onSessionLost}, ошибка `call` всё равно пробрасывается. Смены сессии идут по очереди:
+ * вызов, пришедший во время другой смены, начнётся после её завершения.
  * @param call вызов `auth.login`, `auth.register` или `auth.logout`
  * @returns ответ `call`
  */
-export async function switchSession<T>(call: () => Promise<T>): Promise<T> {
+export function switchSession<T>(call: () => Promise<T>): Promise<T> {
+    const run = switching.then(() => runSwitch(call));
+    switching = run.catch(() => undefined);
+    return run;
+}
+
+async function runSwitch<T>(call: () => Promise<T>): Promise<T> {
     closing = true;
     lostWhileClosing = false;
     try {
