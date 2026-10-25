@@ -23,21 +23,29 @@ const decode = (segment: string) => {
 };
 
 /**
- * Есть ли у клиента страница по этому адресу. Сопоставление как у роутера клиента: `$param` —
- * любой непустой сегмент, регистр статичных сегментов и завершающий слэш не учитываются.
+ * Подходит ли адрес под путь страницы. Сопоставление как у роутера клиента: `$param` — любой
+ * непустой сегмент, регистр статичных сегментов и завершающий слэш не учитываются.
+ * @param page путь страницы из {@link PAGES}
+ * @param pathname путь адреса
+ * @returns `true`, если адрес — эта страница
+ */
+export function matchesPage(page: string, pathname: string): boolean {
+    const pattern = segments(page);
+    const path = segments(pathname).map(decode);
+    return (
+        pattern.length === path.length &&
+        pattern.every(
+            (segment, i) =>
+                segment.startsWith('$') || segment.toLowerCase() === path[i]?.toLowerCase(),
+        )
+    );
+}
+
+/**
+ * Есть ли у клиента страница по этому адресу.
  * @param pathname путь адреса
  * @returns `true`, если адрес — страница клиента
  */
 export function isPage(pathname: string): boolean {
-    const path = segments(pathname).map(decode);
-    return Object.values(PAGES).some((page) => {
-        const pattern = segments(page);
-        return (
-            pattern.length === path.length &&
-            pattern.every(
-                (segment, i) =>
-                    segment.startsWith('$') || segment.toLowerCase() === path[i]?.toLowerCase(),
-            )
-        );
-    });
+    return Object.values(PAGES).some((page) => matchesPage(page, pathname));
 }

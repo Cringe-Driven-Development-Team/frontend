@@ -1,7 +1,7 @@
 import serialize from 'serialize-javascript';
 
 import { createGo } from './go/api.ts';
-import { isPage } from './pages.ts';
+import { PAGES, isPage, matchesPage } from './pages.ts';
 import { SessionEnded } from './session/refresh.ts';
 import { createSession } from './session/session.ts';
 import type { BootstrapData } from './types.ts';
@@ -48,7 +48,8 @@ export function renderBootstrap(
  * `GET /users/me` (общий слой сессии: refresh, повтор после 401). Сессия закончилась — гость и
  * cookie удаляется. Сбой Go — 503 без приложения, сессия не удаляется; новая cookie после удачного
  * refresh сохраняется и в 503. Адрес, которого нет среди страниц клиента, — то же приложение со
- * статусом 404: страницу «Не найдено» рисует клиент.
+ * статусом 404: страницу «Не найдено» рисует клиент. Гость на странице блокнота — `302` на `/login` без
+ * HTML (в том числе когда сессию восстановить не удалось): блокнот у Go не запрашивается.
  * @param template проверенный HTML-шаблон клиента
  * @returns обработчик GET-запросов страниц
  */
@@ -72,7 +73,13 @@ export function createHtmlHandler(template: string): (req: Request) => Promise<R
             }
         }
         session.setCookies(headers);
-        const status = isPage(new URL(req.url).pathname) ? 200 : 404;
+        const { pathname } = new URL(req.url);
+        if (!user && matchesPage(PAGES.notebook, pathname)) {
+            headers.set('Cache-Control', 'private, no-store');
+            headers.set('Location', '/login');
+            return new Response(null, { status: 302, headers });
+        }
+        const status = isPage(pathname) ? 200 : 404;
         return renderBootstrap(template, { user }, headers, status);
     };
 }

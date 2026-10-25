@@ -130,7 +130,8 @@ vite берёт их оттуда.
 - Пользователь — из `<script id="bootstrap">` первого HTML (`src/bootstrap.ts`), до первого
   рендера. Статус сессии сразу `guest` | `authed`, запроса при старте нет. Сломанный bootstrap —
   ошибка запуска, гостем она не прикрывается. Маршруты `_guest` (`/login`, `/register`) и `_auth`
-  (остальные) проверяют статус в `beforeLoad` и делают `redirect`.
+  (остальные) проверяют статус в `beforeLoad` и делают `redirect`. При прямом открытии
+  `/notebooks/:id` гостем на `/login` ведёт уже BFF (`302`), переход внутри SPA — `beforeLoad`.
 - Ошибки — `TRPCClientError` (`isRpcError` из `@api/trpc`): категория — `data.code`, причина —
   `data.appCode`, ошибки полей — `data.zodError`; на `message` поведение не завязывать.
   `UNAUTHORIZED` защищённой процедуры транспорт сам переводит в гостя и ведёт на `/login`;
