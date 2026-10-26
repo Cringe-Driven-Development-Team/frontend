@@ -1,9 +1,24 @@
+import { useEffect } from '@cdd-team/react';
 import { RootLayout } from '@layouts/RootLayout';
-import { createRootRoute } from '@modules/router';
-import { NotFoundPage } from '@pages/NotFoundPage';
+import { createRootRoute, useNavigate } from '@modules/router';
+import { useSessionStore } from '@stores/session';
 
-/** Корневой маршрут: общий макет и страница «Не найдено». */
+/**
+ * Неизвестный адрес при переходе внутри приложения — как при прямом открытии у BFF: гость уходит на
+ * вход, вошедший — на `/404`.
+ * @returns ничего: только перенаправление
+ */
+function UnknownAddress() {
+    const navigate = useNavigate();
+    const authed = useSessionStore((state) => state.status === 'authed');
+    useEffect(() => {
+        void navigate({ to: authed ? '/404' : '/login', replace: true });
+    }, [authed, navigate]);
+    return null;
+}
+
+/** Корневой маршрут: общий макет; неизвестный адрес ведёт на вход или на `/404`. */
 export const rootRoute = createRootRoute({
     component: RootLayout,
-    notFoundComponent: NotFoundPage,
+    notFoundComponent: UnknownAddress,
 });

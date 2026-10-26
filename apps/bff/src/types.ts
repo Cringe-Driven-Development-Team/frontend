@@ -14,5 +14,11 @@ export type RouterOutputs = inferRouterOutputs<AppRouter>;
 /** Пользователь, как его отдаёт `users.me`. */
 export type CurrentUser = RouterOutputs['users']['me'];
 
-/** Данные, которые BFF кладёт в `<script id="bootstrap">` первого HTML. */
-export type BootstrapData = { user: CurrentUser | null };
+/** Блокнот с ячейками, как его отдаёт `notebooks.get`. */
+export type NotebookData = RouterOutputs['notebooks']['get'];
+
+/**
+ * Данные, которые BFF кладёт в `<script id="bootstrap">` первого HTML: пользователь, а на прямом
+ * открытии своего блокнота — и сам блокнот.
+ */
+export type BootstrapData = { user: CurrentUser | null; notebook?: NotebookData };

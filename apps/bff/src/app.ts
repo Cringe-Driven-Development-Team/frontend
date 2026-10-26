@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 
 import { accessLog } from './log.ts';
-import { isPage } from './pages.ts';
+import { pageOf } from './pages.ts';
 
 /** Что приложению нужно от запуска: шаблон, публичные файлы и обработчики, которые есть. */
 export type AppDeps = {
@@ -40,7 +40,7 @@ export function createApp(deps: AppDeps): Hono {
     app.get('*', (c) => {
         if (!c.req.header('Accept')?.includes('text/html')) return notFound();
         if (deps.html) return deps.html(c.req.raw);
-        const status = isPage(c.req.path) ? 200 : 404;
+        const status = pageOf(c.req.path) ? 200 : 404;
         return c.html(deps.template, status, { 'Cache-Control': 'private, no-store' });
     });
 

@@ -15,7 +15,8 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 /**
  * Данные, которые BFF положил в первый HTML. Блок должен быть ровно один, `<script>` с
- * `type="application/json"`, а в нём — `{ user: объект | null }`. Иначе — `BootstrapError`:
+ * `type="application/json"`, а в нём — `{ user: объект | null }` и, на странице своего блокнота,
+ * `notebook`. Иначе — `BootstrapError`:
  * гостем вместо пользователя и запасным запросом дефект не прикрывается.
  * @returns пользователь или `null` для гостя
  */
@@ -39,6 +40,17 @@ export function readBootstrap(): BootstrapData {
         !(isObject(user) && typeof user.id === 'number' && typeof user.login === 'string')
     ) {
         throw new BootstrapError('user — не пользователь и не null');
+    }
+    if ('notebook' in data) {
+        const { notebook } = data;
+        if (
+            !isObject(notebook) ||
+            typeof notebook.id !== 'number' ||
+            typeof notebook.name !== 'string' ||
+            !Array.isArray(notebook.cells)
+        ) {
+            throw new BootstrapError('notebook — не блокнот');
+        }
     }
     return data as BootstrapData;
 }
