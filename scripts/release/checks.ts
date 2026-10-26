@@ -20,35 +20,56 @@ function message(err: unknown): string {
     return err instanceof Error ? err.message : String(err);
 }
 
-async function releaseCheckOnce(sha: string): Promise<string> {
-    const cdn = cdnUrl();
+/**
+ * Все JS и CSS из HTML выпуска — с CDN его SHA и грузятся; JS — с CORS: чанки подключены как
+ * <script type="module" crossorigin>, без CORS браузер их не выполнит.
+ */
+async function checkAssets(html: string, base: string, where: string): Promise<number> {
     const site = siteUrl();
-    const base = `${cdn}/releases/${sha}/`;
+    const assets = [...html.matchAll(/(?:src|href)="([^"]+\.(js|css))"/g)].map(([, url, kind]) => ({
+        url: url!,
+        kind: kind!,
+    }));
+    if (
+        !assets.some(({ kind }) => kind === 'js') ||
+        assets.some(({ url }) => !url.startsWith(base))
+    ) {
+        throw new Error(`${where}: JS и CSS должны идти с ${base}`);
+    }
+    for (const { url, kind } of assets) {
+        const res = await get(url, { Origin: site });
+        await res.body?.cancel();
+        const origin = res.headers.get('access-control-allow-origin');
+        if (kind === 'js' && origin !== '*' && origin !== site) {
+            throw new Error(
+                `${url}: Access-Control-Allow-Origin='${origin ?? ''}', нужен '${site}'`,
+            );
+        }
+    }
+    return assets.length;
+}
+
+async function releaseCheckOnce(sha: string): Promise<number> {
+    const base = `${cdnUrl()}/releases/${sha}/`;
     const html = await (await get(`${base}index.html`)).text();
     if (releaseOf(html) !== sha) {
         throw new Error(`${base}index.html: release='${releaseOf(html) ?? ''}', нужен '${sha}'`);
     }
-    const chunk = new RegExp(`src="(${RegExp.escape(base)}[^"]*\\.js)"`).exec(html)?.[1];
-    if (!chunk) throw new Error(`В ${base}index.html нет чанка с ${base}`);
-    // чанки подключены как <script type="module" crossorigin>: без CORS браузер их не выполнит
-    const res = await get(chunk, { Origin: site });
-    await res.body?.cancel();
-    const origin = res.headers.get('access-control-allow-origin');
-    if (origin !== '*' && origin !== site) {
-        throw new Error(`${chunk}: Access-Control-Allow-Origin='${origin ?? ''}', нужен '${site}'`);
-    }
-    return chunk;
+    return checkAssets(html, base, `${base}index.html`);
 }
 
 /**
- * Релиз отдаётся с CDN: его index.html и чанк из него. Выполняется после заливки и до переключения.
+ * Релиз отдаётся с CDN: его index.html и все JS и CSS из него. Выполняется после заливки и до
+ * переключения: без любого из ассетов прод не меняется.
  * @param sha sha релиза
  */
 export async function releaseCheck(sha: string): Promise<void> {
     for (let attempt = 1; ; attempt++) {
         try {
-            const chunk = await releaseCheckOnce(sha);
-            console.log(`OK: релиз ${sha} отдаётся с CDN, ${chunk} грузится с ${siteUrl()}`);
+            const assets = await releaseCheckOnce(sha);
+            console.log(
+                `OK: релиз ${sha} отдаётся с CDN, JS и CSS грузятся с ${siteUrl()} (файлов: ${assets})`,
+            );
             return;
         } catch (err) {
             console.log(message(err));
@@ -79,25 +100,7 @@ async function healthOnce(sha: string): Promise<string> {
     if (releaseOf(html) !== sha) {
         throw new Error(`${site}/login: release='${releaseOf(html) ?? ''}', ждём '${sha}'`);
     }
-    // JS и CSS выпуска — с CDN своего SHA; чанки — с CORS для <script type="module" crossorigin>
-    const assets = [...html.matchAll(/(?:src|href)="([^"]+\.(js|css))"/g)].map(([, url, kind]) => ({
-        url: url!,
-        kind: kind!,
-    }));
-    if (
-        !assets.some(({ kind }) => kind === 'js') ||
-        assets.some(({ url }) => !url.startsWith(base))
-    ) {
-        throw new Error(`${site}/login: JS и CSS должны идти с ${base}`);
-    }
-    for (const { url, kind } of assets) {
-        const res = await get(url, { Origin: site });
-        await res.body?.cancel();
-        const origin = res.headers.get('access-control-allow-origin');
-        if (kind === 'js' && origin !== '*' && origin !== site) {
-            throw new Error(`${url}: Access-Control-Allow-Origin='${origin ?? ''}'`);
-        }
-    }
+    const assets = await checkAssets(html, base, `${site}/login`);
     const rpc = await fetch(`${site}/api/trpc/users.me`, {
         headers: { 'X-CSRF': '1' },
         signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -121,7 +124,7 @@ async function healthOnce(sha: string): Promise<string> {
     ) {
         throw new Error(`${site}/api/unknown: ${unknown.status}, нужен 404 не HTML`);
     }
-    return `${assets.length} ассетов`;
+    return `JS и CSS (файлов: ${assets})`;
 }
 
 /**

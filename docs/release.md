@@ -70,7 +70,7 @@ GitHub → Packages → `bff` → Package settings → Change visibility → Pub
 
 1. единственная успешная запись `release-artifacts` выбранного SHA → `image_ref` и каталог ассетов;
 2. анонимная доступность точного digest и метка `org.opencontainers.image.revision` = SHA;
-3. Release check: `index.html` и чанк релиза отдаются с CDN, чанк — с CORS.
+3. Release check: `index.html` и все JS и CSS из него отдаются с CDN, JS — с CORS; без любого ассета прод не меняется.
 
 Затем создаётся запись `production` (`ref` — SHA **выбранного образа**, в том числе при откате;
 `payload` — `image_ref`, `assets`, `action` = `deploy`/`rollback`, `run` — ссылка на этот запуск) со

@@ -159,7 +159,7 @@ export async function notify(what: string, status: string, sha?: string): Promis
     ];
     if (sha) lines.push(`Релиз <code>${sha}</code>`);
     const digest = digestOf(process.env.RELEASE_IMAGE_REF);
-    if (digest) lines.push(`Образ BFF <code>sha256:${digest.slice(0, 12)}</code>`);
+    if (digest) lines.push(`Образ BFF <code>sha256:${digest}</code>`);
     if (GITHUB_ACTOR)
         lines.push(`Запустил: ${mentionActor(GITHUB_ACTOR, process.env.TELEGRAM_USER_MAP)}`);
     const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
@@ -174,9 +174,10 @@ export async function notify(what: string, status: string, sha?: string): Promis
                     ? `${sha}...${before}`
                     : `${before}...${sha}`
                 : undefined;
+        // полные SHA и digest остаются в тексте, после хода выпуска
         lines.splice(
             1,
-            sha ? 1 : 0,
+            0,
             `${escape(siteUrl())} · production`,
             '',
             `<b>Версия:</b> ${revision(before, repo)} → ${revision(sha, repo)}`,
@@ -187,6 +188,7 @@ export async function notify(what: string, status: string, sha?: string): Promis
             ...(await changes(range)),
             '',
             ...deploymentState(status),
+            '',
         );
         if (
             status === 'success' ||
