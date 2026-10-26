@@ -353,10 +353,14 @@ describe('HTML', () => {
             'GET /users/me': () => Response.json(USER),
             'GET /notebooks/:id': () => Response.json({ ...NOTEBOOK, owner_id: 1 }),
         });
-        const res = await page(await cookie(goTokens().issue()), '/notebooks/1');
-        expect(res.status).toBe(200);
-        expect(await bootstrap(res)).toEqual({ user: USER, notebook: NOTEBOOK });
-        expect(go?.calls.filter((c) => c.path === '/notebooks/1')).toHaveLength(1);
+        const session = await cookie(goTokens().issue());
+        // %31 — тот же блокнот 1: сегмент декодируется, как в роутере клиента
+        for (const path of ['/notebooks/1', '/notebooks/%31']) {
+            const res = await page(session, path);
+            expect(res.status, path).toBe(200);
+            expect(await bootstrap(res)).toEqual({ user: USER, notebook: NOTEBOOK });
+        }
+        expect(go?.calls.filter((c) => c.path === '/notebooks/1')).toHaveLength(2);
     });
 
     test('вошедший, отсутствующий и чужой блокнот — одинаковый 302 на /404 без данных', async () => {

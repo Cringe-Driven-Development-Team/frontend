@@ -2,7 +2,7 @@ import serialize from 'serialize-javascript';
 
 import { createGo } from './go/api.ts';
 import { GoError } from './go/errors.ts';
-import { type Page, pageOf } from './pages.ts';
+import { type Page, decodeSegment, pageOf } from './pages.ts';
 import { SessionEnded } from './session/refresh.ts';
 import { createSession } from './session/session.ts';
 import type { BootstrapData } from './types.ts';
@@ -59,8 +59,9 @@ const unavailable = (headers: Headers): Response => {
 };
 
 /** ID блокнота из адреса `/notebooks/:id`, как его примет `notebooks.get`, или `undefined`. */
+// параметр декодируется так же, как при сопоставлении маршрута: /notebooks/%31 — блокнот 1
 const notebookId = (pathname: string): number | undefined => {
-    const id = Number(pathname.split('/').filter(Boolean)[1]);
+    const id = Number(decodeSegment(pathname.split('/').filter(Boolean)[1] ?? ''));
     return Number.isSafeInteger(id) && id > 0 ? id : undefined;
 };
 

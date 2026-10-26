@@ -18,13 +18,18 @@ export type Page = keyof typeof PAGES;
 
 const segments = (path: string) => path.split('/').filter(Boolean);
 
-const decode = (segment: string) => {
+/**
+ * Сегмент адреса, декодированный как в роутере клиента; некорректное кодирование — как есть.
+ * @param segment сегмент пути
+ * @returns декодированный сегмент
+ */
+export function decodeSegment(segment: string): string {
     try {
         return decodeURIComponent(segment);
     } catch {
         return segment;
     }
-};
+}
 
 /**
  * Подходит ли адрес под путь страницы. Сопоставление как у роутера клиента: `$param` — любой
@@ -35,7 +40,7 @@ const decode = (segment: string) => {
  */
 export function matchesPage(page: string, pathname: string): boolean {
     const pattern = segments(page);
-    const path = segments(pathname).map(decode);
+    const path = segments(pathname).map(decodeSegment);
     return (
         pattern.length === path.length &&
         pattern.every(
