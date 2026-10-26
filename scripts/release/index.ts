@@ -1,40 +1,62 @@
-// Выкатка клиента в S3, по команде на шаг workflow. Раскладка бакета:
-//   releases/{sha}/ — сборка клиента, неизменяемая;
-//   index.html      — копия index.html текущего релиза, его отдаёт Caddy;
-//   current.json    — { "stable": "{sha}", "previous": "{sha}" }, пишет только CI.
+// Выпуск и выкатка, по команде на шаг workflow. Ассеты клиента — неизменяемые releases/{sha}/ в S3 и
+// на CDN; образ BFF — публичный GHCR по digest; готовые выпуски и история прода — GitHub Deployments
+// (release-artifacts и production). HTML отдаёт работающий образ BFF, указателя в S3 нет.
 import { health, releaseCheck } from './checks.ts';
+import {
+    artifacts,
+    finishProduction,
+    lastConfirmed,
+    published,
+    register,
+    rollbackTarget,
+    startProduction,
+} from './deployments.ts';
 import { ReleaseError, checkSha } from './env.ts';
+import { checkImage, checkImageRef } from './image.ts';
 import { notify } from './notify.ts';
-import { exists, findPrevious, promote, rollback } from './pointer.ts';
 import { retention } from './retention.ts';
 import { upload } from './upload.ts';
 
 const USAGE = `Использование: bun run release <команда>
-  upload <sha> [каталог]   apps/client/dist → releases/{sha}/
-  exists <sha>             релиз есть в бакете
-  check <sha>              Release check: релиз отдаётся с CDN
-  promote <sha>            сделать релиз текущим, только вперёд по истории main
-  previous                 sha релиза, на который вернёт откат
-  rollback <sha>           вернуть релиз previous
-  health <sha>             Health check: сайт отдаёт релиз
-  retention                удалить старые релизы
+  upload <sha> [каталог]          apps/client/dist → releases/{sha}/, неизменяемо
+  check <sha>                     Release check: ассеты релиза отдаются с CDN
+  image <image_ref> <sha>         образ скачивается анонимно и помечен этим SHA
+  published <sha>                 выпуск SHA уже есть в release-artifacts
+  register <sha> <image_ref>      записать готовый выпуск в release-artifacts
+  artifacts <sha>                 готовый выпуск SHA: image_ref и каталог ассетов
+  confirmed                       последний подтверждённый выпуск прода по истории
+  target                          цель отката по истории production
+  start <sha> <image_ref> <deploy|rollback>   запись production до переключения
+  finish <deployment_id> <success|failure|error>   итог записи production
+  health <sha>                    Health check: прод отдаёт выпуск через BFF
+  retention                       удалить старые ассеты
   notify <Заливка|Выкатка|Откат> <success|failure|cancelled> [sha]`;
 
 async function main(command: string | undefined, args: string[]): Promise<void> {
     switch (command) {
         case 'upload':
             return upload(checkSha(args[0]), args[1]);
-        case 'exists':
-            return exists(checkSha(args[0]));
         case 'check':
             return releaseCheck(checkSha(args[0]));
-        case 'promote':
-            return promote(checkSha(args[0]));
-        case 'previous':
-            await findPrevious();
+        case 'image':
+            return checkImage(checkImageRef(args[0]), checkSha(args[1]));
+        case 'published':
+            return published(checkSha(args[0]));
+        case 'register':
+            return register(checkSha(args[0]), checkImageRef(args[1]));
+        case 'artifacts':
+            await artifacts(checkSha(args[0]));
             return;
-        case 'rollback':
-            return rollback(checkSha(args[0]));
+        case 'confirmed':
+            await lastConfirmed();
+            return;
+        case 'target':
+            return rollbackTarget();
+        case 'start':
+            if (args[2] !== 'deploy' && args[2] !== 'rollback') throw new ReleaseError(USAGE);
+            return startProduction(checkSha(args[0]), checkImageRef(args[1]), args[2]);
+        case 'finish':
+            return finishProduction(args[0] ?? '', args[1] ?? '');
         case 'health':
             return health(checkSha(args[0]));
         case 'retention':

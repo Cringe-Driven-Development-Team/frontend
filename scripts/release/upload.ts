@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { ReleaseError } from './env.ts';
-import { IMMUTABLE, NO_CACHE, openBucket, putObject } from './s3.ts';
+import { IMMUTABLE, NO_CACHE, openBucket, putObject, readObject } from './s3.ts';
 
 // Content-Type задаём сами: чанк с чужим типом браузер как модуль не выполнит
 const TYPES: Record<string, string> = {
@@ -29,7 +29,9 @@ const TYPES: Record<string, string> = {
 const PARALLEL = 8;
 
 /**
- * dist → releases/{sha}/
+ * dist → releases/{sha}/. Релиз неизменяемый: если он уже залит целиком (есть index.html), файлы
+ * сверяются с бакетом — совпадают, заливка пропускается, отличаются — ошибка: другой сборкой тот же
+ * SHA не заменяется.
  * @param sha sha релиза
  * @param [dir] каталог сборки (по умолчанию apps/client/dist)
  */
@@ -44,6 +46,20 @@ export async function upload(sha: string, dir = 'apps/client/dist'): Promise<voi
     }
 
     const bucket = openBucket();
+    if (await readObject(bucket, `releases/${sha}/index.html`)) {
+        for (const file of files) {
+            const stored = await readObject(bucket, `releases/${sha}/${file}`);
+            const local = await readFile(join(dir, file));
+            if (!stored || !Buffer.from(stored).equals(local)) {
+                throw new ReleaseError(
+                    `Релиз ${sha} уже залит, а ${file} в бакете ${stored ? 'другой' : 'отсутствует'}: ` +
+                        'выпуск неизменяемый, другая сборка того же SHA не заливается',
+                );
+            }
+        }
+        console.log(`Релиз ${sha} уже залит, содержимое совпадает: заливка пропущена`);
+        return;
+    }
     const put = async (file: string, cacheControl: string): Promise<void> => {
         const type = TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream';
         const body = await readFile(join(dir, file));

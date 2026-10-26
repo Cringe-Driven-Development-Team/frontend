@@ -36,6 +36,9 @@
         },
         "//#typecheck:scripts": {
             "inputs": ["scripts/**"]
+        },
+        "//#test:scripts": {
+            "inputs": ["scripts/**"]
         }
     }
 }

@@ -62,7 +62,7 @@ bun run dev
 
 Целевой порядок работы после включения GitHub Merge Queue:
 
-`PR Check и одобрение ментора → Merge when ready → merge_group Check → автоматическое слияние → push/main upload и sync → ручной CD`.
+`PR Check и одобрение ментора → Merge when ready → merge_group Check → автоматическое слияние → push/main publish и sync → ручной CD`.
 
 После успешного `Check`, одобрения frontend-ментора и разрешения обсуждений нажмите
 **Merge when ready**. GitHub проверит кандидата с актуальным `main` и предыдущими PR

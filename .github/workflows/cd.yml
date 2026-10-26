@@ -4,72 +4,142 @@ on:
   workflow_dispatch:
     inputs:
       sha:
-        description: Sha залитого релиза (40 символов). Пусто — голова main
+        description: Полный SHA готового выпуска (40 символов). Пусто — голова main
         type: string
 
 permissions:
   contents: read
+  deployments: write
 
 env:
   SITE_URL: https://cellestial.ru
+  # entrypoint выкатки BFF (infra#74) на зафиксированной ревизии infra: контракт bff_image_ref/bff_release_sha
+  INFRA_REF: 35ae002f211bf3ef43769ad0c33748f457889532
 
 jobs:
   cd:
     name: CD
     if: github.repository == 'Cringe-Driven-Development-Team/frontend' && github.ref == 'refs/heads/main' && vars.PRODUCTION_ENABLED == 'true'
     runs-on: ubuntu-latest
-    environment: production
-    # указатель релиза меняет кто-то один: группа общая с Rollback. Очереди в ней нет — ожидает
-    # один запуск, более новый его вытесняет (README, «Выкатка»)
+    timeout-minutes: 30
+    # ограничения environment production сохраняются; запись Deployment скрипт создаёт сам
+    environment:
+      name: production
+      deployment: false
+    # CD, Rollback и retention — по одному; идущий запуск не отменяется (docs/release.md, «Очередь»)
     concurrency:
       group: production
       cancel-in-progress: false
     env:
-      S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
-      S3_BUCKET: ${{ vars.S3_BUCKET }}
-      S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
-      S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
-      CDN_URL: ${{ vars.CDN_URL }}
       SHA: ${{ inputs.sha || github.sha }}
+      GITHUB_TOKEN: ${{ github.token }}
+      CDN_URL: ${{ vars.CDN_URL }}
+      ANSIBLE_HOST_KEY_CHECKING: 'True'
     steps:
-      # вся история: promote проверяет, что stable — предок выкатываемого релиза
       - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
       - run: bun install --frozen-lockfile
-      - name: Release exists
-        id: exists
-        run: bun run release exists "$SHA"
-      # релиз проверяется до переключения: сломанный не становится stable
+      - name: Last confirmed release
+        id: confirmed
+        run: bun run release confirmed
+      # до изменения сервера: единственный готовый выпуск SHA, образ анонимно, ассеты с CDN
+      - name: Ready release
+        id: artifacts
+        run: bun run release artifacts "$SHA"
+      - name: Anonymous image check
+        id: image
+        env:
+          IMAGE_REF: ${{ steps.artifacts.outputs.image_ref }}
+        run: bun run release image "$IMAGE_REF" "$SHA"
       - name: Release check
         id: check
         run: bun run release check "$SHA"
-      - name: Promote to stable
-        id: promote
-        run: bun run release promote "$SHA"
+      - name: Production record
+        id: start
+        env:
+          IMAGE_REF: ${{ steps.artifacts.outputs.image_ref }}
+        run: bun run release start "$SHA" "$IMAGE_REF" deploy
+      - name: Checkout deployment infrastructure
+        uses: actions/checkout@v5
+        with:
+          repository: Cringe-Driven-Development-Team/infra
+          ref: ${{ env.INFRA_REF }}
+          path: infra
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install deployment tools
+        working-directory: infra/ansible
+        run: |
+          python -m pip install -r deploy-requirements.txt
+          ansible-galaxy collection install -r deploy-requirements.yml
+      - name: Prepare SSH and Vault files
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          for name in DEPLOY_SSH_KEY SSH_KNOWN_HOSTS ANSIBLE_VAULT_PASSWORD; do
+            [[ -n "${!name}" ]] || { echo "::error::Нет секрета $name в environment production"; exit 1; }
+          done
+          umask 077
+          mkdir -p "$RUNNER_TEMP/deploy"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/deploy/ci-key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy/known_hosts"
+          printf '%s\n' "$ANSIBLE_VAULT_PASSWORD" > "$RUNNER_TEMP/deploy/vault-pass"
+          ssh-keygen -F cellestial.ru -f "$RUNNER_TEMP/deploy/known_hosts" > /dev/null
+          echo "ANSIBLE_VAULT_PASSWORD_FILE=$RUNNER_TEMP/deploy/vault-pass" >> "$GITHUB_ENV"
+      # публичный образ — без GHCR credentials; Ansible сам сверяет метку, запущенный образ и healthy
+      - name: Switch BFF
+        id: switch
+        working-directory: infra/ansible
+        env:
+          IMAGE_REF: ${{ steps.artifacts.outputs.image_ref }}
+        run: |
+          ansible-playbook -i inventory/ci.yml deploy-bff.yml \
+            -e "bff_image_ref=$IMAGE_REF" -e "bff_release_sha=$SHA" \
+            -e "deploy_key_path=$RUNNER_TEMP/deploy/ci-key" \
+            --ssh-common-args="-o UserKnownHostsFile=$RUNNER_TEMP/deploy/known_hosts -o StrictHostKeyChecking=yes"
+      - name: Remove deployment secrets
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/deploy"
       - name: Health check
         id: health
         run: bun run release health "$SHA"
+      # success — только после проверок запущенного выпуска; сбой до проверки — error
+      - name: Production result
+        if: always() && steps.start.outputs.deployment_id
+        env:
+          ID: ${{ steps.start.outputs.deployment_id }}
+          RESULT: ${{ steps.health.outcome == 'success' && 'success' || (steps.switch.outcome == 'success' && 'failure' || 'error') }}
+        run: bun run release finish "$ID" "$RESULT"
       - name: Retention
         id: retention
+        env:
+          S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
+          S3_BUCKET: ${{ vars.S3_BUCKET }}
+          S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+          S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
         run: bun run release retention
       - name: Send to tg
         if: always()
+        continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
           TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
           TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
           STATUS: ${{ job.status }}
-          GITHUB_TOKEN: ${{ github.token }}
-          RELEASE_BEFORE_SHA: ${{ steps.promote.outputs.before_sha }}
-          RELEASE_INDEX_PUBLISHED: ${{ steps.promote.outputs.index_published }}
-          RELEASE_EXISTS_STATUS: ${{ steps.exists.outcome }}
+          RELEASE_BEFORE_SHA: ${{ steps.confirmed.outputs.before_sha }}
+          RELEASE_IMAGE_REF: ${{ steps.artifacts.outputs.image_ref }}
+          RELEASE_ARTIFACTS_STATUS: ${{ steps.artifacts.outcome }}
+          RELEASE_IMAGE_STATUS: ${{ steps.image.outcome }}
           RELEASE_CHECK_STATUS: ${{ steps.check.outcome }}
-          RELEASE_SWITCH_STATUS: ${{ steps.promote.outcome }}
+          RELEASE_START_STATUS: ${{ steps.start.outcome }}
+          RELEASE_SWITCH_STATUS: ${{ steps.switch.outcome }}
           RELEASE_HEALTH_STATUS: ${{ steps.health.outcome }}
           RELEASE_RETENTION_STATUS: ${{ steps.retention.outcome }}
         run: bun run release notify Выкатка "$STATUS" "$SHA"
