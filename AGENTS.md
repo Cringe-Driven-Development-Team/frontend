@@ -104,9 +104,9 @@ vite берёт их оттуда.
 - `modules/router/` — командный роутер (API как у TanStack Router). Импорт только через
   `@modules/router`, не из внутренних файлов.
 - `pages/` — страницы. `routes/` — маршруты и дерево `routeTree.ts`. `path` маршрута берётся из
-  `PAGES` (`@cdd/bff/pages`): по этому списку BFF отвечает 404 на неизвестный адрес, поэтому новая
-  страница добавляется сначала в `PAGES`.
-- `stores/` — сторы на `@cdd-team/zustand`: `session`, `toast`, `snackbar`.
+  `PAGES` (`@cdd/bff/pages`): по этому списку BFF решает, куда вести прямой запрос страницы,
+  поэтому новая страница добавляется сначала в `PAGES`.
+- `stores/` — сторы на `@cdd-team/zustand`: `session`, `toast`, `snackbar`; `preloaded` — блокнот из bootstrap.
 - `styles/tokens.css` — переменные с именами как в макете (`color/bg` → `--color-bg`).
   Глобальные стили — только `styles/global.css` и `styles/tokens.css`.
 - `assets/` — SVG (знак логотипа, иконки) и favicon: Vite встраивает их в бандл.
@@ -131,7 +131,10 @@ vite берёт их оттуда.
   рендера. Статус сессии сразу `guest` | `authed`, запроса при старте нет. Сломанный bootstrap —
   ошибка запуска, гостем она не прикрывается. Маршруты `_guest` (`/login`, `/register`) и `_auth`
   (остальные) проверяют статус в `beforeLoad` и делают `redirect`. При прямом открытии
-  `/notebooks/:id` гостем на `/login` ведёт уже BFF (`302`), переход внутри SPA — `beforeLoad`.
+  страницы куда вести решает BFF (`302` на `/login` или `/404`, правила — в
+  [локальной разработке](docs/local-development.md#bff)); при переходе внутри SPA то же делают
+  `beforeLoad`, `notFoundComponent` корня и `NOT_FOUND` блокнота. Блокнот при прямом открытии своего
+  приходит в bootstrap (`@stores/preloaded`).
 - Ошибки — `TRPCClientError` (`isRpcError` из `@api/trpc`): категория — `data.code`, причина —
   `data.appCode`, ошибки полей — `data.zodError`; на `message` поведение не завязывать.
   `UNAUTHORIZED` защищённой процедуры транспорт сам переводит в гостя и ведёт на `/login`;

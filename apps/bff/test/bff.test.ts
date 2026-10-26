@@ -269,94 +269,150 @@ describe('RPC', () => {
     }, 10_000);
 });
 
+const head = (path: string, sessionCookie?: string) =>
+    bff(
+        new Request(`${ORIGIN}${path}`, {
+            method: 'HEAD',
+            headers: {
+                Accept: 'text/html',
+                ...(sessionCookie ? { Cookie: `${SESSION_COOKIE}=${sessionCookie}` } : {}),
+            },
+        }),
+    );
+
+const expectRedirect = async (res: Response, location: string, what: string) => {
+    expect(res.status, what).toBe(302);
+    expect(res.headers.get('Location'), what).toBe(location);
+    expect(res.headers.get('Cache-Control'), what).toBe('private, no-store');
+    expect(await res.text(), what).toBe('');
+};
+
 describe('HTML', () => {
+    const NOTEBOOK = {
+        id: 1,
+        name: 'Первый блокнот',
+        cells: [{ id: 'c1', kind: 'code', source: 'print(1)' }],
+        created_at: '2026-10-01T10:00:00Z',
+        updated_at: '2026-10-02T10:00:00Z',
+    };
+
     test('гость — { user: null }, Go не вызывается, private no-store', async () => {
         useGo({});
-        const res = await page(undefined, '/');
+        const res = await page(undefined, '/login');
         expect(res.status).toBe(200);
         expect(res.headers.get('Cache-Control')).toBe('private, no-store');
         expect(await bootstrap(res)).toEqual({ user: null });
         expect(go?.calls).toHaveLength(0);
     });
 
-    test('страницы клиента — 200, как их сопоставляет роутер клиента', async () => {
-        useGo({ 'GET /users/me': () => Response.json(USER) });
-        const session = await cookie(goTokens().issue());
-        for (const path of ['/', '/login', '/register/', '/Notebooks/42', '/notebooks/a%20b']) {
-            expect((await page(session, path)).status, path).toBe(200);
+    test('гость: вход и регистрация — 200, /404 — приложение со статусом 404', async () => {
+        useGo({});
+        for (const path of ['/login', '/Register/']) {
+            expect((await page(undefined, path)).status, path).toBe(200);
         }
+        const res = await page(undefined, '/404');
+        expect(res.status).toBe(404);
+        expect(res.headers.get('Content-Type')).toBe('text/html; charset=UTF-8');
+        expect(await bootstrap(res)).toEqual({ user: null });
     });
 
-    test('гость на странице блокнота — 302 на /login без HTML, блокнот у Go не запрашивается', async () => {
+    test('гость: защищённые страницы и неизвестный адрес — 302 на /login, Go не вызывается', async () => {
         useGo({});
-        for (const path of ['/notebooks/1', '/Notebooks/42/']) {
-            const res = await page(undefined, path);
-            expect(res.status, path).toBe(302);
-            expect(res.headers.get('Location')).toBe('/login');
-            expect(res.headers.get('Cache-Control')).toBe('private, no-store');
-            expect(await res.text()).toBe('');
+        for (const path of ['/', '/notebooks/1', '/Notebooks/42/', '/nope', '/notebooks/1/cells']) {
+            await expectRedirect(await page(undefined, path), '/login', path);
         }
+        await expectRedirect(await head('/notebooks/1'), '/login', 'HEAD');
         expect(go?.calls).toHaveLength(0);
     });
 
-    test('HEAD гостя на странице блокнота — тот же 302', async () => {
-        useGo({});
-        const res = await bff(
-            new Request(`${ORIGIN}/notebooks/1`, {
-                method: 'HEAD',
-                headers: { Accept: 'text/html' },
-            }),
-        );
-        expect(res.status).toBe(302);
-        expect(res.headers.get('Location')).toBe('/login');
-    });
-
-    test('сессию не восстановить на странице блокнота — 302 на /login и удаление cookie', async () => {
+    test('сессию не восстановить — гость: 302 на /login и удаление cookie, блокнот не запрашивается', async () => {
         useGo({ 'POST /auth/refresh': () => goError(401, 'unauthorized') });
-        const res = await page(await cookie(goTokens().issue(), now() - 1));
-        expect(res.status).toBe(302);
-        expect(res.headers.get('Location')).toBe('/login');
+        const res = await page(await cookie(goTokens().issue(), now() - 1), '/notebooks/1');
         expect(cleared(res)).toBe(true);
+        await expectRedirect(res, '/login', '/notebooks/1');
         expect(go?.calls.some((c) => c.path.startsWith('/notebooks'))).toBe(false);
     });
 
-    test('вошедший на странице блокнота — приложение, доступ к блокноту проверяет notebooks.get', async () => {
-        useGo({ 'GET /users/me': () => Response.json(USER) });
-        const res = await page(await cookie(goTokens().issue()), '/notebooks/1');
-        expect(res.status).toBe(200);
-        expect(await bootstrap(res)).toEqual({ user: USER });
-    });
-
-    test('неизвестный адрес — то же приложение с bootstrap и статусом 404', async () => {
+    test('вошедший: свои страницы — 200, /404 — 404, неизвестный адрес — 302 на /404', async () => {
         useGo({ 'GET /users/me': () => Response.json(USER) });
         const session = await cookie(goTokens().issue());
-        for (const path of ['/nope', '/notebooks', '/notebooks/1/cells', '/login/extra']) {
-            const res = await page(session, path);
-            expect(res.status, path).toBe(404);
-            expect(res.headers.get('Content-Type')).toBe('text/html; charset=UTF-8');
-            expect(res.headers.get('Cache-Control')).toBe('private, no-store');
-            expect(await bootstrap(res)).toEqual({ user: USER });
+        for (const path of ['/', '/login', '/register']) {
+            expect((await page(session, path)).status, path).toBe(200);
         }
+        const notFound = await page(session, '/404');
+        expect(notFound.status).toBe(404);
+        expect(await bootstrap(notFound)).toEqual({ user: USER });
+        for (const path of ['/nope', '/notebooks', '/notebooks/1/cells', '/login/extra']) {
+            await expectRedirect(await page(session, path), '/404', path);
+        }
+        await expectRedirect(await head('/nope', session), '/404', 'HEAD');
     });
 
-    test('HEAD неизвестного адреса — 404 без тела', async () => {
-        useGo({});
-        const res = await bff(
-            new Request(`${ORIGIN}/nope`, { method: 'HEAD', headers: { Accept: 'text/html' } }),
-        );
-        expect(res.status).toBe(404);
+    test('вошедший, свой блокнот — 200 и блокнот в bootstrap без лишних полей Go', async () => {
+        useGo({
+            'GET /users/me': () => Response.json(USER),
+            'GET /notebooks/:id': () => Response.json({ ...NOTEBOOK, owner_id: 1 }),
+        });
+        const res = await page(await cookie(goTokens().issue()), '/notebooks/1');
+        expect(res.status).toBe(200);
+        expect(await bootstrap(res)).toEqual({ user: USER, notebook: NOTEBOOK });
+        expect(go?.calls.filter((c) => c.path === '/notebooks/1')).toHaveLength(1);
+    });
+
+    test('вошедший, отсутствующий и чужой блокнот — одинаковый 302 на /404 без данных', async () => {
+        // Go ищет блокнот по ID и владельцу (backend#1): на оба отвечает 404
+        useGo({
+            'GET /users/me': () => Response.json(USER),
+            'GET /notebooks/:id': () => goError(404, 'not_found'),
+        });
+        const session = await cookie(goTokens().issue());
+        const missing = await page(session, '/notebooks/404');
+        const foreign = await page(session, '/notebooks/7');
+        expect([...missing.headers.entries()]).toEqual([...foreign.headers.entries()]);
+        await expectRedirect(missing, '/404', 'отсутствующий');
+        await expectRedirect(foreign, '/404', 'чужой');
+    });
+
+    test('вошедший, некорректный ID — 302 на /404, Go за блокнотом не ходит', async () => {
+        useGo({ 'GET /users/me': () => Response.json(USER) });
+        const session = await cookie(goTokens().issue());
+        for (const path of ['/notebooks/abc', '/notebooks/0', '/notebooks/1.5']) {
+            await expectRedirect(await page(session, path), '/404', path);
+        }
+        expect(go?.calls.some((c) => c.path.startsWith('/notebooks'))).toBe(false);
+    });
+
+    test('сбой Go на блокноте — 503, не 404', async () => {
+        useGo({
+            'GET /users/me': () => Response.json(USER),
+            'GET /notebooks/:id': () => goError(500, 'internal'),
+        });
+        const res = await page(await cookie(goTokens().issue()), '/notebooks/1');
+        expect(res.status).toBe(503);
+        expect(await res.text()).not.toContain('<script');
+    });
+
+    test('сессия закончилась на запросе блокнота — 302 на /login и удаление cookie', async () => {
+        useGo({
+            'GET /users/me': () => Response.json(USER),
+            'GET /notebooks/:id': () => goError(401, 'unauthorized'),
+            'POST /auth/refresh': () => goError(401, 'unauthorized'),
+        });
+        const res = await page(await cookie(goTokens().issue()), '/notebooks/1');
+        expect(cleared(res)).toBe(true);
+        await expectRedirect(res, '/login', '/notebooks/1');
     });
 
     test('пользователь — только DTO из users/me', async () => {
         useGo({ 'GET /users/me': () => Response.json({ ...USER, password_hash: 'x' }) });
-        expect(await bootstrap(await page(await cookie(goTokens().issue())))).toEqual({
+        expect(await bootstrap(await page(await cookie(goTokens().issue()), '/'))).toEqual({
             user: USER,
         });
     });
 
     test('истёкший refresh в cookie — гость, cookie удаляется, Go не вызывается', async () => {
         useGo({});
-        const res = await page(await cookie(goTokens().issue(), now() - 100, now() - 1), '/');
+        const res = await page(await cookie(goTokens().issue(), now() - 100, now() - 1), '/login');
         expect(await bootstrap(res)).toEqual({ user: null });
         expect(cleared(res)).toBe(true);
         expect(go?.calls).toHaveLength(0);
@@ -364,7 +420,7 @@ describe('HTML', () => {
 
     test('отказ refresh — гость и удаление cookie', async () => {
         useGo({ 'POST /auth/refresh': () => goError(401, 'unauthorized') });
-        const res = await page(await cookie(goTokens().issue(), now() - 1), '/');
+        const res = await page(await cookie(goTokens().issue(), now() - 1), '/login');
         expect(res.status).toBe(200);
         expect(await bootstrap(res)).toEqual({ user: null });
         expect(cleared(res)).toBe(true);

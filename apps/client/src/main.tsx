@@ -4,6 +4,7 @@ import { onSessionLost } from './api/trpc';
 import { readBootstrap } from './bootstrap';
 import { RouterProvider } from './modules/router';
 import { router } from './router';
+import { setPreloadedNotebook } from './stores/preloaded';
 import { initSession, loseSession } from './stores/session';
 import { showToast } from './stores/toast';
 import './styles/tokens.css';
@@ -16,7 +17,9 @@ if (!container) throw new Error('Не найден элемент #root');
 // Сломанный bootstrap — ошибка запуска, гостем и запасным users.me она не прикрывается.
 let started = false;
 try {
-    initSession(readBootstrap().user);
+    const { user, notebook } = readBootstrap();
+    initSession(user);
+    setPreloadedNotebook(notebook);
     started = true;
 } catch (error) {
     console.error(error);

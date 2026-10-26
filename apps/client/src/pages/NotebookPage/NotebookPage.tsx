@@ -2,7 +2,6 @@ import { useEffect, useState } from '@cdd-team/react';
 
 import { isRpcError, trpc, type Cell as CellData, type Notebook } from '@api/trpc';
 import logoMarkUrl from '@assets/logo-mark.svg';
-import { buttonClassName } from '@components/Button/Button';
 import { Cell, CellSkeleton, cellDomId } from '@components/Cell/Cell';
 import { Chip } from '@components/Chip/Chip';
 import { Header } from '@components/Header/Header';
@@ -11,7 +10,8 @@ import { ProfileMenu } from '@components/ProfileMenu/ProfileMenu';
 import { Space } from '@components/Space/Space';
 import { StateBlock } from '@components/StateBlock/StateBlock';
 import { clsx } from '@modules/clsx';
-import { Link, useNavigate, useParams } from '@modules/router';
+import { useNavigate, useParams } from '@modules/router';
+import { peekPreloadedNotebook, takePreloadedNotebook } from '@stores/preloaded';
 import { useSessionStore } from '@stores/session';
 import { hideSnackbar, showSnackbar } from '@stores/snackbar';
 import { plural } from '@utils/plural';
@@ -25,7 +25,6 @@ type CellKind = CellData['kind'];
 type PageState =
     | { status: 'loading' }
     | { status: 'error' }
-    | { status: 'missing' }
     | { status: 'ready'; notebook: Notebook };
 
 /**
@@ -83,8 +82,6 @@ function title(state: PageState): string {
             return 'Загрузка блокнота…';
         case 'error':
             return 'Не удалось загрузить блокнот';
-        case 'missing':
-            return 'Блокнот не найден';
         case 'ready':
             return state.notebook.name;
     }
@@ -122,7 +119,11 @@ export function NotebookPage() {
     const navigate = useNavigate();
     const login = useSessionStore((state) => state.user?.login ?? '');
     const id = Number(useParams({ from: '/_auth/notebooks/$notebookId' }).notebookId);
-    const [page, setPage] = useState<PageState>({ status: 'loading' });
+    // При прямом открытии своего блокнота BFF уже положил его в bootstrap: первый показ без запроса
+    const preloaded = peekPreloadedNotebook(id);
+    const [page, setPage] = useState<PageState>(
+        preloaded ? { status: 'ready', notebook: preloaded } : { status: 'loading' },
+    );
     const [attempt, setAttempt] = useState(0);
     const [addedId, setAddedId] = useState<string | undefined>(undefined);
     // Ячейки удаляются по номеру, поэтому добавление и удаление идут строго по одному
@@ -135,11 +136,17 @@ export function NotebookPage() {
             hideSnackbar();
             setAttempt((current) => current + 1);
         };
+        const first = takePreloadedNotebook(id);
+        if (first) {
+            setPage({ status: 'ready', notebook: first });
+            return;
+        }
         setPage({ status: 'loading' });
         void loadNotebook(id).then((notebook) => {
             if (!alive) return;
+            // отсутствующий и чужой блокнот (одинаковый NOT_FOUND) — как прямое открытие: на /404
             if (notebook === 'missing') {
-                setPage({ status: 'missing' });
+                void navigate({ to: '/404', replace: true });
                 return;
             }
             if (notebook) {
@@ -153,7 +160,7 @@ export function NotebookPage() {
             alive = false;
             hideSnackbar();
         };
-    }, [id, attempt]);
+    }, [id, attempt, navigate]);
 
     useEffect(
         () => () => {
@@ -296,17 +303,6 @@ export function NotebookPage() {
                         actionsClassName={styles.chips}
                     >
                         <AddCellChips onAdd={handleAdd} />
-                    </StateBlock>
-                )}
-                {page.status === 'missing' && (
-                    <StateBlock
-                        key="missing"
-                        title="Блокнот не найден"
-                        description="Возможно, его удалили или ссылка неверная."
-                    >
-                        <Link to="/" className={buttonClassName('secondary')}>
-                            К списку блокнотов
-                        </Link>
                     </StateBlock>
                 )}
             </div>

@@ -3,14 +3,18 @@
 /**
  * Пути страниц клиента — `path` маршрутов в `apps/client/src/routes`. Обёртки `_auth` и `_guest`
  * сегмента не добавляют, поэтому путь маршрута — он же путь адреса. Новая страница добавляется
- * сюда: по этому списку BFF отвечает на неизвестный адрес 404.
+ * сюда: по этому списку BFF решает, куда вести прямой запрос HTML (`html.ts`).
  */
 export const PAGES = {
     index: '/',
     login: 'login',
     register: 'register',
     notebook: 'notebooks/$notebookId',
+    notFound: '404',
 } as const;
+
+/** Страница клиента — ключ {@link PAGES}. */
+export type Page = keyof typeof PAGES;
 
 const segments = (path: string) => path.split('/').filter(Boolean);
 
@@ -42,10 +46,10 @@ export function matchesPage(page: string, pathname: string): boolean {
 }
 
 /**
- * Есть ли у клиента страница по этому адресу.
+ * Страница клиента по адресу.
  * @param pathname путь адреса
- * @returns `true`, если адрес — страница клиента
+ * @returns ключ страницы или `undefined` для неизвестного адреса
  */
-export function isPage(pathname: string): boolean {
-    return Object.values(PAGES).some((page) => matchesPage(page, pathname));
+export function pageOf(pathname: string): Page | undefined {
+    return (Object.keys(PAGES) as Page[]).find((page) => matchesPage(PAGES[page], pathname));
 }
