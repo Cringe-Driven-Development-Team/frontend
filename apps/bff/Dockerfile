@@ -1,5 +1,9 @@
 # Образ BFF: сборки BFF и клиента одного коммита. Собирается из корня монорепы: bun run image
 FROM oven/bun:1.4.4-alpine
+# полный SHA коммита: по метке CD сверяет образ с релизом до выкатки (frontend#4, infra#74)
+ARG RELEASE_SHA=dev
+LABEL org.opencontainers.image.revision=$RELEASE_SHA \
+      org.opencontainers.image.source=https://github.com/Cringe-Driven-Development-Team/frontend
 WORKDIR /app
 COPY apps/bff/dist/bff.js /app/bff.js
 COPY apps/client/dist/index.html /app/client/index.html

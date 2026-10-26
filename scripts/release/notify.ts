@@ -70,10 +70,12 @@ async function changes(range: string | undefined): Promise<string[]> {
 function deploymentState(status: string): string[] {
     const env = process.env;
     const stages = [
-        ['RELEASE_PREVIOUS_STATUS', 'Поиск предыдущего релиза'],
-        ['RELEASE_EXISTS_STATUS', 'Release exists'],
+        ['RELEASE_TARGET_STATUS', 'Выбор цели отката'],
+        ['RELEASE_ARTIFACTS_STATUS', 'Готовый выпуск'],
+        ['RELEASE_IMAGE_STATUS', 'Проверка образа'],
         ['RELEASE_CHECK_STATUS', 'Release check'],
-        ['RELEASE_SWITCH_STATUS', 'Переключение версии'],
+        ['RELEASE_START_STATUS', 'Запись production'],
+        ['RELEASE_SWITCH_STATUS', 'Переключение BFF'],
         ['RELEASE_HEALTH_STATUS', 'Health check'],
         ['RELEASE_RETENTION_STATUS', 'Retention'],
     ];
@@ -83,25 +85,34 @@ function deploymentState(status: string): string[] {
         : status === 'success'
           ? []
           : ['<b>Этап сбоя:</b> не определён — см. логи запуска.'];
+    // результат этого запуска — по его проверкам, а не по истории GitHub
     if (env.RELEASE_HEALTH_STATUS === 'success') {
-        lines.push('<b>Проверка прода:</b> пройдена — сайт отдаёт целевую версию.');
-    } else if (env.RELEASE_INDEX_PUBLISHED === 'true') {
+        lines.push(
+            '<b>Этот запуск:</b> проверен — работает выбранный образ, HTML, RPC и ассеты в порядке.',
+        );
+    } else if (env.RELEASE_SWITCH_STATUS === 'success') {
         lines.push(
             env.RELEASE_HEALTH_STATUS === 'failure'
-                ? '<b>Прод:</b> Версия переключена, проверка прода не пройдена.'
-                : '<b>Прод:</b> Версия переключена, результат проверки неизвестен.',
+                ? '<b>Этот запуск:</b> BFF переключён, проверка прода не пройдена.'
+                : '<b>Этот запуск:</b> BFF переключён, результат проверки неизвестен.',
         );
+        lines.push('Проверьте сайт и логи; при необходимости запустите откат.');
+    } else if (
+        env.RELEASE_SWITCH_STATUS === 'failure' ||
+        env.RELEASE_SWITCH_STATUS === 'cancelled'
+    ) {
         lines.push(
-            env.RELEASE_SWITCH_STATUS === 'failure'
-                ? 'Указатель current.json мог не обновиться: проверьте его и логи перед откатом.'
-                : 'Проверьте сайт и логи; при необходимости запустите откат.',
+            '<b>Этот запуск:</b> переключение не завершилось — .env и Compose восстановлены, ' +
+                'но контейнер мог смениться: состояние прода неизвестно, смотрите логи.',
         );
-    } else if (env.RELEASE_SWITCH_STATUS === 'skipped') {
-        lines.push('<b>Прод:</b> Переключение не выполнялось.');
     } else {
-        lines.push('<b>Прод:</b> Переключение не подтверждено — проверьте сайт и логи.');
+        lines.push('<b>Этот запуск:</b> прод не менялся — переключение не выполнялось.');
     }
     return lines;
+}
+
+function digestOf(ref: string | undefined): string | undefined {
+    return /@sha256:([0-9a-f]{64})$/.exec(ref ?? '')?.[1];
 }
 
 function mentionActor(actor: string, rawMap: string | undefined): string {
@@ -147,6 +158,8 @@ export async function notify(what: string, status: string, sha?: string): Promis
                 : `❌ ${what} фронта: ошибка`,
     ];
     if (sha) lines.push(`Релиз <code>${sha}</code>`);
+    const digest = digestOf(process.env.RELEASE_IMAGE_REF);
+    if (digest) lines.push(`Образ BFF <code>sha256:${digest.slice(0, 12)}</code>`);
     if (GITHUB_ACTOR)
         lines.push(`Запустил: ${mentionActor(GITHUB_ACTOR, process.env.TELEGRAM_USER_MAP)}`);
     const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
@@ -167,17 +180,17 @@ export async function notify(what: string, status: string, sha?: string): Promis
             `${escape(siteUrl())} · production`,
             '',
             `<b>Версия:</b> ${revision(before, repo)} → ${revision(sha, repo)}`,
+            '<i>Слева — последний подтверждённый выпуск по истории GitHub Deployments: он показывает ' +
+                'прошлую проверку, а не то, что запущено сейчас.</i>',
             '',
             `<b>${what === 'Откат' ? 'Отменённые изменения' : 'Изменения'}</b>`,
             ...(await changes(range)),
             '',
             ...deploymentState(status),
         );
-        const switched = process.env.RELEASE_INDEX_PUBLISHED === 'true';
         if (
             status === 'success' ||
-            switched ||
-            ['failure', 'cancelled'].includes(process.env.RELEASE_SWITCH_STATUS ?? '')
+            ['success', 'failure', 'cancelled'].includes(process.env.RELEASE_SWITCH_STATUS ?? '')
         ) {
             keyboard.push([
                 button('🌐 Открыть прод', siteUrl()),

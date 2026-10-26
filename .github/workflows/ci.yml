@@ -19,9 +19,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  SITE_URL: https://cellestial.ru
-
 jobs:
   check:
     name: Check
@@ -36,53 +33,95 @@ jobs:
       - run: bun run test
       - run: bun run build
 
-  upload:
-    name: Upload release
+  # Готовый выпуск коммита main: ассеты клиента в S3/CDN releases/<sha>/ и публичный образ BFF в GHCR
+  # с HTML того же коммита. Запись release-artifacts (GitHub Deployment) появляется только после
+  # проверки обоих; на прод выпуск выкатывает workflow CD (docs/release.md).
+  publish:
+    name: Publish release
     needs: check
     if: github.repository == 'Cringe-Driven-Development-Team/frontend' && github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PRODUCTION_ENABLED == 'true'
     runs-on: ubuntu-latest
-    # ключ S3 лежит в environment и действует на весь проект Selectel
-    environment: production
+    permissions:
+      contents: read
+      packages: write
+      deployments: write
+    # ключ S3 лежит в environment и действует на весь проект Selectel. Публикация — не выкатка:
+    # автоматический Deployment production не создаётся
+    environment:
+      name: production
+      deployment: false
+    # один SHA публикуется одним запуском: повторный ждёт и находит уже готовый выпуск
+    concurrency:
+      group: publish-${{ github.sha }}
+      cancel-in-progress: false
+    env:
+      SHA: ${{ github.sha }}
+      GITHUB_TOKEN: ${{ github.token }}
+      CDN_URL: ${{ vars.CDN_URL }}
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
       - run: bun install --frozen-lockfile
+      - name: Published already
+        id: published
+        run: bun run release published "$SHA"
       - name: Build release
+        if: steps.published.outputs.published != 'true'
         env:
           RELEASE_SHA: ${{ github.sha }}
-          CDN_URL: ${{ vars.CDN_URL }}
         run: |
           [ -n "$CDN_URL" ] || { echo "::error::Не задана переменная CDN_URL"; exit 1; }
           bun run build
-      - name: Upload release
+      - name: Upload assets
+        if: steps.published.outputs.published != 'true'
         env:
           S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
           S3_BUCKET: ${{ vars.S3_BUCKET }}
           S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
           S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
-        run: bun run release upload "$GITHUB_SHA"
-      # релиз залит и отдаётся с CDN, но пользователи его не видят: выкатка — workflow CD
+        run: bun run release upload "$SHA"
       - name: Release check
+        if: steps.published.outputs.published != 'true'
+        run: bun run release check "$SHA"
+      # образ — после обеих сборок (bff.js и index.html этого SHA), вне turbo build
+      - name: Publish BFF image
+        id: image
+        if: steps.published.outputs.published != 'true'
         env:
-          CDN_URL: ${{ vars.CDN_URL }}
-        run: bun run release check "$GITHUB_SHA"
+          IMAGE: ghcr.io/cringe-driven-development-team/bff
+        run: |
+          echo "$GITHUB_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          trap 'docker logout ghcr.io' EXIT
+          docker build -f apps/bff/Dockerfile --build-arg "RELEASE_SHA=$SHA" -t "$IMAGE:sha-$SHA" .
+          docker push "$IMAGE:sha-$SHA"
+          ref=$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE:sha-$SHA")
+          [[ "$ref" =~ ^ghcr\.io/cringe-driven-development-team/bff@sha256:[0-9a-f]{64}$ ]] \
+            || { echo "::error::Не удалось получить digest образа: '$ref'"; exit 1; }
+          echo "image_ref=$ref" >> "$GITHUB_OUTPUT"
+      # без учётных данных, как скачивает VPS: приватный package — выпуск не готов
+      - name: Anonymous image check
+        if: steps.published.outputs.published != 'true'
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.image_ref }}
+        run: bun run release image "$IMAGE_REF" "$SHA"
+      - name: Register release
+        if: steps.published.outputs.published != 'true'
+        env:
+          IMAGE_REF: ${{ steps.image.outputs.image_ref }}
+        run: bun run release register "$SHA" "$IMAGE_REF"
       - name: Send to tg
+        if: always()
+        continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
           TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
           TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
-        run: bun run release notify Заливка success "$GITHUB_SHA"
-      - name: Send failure to tg
-        if: failure()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
-          TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
-          TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
-        run: bun run release notify Заливка failure "$GITHUB_SHA"
+          RELEASE_IMAGE_REF: ${{ steps.image.outputs.image_ref || steps.published.outputs.image_ref }}
+          STATUS: ${{ job.status }}
+        run: bun run release notify Заливка "$STATUS" "$SHA"
 
   course-sync:
     needs: [check]

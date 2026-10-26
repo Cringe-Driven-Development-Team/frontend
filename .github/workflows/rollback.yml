@@ -5,66 +5,129 @@ on:
 
 permissions:
   contents: read
+  deployments: write
 
 env:
   SITE_URL: https://cellestial.ru
+  # entrypoint выкатки BFF (infra#74) на зафиксированной ревизии infra — та же, что в CD
+  INFRA_REF: 35ae002f211bf3ef43769ad0c33748f457889532
 
 jobs:
   rollback:
     name: Rollback
     if: github.repository == 'Cringe-Driven-Development-Team/frontend' && github.ref == 'refs/heads/main' && vars.PRODUCTION_ENABLED == 'true'
     runs-on: ubuntu-latest
-    environment: production
-    # указатель релиза меняет кто-то один: группа общая с CD. Очереди в ней нет — ожидает
-    # один запуск, более новый его вытесняет (README, «Выкатка»)
+    timeout-minutes: 30
+    environment:
+      name: production
+      deployment: false
     concurrency:
       group: production
       cancel-in-progress: false
     env:
-      S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
-      S3_BUCKET: ${{ vars.S3_BUCKET }}
-      S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
-      S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+      GITHUB_TOKEN: ${{ github.token }}
       CDN_URL: ${{ vars.CDN_URL }}
+      ANSIBLE_HOST_KEY_CHECKING: 'True'
     steps:
       - uses: actions/checkout@v5
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.4
       - run: bun install --frozen-lockfile
-      - name: Find previous release
-        id: previous
-        run: bun run release previous
-      # как и в выкатке, релиз проверяется до переключения
+      # цель — по истории production в GitHub, до доступа к VPS (docs/release.md, «Откат»)
+      - name: Rollback target
+        id: target
+        run: bun run release target
+      - name: Anonymous image check
+        id: image
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+          IMAGE_REF: ${{ steps.target.outputs.image_ref }}
+        run: bun run release image "$IMAGE_REF" "$SHA"
       - name: Release check
         id: check
         env:
-          SHA: ${{ steps.previous.outputs.sha }}
+          SHA: ${{ steps.target.outputs.sha }}
         run: bun run release check "$SHA"
-      - name: Switch release pointer
-        id: switch
+      - name: Production record
+        id: start
         env:
-          SHA: ${{ steps.previous.outputs.sha }}
-        run: bun run release rollback "$SHA"
+          SHA: ${{ steps.target.outputs.sha }}
+          IMAGE_REF: ${{ steps.target.outputs.image_ref }}
+        run: bun run release start "$SHA" "$IMAGE_REF" rollback
+      - name: Checkout deployment infrastructure
+        uses: actions/checkout@v5
+        with:
+          repository: Cringe-Driven-Development-Team/infra
+          ref: ${{ env.INFRA_REF }}
+          path: infra
+          persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install deployment tools
+        working-directory: infra/ansible
+        run: |
+          python -m pip install -r deploy-requirements.txt
+          ansible-galaxy collection install -r deploy-requirements.yml
+      - name: Prepare SSH and Vault files
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
+        run: |
+          for name in DEPLOY_SSH_KEY SSH_KNOWN_HOSTS ANSIBLE_VAULT_PASSWORD; do
+            [[ -n "${!name}" ]] || { echo "::error::Нет секрета $name в environment production"; exit 1; }
+          done
+          umask 077
+          mkdir -p "$RUNNER_TEMP/deploy"
+          printf '%s\n' "$DEPLOY_SSH_KEY" > "$RUNNER_TEMP/deploy/ci-key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$RUNNER_TEMP/deploy/known_hosts"
+          printf '%s\n' "$ANSIBLE_VAULT_PASSWORD" > "$RUNNER_TEMP/deploy/vault-pass"
+          ssh-keygen -F cellestial.ru -f "$RUNNER_TEMP/deploy/known_hosts" > /dev/null
+          echo "ANSIBLE_VAULT_PASSWORD_FILE=$RUNNER_TEMP/deploy/vault-pass" >> "$GITHUB_ENV"
+      # тот же entrypoint, что у выкатки: отсутствующий или упавший контейнер откат не блокирует
+      - name: Switch BFF
+        id: switch
+        working-directory: infra/ansible
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+          IMAGE_REF: ${{ steps.target.outputs.image_ref }}
+        run: |
+          ansible-playbook -i inventory/ci.yml deploy-bff.yml \
+            -e "bff_image_ref=$IMAGE_REF" -e "bff_release_sha=$SHA" \
+            -e "deploy_key_path=$RUNNER_TEMP/deploy/ci-key" \
+            --ssh-common-args="-o UserKnownHostsFile=$RUNNER_TEMP/deploy/known_hosts -o StrictHostKeyChecking=yes"
+      - name: Remove deployment secrets
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/deploy"
       - name: Health check
         id: health
         env:
-          SHA: ${{ steps.previous.outputs.sha }}
+          SHA: ${{ steps.target.outputs.sha }}
         run: bun run release health "$SHA"
+      - name: Production result
+        if: always() && steps.start.outputs.deployment_id
+        env:
+          ID: ${{ steps.start.outputs.deployment_id }}
+          RESULT: ${{ steps.health.outcome == 'success' && 'success' || (steps.switch.outcome == 'success' && 'failure' || 'error') }}
+        run: bun run release finish "$ID" "$RESULT"
       - name: Send to tg
         if: always()
+        continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
           TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
           TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
           STATUS: ${{ job.status }}
-          SHA: ${{ steps.previous.outputs.sha }}
-          GITHUB_TOKEN: ${{ github.token }}
-          RELEASE_BEFORE_SHA: ${{ steps.switch.outputs.before_sha || steps.previous.outputs.before_sha }}
-          RELEASE_INDEX_PUBLISHED: ${{ steps.switch.outputs.index_published }}
-          RELEASE_PREVIOUS_STATUS: ${{ steps.previous.outcome }}
+          SHA: ${{ steps.target.outputs.sha }}
+          RELEASE_BEFORE_SHA: ${{ steps.target.outputs.before_sha }}
+          RELEASE_IMAGE_REF: ${{ steps.target.outputs.image_ref }}
+          RELEASE_TARGET_STATUS: ${{ steps.target.outcome }}
+          RELEASE_IMAGE_STATUS: ${{ steps.image.outcome }}
           RELEASE_CHECK_STATUS: ${{ steps.check.outcome }}
+          RELEASE_START_STATUS: ${{ steps.start.outcome }}
           RELEASE_SWITCH_STATUS: ${{ steps.switch.outcome }}
           RELEASE_HEALTH_STATUS: ${{ steps.health.outcome }}
         run: bun run release notify Откат "$STATUS" "$SHA"

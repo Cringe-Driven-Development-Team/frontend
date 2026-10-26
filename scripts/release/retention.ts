@@ -1,13 +1,22 @@
-import { ReleaseError, isSha } from './env.ts';
-import { deleteObject, listObjects, openBucket, readCurrent } from './s3.ts';
+import { protectedReleases } from './deployments.ts';
+import { isSha } from './env.ts';
+import { PRODUCTION_ENV, type ProductionPayload, listDeployments } from './github.ts';
+import { deleteObject, listObjects, openBucket } from './s3.ts';
 
 const KEEP_RELEASES = 5;
 
-/** Оставить KEEP_RELEASES последних релизов; stable и previous не удаляются никогда */
+/**
+ * Оставить KEEP_RELEASES последних релизов и, независимо от возраста, ассеты последнего успешного
+ * выпуска прода и предыдущего успешного с другим digest (история GitHub Deployments). Если последняя
+ * попытка выкатки не success, очистка откладывается: попытка могла переключить контейнер.
+ */
 export async function retention(): Promise<void> {
+    const keep = protectedReleases(await listDeployments<ProductionPayload>(PRODUCTION_ENV));
+    if (!keep) {
+        console.log('Последняя выкатка не подтверждена — очистка отложена до следующего успеха');
+        return;
+    }
     const bucket = openBucket();
-    const current = await readCurrent(bucket);
-    if (!current) throw new ReleaseError('current.json нет — без него удалять релизы нельзя');
 
     // возраст релиза — время последней записи в его каталог
     const releases = new Map<string, { keys: string[]; modified: number }>();
@@ -27,7 +36,7 @@ export async function retention(): Promise<void> {
     const old = [...releases]
         .toSorted(([, a], [, b]) => b.modified - a.modified)
         .slice(KEEP_RELEASES)
-        .filter(([sha]) => sha !== current.stable && sha !== current.previous);
+        .filter(([sha]) => !keep.includes(sha));
     for (const [sha, { keys }] of old) {
         console.log(`Удаляем релиз ${sha}`);
         // index.html — первым: недоудалённый релиз не выглядит целым
@@ -36,4 +45,7 @@ export async function retention(): Promise<void> {
             await deleteObject(bucket, key);
         }
     }
+    console.log(
+        `Сохранены последние ${KEEP_RELEASES} релизов и выпуски прода: ${keep.join(', ') || 'нет'}`,
+    );
 }
