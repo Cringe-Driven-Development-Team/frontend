@@ -40,6 +40,8 @@ export interface Deployment<P> {
     state: DeploymentState | undefined;
 }
 
+const PAGE_SIZE = 100;
+
 interface RawDeployment {
     id: number;
     sha: string;
@@ -87,9 +89,16 @@ export async function listDeployments<P>(
     environment: string,
     sha?: string,
 ): Promise<Deployment<P>[]> {
-    const query = new URLSearchParams({ environment, per_page: '100' });
+    const query = new URLSearchParams({ environment, per_page: String(PAGE_SIZE) });
     if (sha) query.set('sha', sha);
-    const raw = await api<RawDeployment[]>(`/deployments?${query}`);
+    // вся история: цель отката и защита ассетов могут лежать дальше первой страницы
+    const raw: RawDeployment[] = [];
+    for (let page = 1; ; page++) {
+        query.set('page', String(page));
+        const batch = await api<RawDeployment[]>(`/deployments?${query}`);
+        raw.push(...batch);
+        if (batch.length < PAGE_SIZE) break;
+    }
     const result: Deployment<P>[] = [];
     for (const item of raw) {
         const statuses = await api<{ state: DeploymentState }[]>(
