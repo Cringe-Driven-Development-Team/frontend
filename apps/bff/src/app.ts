@@ -11,12 +11,15 @@ export type AppDeps = {
     html?: (req: Request) => Promise<Response>;
 };
 
+// поисковым роботам не обходить API; клиентские страницы и ассеты не закрыты
+const ROBOTS_TXT = 'User-agent: *\nDisallow: /api/\n';
+
 const notFound = (): Response =>
     new Response('Not Found', { status: 404, headers: { 'Content-Type': 'text/plain' } });
 
 /**
  * Приложение Hono. Порядок маршрутов: `/health`, tRPC, остальные `/api` (404, в Go не уходят),
- * публичные файлы, HTML для GET/HEAD с `Accept: text/html` (на неизвестный адрес — со статусом 404),
+ * `/robots.txt` (без сессии и Go, при любом `Accept`), публичные файлы, HTML для GET/HEAD с `Accept: text/html` (на неизвестный адрес — со статусом 404),
  * остальное — 404. HEAD сюда приходит как
  * GET (`index.ts`), тело отбрасывает Bun.
  * @param deps шаблон, публичные файлы и обработчики tRPC и HTML
@@ -32,6 +35,14 @@ export function createApp(deps: AppDeps): Hono {
     app.all('/api/trpc/*', (c) => (deps.trpc ? deps.trpc(c.req.raw) : notFound()));
     app.all('/api', notFound);
     app.all('/api/*', notFound);
+
+    app.get(
+        '/robots.txt',
+        () =>
+            new Response(ROBOTS_TXT, {
+                headers: { 'Content-Type': 'text/plain; charset=UTF-8' },
+            }),
+    );
 
     for (const [name, file] of deps.publicFiles) {
         app.get(`/${name}`, () => new Response(file));
