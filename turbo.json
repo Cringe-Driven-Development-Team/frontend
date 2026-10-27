@@ -6,7 +6,7 @@
         "build": {
             "dependsOn": ["^build"],
             // RELEASE_SHA и CDN_URL задаёт CI для релиза: от них зависит base в сборке клиента
-            "env": ["RELEASE_SHA", "CDN_URL", "STATIC_URL"],
+            "env": ["RELEASE_SHA", "CDN_URL", "VITE_STATIC_URL"],
             "outputs": ["dist/**"]
         },
         "lint": {

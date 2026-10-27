@@ -67,11 +67,11 @@ const envDir = '../..';
 export default defineConfig(({ command, mode }) => {
     if (command === 'serve') hideForeignMkcert();
     // RELEASE_SHA и CDN_URL задаёт CI при сборке релиза; без них (локально и в PR) base остаётся '/'
-    // STATIC_URL — адрес static (картинки и шрифты), BFF_URL — адрес локального BFF
-    const { RELEASE_SHA: sha, CDN_URL: cdn, STATIC_URL, BFF_URL } = loadEnv(mode, envDir, '');
+    // VITE_STATIC_URL — публичный адрес static (картинки и шрифты), BFF_URL — адрес локального BFF
+    const { RELEASE_SHA: sha, CDN_URL: cdn, VITE_STATIC_URL, BFF_URL } = loadEnv(mode, envDir, '');
     const bffUrl = BFF_URL || 'http://127.0.0.1:3000';
     const cdnUrl = cdn && toUrl(cdn);
-    const staticUrl = toUrl(STATIC_URL || 'https://static.cellestial.ru');
+    const staticUrl = toUrl(VITE_STATIC_URL || 'https://static.cellestial.ru');
 
     return {
         envDir,
@@ -88,6 +88,9 @@ export default defineConfig(({ command, mode }) => {
             proxy: { '/api/trpc': bffUrl },
         },
         build: { outDir: 'dist', sourcemap: true },
+        // %VITE_STATIC_URL% в index.html подставляет сам Vite и берёт значение и из define: так
+        // в HTML попадает адрес по умолчанию и тот же нормализованный адрес, что и в CSS
+        define: { 'import.meta.env.VITE_STATIC_URL': JSON.stringify(staticUrl) },
         plugins: [
             // локальный HTTPS: cookie сессии BFF — Secure; сертификат выпускает и доверяет mkcert
             mkcert({ hosts: ['localhost', '127.0.0.1'] }),
@@ -95,18 +98,14 @@ export default defineConfig(({ command, mode }) => {
             // Vite добавляет в него клиент HMR; /api/trpc из server.proxy плагин не трогает
             bffHtml(bffUrl),
             {
-                // var() не работает внутри url() и в @font-face: адрес static подставляется
-                // вместо %STATIC_URL% в CSS и index.html
+                // var() не работает внутри url() и в @font-face, а HTML-подстановку Vite к CSS не
+                // применяет: адрес static подставляется вместо %VITE_STATIC_URL% в CSS здесь
                 name: 'static-url',
                 enforce: 'pre',
                 transform: (code: string, id: string) =>
                     /\.css($|\?)/.test(id)
-                        ? { code: code.replaceAll('%STATIC_URL%', staticUrl), map: null }
+                        ? { code: code.replaceAll('%VITE_STATIC_URL%', staticUrl), map: null }
                         : undefined,
-                transformIndexHtml: {
-                    order: 'pre',
-                    handler: (html) => html.replaceAll('%STATIC_URL%', staticUrl),
-                },
             },
             {
                 name: 'release-meta',

@@ -118,6 +118,10 @@ BFF — с пользователем в `<script id="bootstrap">` и cookie с�
   отдаёт ответом BFF
   с его `Set-Cookie`, добавив клиент HMR (`transformIndexHtml`). Адрес BFF — `BFF_URL`, по умолчанию
   `http://127.0.0.1:3000`.
+- Картинки и шрифты — с адреса `VITE_STATIC_URL`, по умолчанию `https://static.cellestial.ru`; свой
+  static — `VITE_STATIC_URL=https://…` в корневом `.env` или окружении. Переменная публичная: адрес
+  попадает в HTML страниц и может оказаться в клиентском бандле, секреты в неё не класть. Тот же адрес
+  берёт `bun run build`.
 - BFF (`apps/bff`, `src/dev.ts`) — шаблон `apps/client/index.html`,
   `APP_ORIGIN=https://localhost:5173`, Go — Cloud Mock Apidog
   (`https://mock.apidog.com/m1/1382426-0-default`), постоянный dev-ключ сессии: она переживает
