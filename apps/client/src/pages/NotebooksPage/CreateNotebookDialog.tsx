@@ -4,7 +4,7 @@ import { isRpcError, trpc } from '@api/trpc';
 import { Button } from '@components/Button/Button';
 import { Input } from '@components/Input/Input';
 import { Modal } from '@components/Modal/Modal';
-import { useNavigate } from '@modules/router';
+import { useNavigate } from '@cdd-team/router';
 import { hideSnackbar, showSnackbar } from '@stores/snackbar';
 import styles from './NotebooksPage.module.css';
 

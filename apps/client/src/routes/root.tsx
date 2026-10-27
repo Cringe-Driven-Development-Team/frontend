@@ -1,6 +1,6 @@
 import { useEffect } from '@cdd-team/react';
 import { RootLayout } from '@layouts/RootLayout';
-import { createRootRoute, useNavigate } from '@modules/router';
+import { createRootRoute, useNavigate } from '@cdd-team/router';
 import { useSessionStore } from '@stores/session';
 
 /**

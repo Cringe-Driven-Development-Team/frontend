@@ -1,6 +1,6 @@
 import { Snackbar } from '@components/Snackbar/Snackbar';
 import { Toast } from '@components/Toast/Toast';
-import { Outlet } from '@modules/router';
+import { Outlet } from '@cdd-team/router';
 import { useSnackbarStore } from '@stores/snackbar';
 import { useToastStore } from '@stores/toast';
 

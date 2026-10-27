@@ -50,7 +50,8 @@ zod-схемы — `packages/schemas` ([README](README.md#монорепа)). К
 - Работать этапами: сделать этап → человек проверяет → следующий этап только после его команды.
 - Если что-то непонятно или есть выбор — спросить, а не угадывать.
 - Готовые библиотеки из интернета не подключать. Можно только командные пакеты:
-  `@cdd-team/react`, `@cdd-team/zustand`, `@cdd-team/openapi`, `@cdd-team/vite-plugin-bff-html`. Исключения — по задачам ментора:
+  `@cdd-team/react`, `@cdd-team/zustand`, `@cdd-team/clsx`, `@cdd-team/router`, `@cdd-team/openapi`,
+  `@cdd-team/vite-plugin-bff-html`. Исключения — по задачам ментора:
   Orval и zod (frontend#45), lefthook (frontend#24).
 - Не добавлять ничего, что не нужно для задачи. Комментарии в коде — коротко и только там,
   где без них непонятно.
@@ -93,7 +94,7 @@ bun run orval      # spec/openapi.json → клиент BFF к Go и zod-схе�
 
 ## Структура `apps/client/src/`
 
-Импорты из другой папки `src` — через алиасы (`@components/...`, `@modules/clsx`, `@stores/...`),
+Импорты из другой папки `src` — через алиасы (`@components/...`, `@stores/...`),
 внутри своей папки — через `./`. Алиасы заданы только в `paths` в `apps/client/tsconfig.json`,
 vite берёт их оттуда.
 
@@ -101,8 +102,8 @@ vite берёт их оттуда.
 - `components/` — UI-kit по Components из макета: `Button`, `Input`, `Icon`, `Logo`, `Moon`,
   `Snackbar`, `Toast`, `Space`. Каждый компонент — папка с `.tsx` и `.module.css`.
 - `layouts/RootLayout.tsx` — `<main>` с `<Outlet />`, тост и снекбар. Второй `<main>` на страницах не нужен.
-- `modules/router/` — командный роутер (API как у TanStack Router). Импорт только через
-  `@modules/router`, не из внутренних файлов.
+- `router.ts` — экземпляр роутера `@cdd-team/router` (API как у TanStack Router) и регистрация его
+  типов через `Register`. Импорт роутера — только из `@cdd-team/router`.
 - `pages/` — страницы. `routes/` — маршруты и дерево `routeTree.ts`. `path` маршрута берётся из
   `PAGES` (`@cdd/bff/pages`): по этому списку BFF решает, куда вести прямой запрос страницы,
   поэтому новая страница добавляется сначала в `PAGES`.
@@ -116,7 +117,7 @@ vite берёт их оттуда.
   `url('%STATIC_URL%/img/…')`: плагин в `apps/client/vite.config.ts` подставляет его при сборке и в dev.
 
 Стили компонентов и страниц — CSS Modules: `import styles from './X.module.css'`,
-в JSX `className={styles.peek}`, несколько классов — через `clsx` из `@modules/clsx`.
+в JSX `className={styles.peek}`, несколько классов — через `clsx` из `@cdd-team/clsx`.
 Имена классов короткие, в camelCase, без БЭМ-префиксов: область видимости даёт модуль.
 Компонент не стилизует классы другого — нужный класс передаётся ему пропом `className`.
 

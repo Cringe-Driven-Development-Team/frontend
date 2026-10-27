@@ -1,7 +1,7 @@
 import { useEffect, useState } from '@cdd-team/react';
 import { Avatar } from '@components/Avatar/Avatar';
 import { Icon } from '@components/Icon/Icon';
-import { clsx } from '@modules/clsx';
+import { clsx } from '@cdd-team/clsx';
 import { LogoutDialog } from './LogoutDialog';
 import styles from './ProfileMenu.module.css';
 

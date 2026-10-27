@@ -1,5 +1,5 @@
 import { PAGES } from '@cdd/bff/pages';
-import { createRoute, redirect } from '@modules/router';
+import { createRoute, redirect } from '@cdd-team/router';
 import { AuthPage } from '@pages/AuthPage/AuthPage';
 import { useSessionStore } from '@stores/session';
 import { rootRoute } from './root';

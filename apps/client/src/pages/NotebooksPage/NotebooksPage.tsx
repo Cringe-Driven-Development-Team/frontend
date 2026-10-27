@@ -8,7 +8,7 @@ import { NotebookCard, NotebookCardSkeleton } from '@components/NotebookCard/Not
 import { ProfileMenu } from '@components/ProfileMenu/ProfileMenu';
 import { Space } from '@components/Space/Space';
 import { StateBlock } from '@components/StateBlock/StateBlock';
-import { Link } from '@modules/router';
+import { Link } from '@cdd-team/router';
 import { useSessionStore } from '@stores/session';
 import { hideSnackbar, showSnackbar } from '@stores/snackbar';
 import { plural } from '@utils/plural';

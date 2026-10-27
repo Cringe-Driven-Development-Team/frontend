@@ -1,7 +1,7 @@
 import { useEffect, useState } from '@cdd-team/react';
 import { Button } from '@components/Button/Button';
 import { Modal } from '@components/Modal/Modal';
-import { useNavigate } from '@modules/router';
+import { useNavigate } from '@cdd-team/router';
 import { logout } from '@stores/session';
 import { hideSnackbar, showSnackbar } from '@stores/snackbar';
 import { showToast } from '@stores/toast';

@@ -2,7 +2,7 @@ import { useEffect, useState } from '@cdd-team/react';
 
 import { Button } from '@components/Button/Button';
 import { Input } from '@components/Input/Input';
-import { useNavigate } from '@modules/router';
+import { useNavigate } from '@cdd-team/router';
 import { login, register } from '@stores/session';
 import { hideSnackbar, showSnackbar } from '@stores/snackbar';
 import { showToast } from '@stores/toast';

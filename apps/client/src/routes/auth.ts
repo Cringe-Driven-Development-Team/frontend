@@ -1,4 +1,4 @@
-import { createRoute, redirect } from '@modules/router';
+import { createRoute, redirect } from '@cdd-team/router';
 import { useSessionStore } from '@stores/session';
 import { rootRoute } from './root';
 
