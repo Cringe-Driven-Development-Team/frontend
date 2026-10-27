@@ -459,3 +459,41 @@ describe('HTML', () => {
         expect(await bootstrap(new Response(html))).toEqual({ user });
     });
 });
+
+describe('robots.txt', () => {
+    const ROBOTS = 'User-agent: *\nDisallow: /api/\n';
+
+    test('GET — 200, text/plain и запрет обхода /api/ при любом Accept и cookie; Go не вызывается', async () => {
+        useGo({});
+        const session = await cookie(goTokens().issue());
+        for (const headers of [
+            {},
+            { Accept: 'text/html' },
+            { Accept: 'text/html', Cookie: `${SESSION_COOKIE}=${session}` },
+        ] as Record<string, string>[]) {
+            const res = await bff(new Request(`${ORIGIN}/robots.txt`, { headers }));
+            expect(res.status).toBe(200);
+            expect(res.headers.get('Content-Type')).toBe('text/plain; charset=UTF-8');
+            expect(res.headers.getSetCookie()).toEqual([]);
+            expect(await res.text()).toBe(ROBOTS);
+        }
+        expect(go?.calls).toHaveLength(0);
+    });
+
+    test('HEAD через Bun.serve — те же статус и заголовки, без тела', async () => {
+        // настоящий fetch к серверу: фейковый Go его подменил бы
+        const server = Bun.serve({ port: 0, fetch: bff });
+        try {
+            const url = `${server.url}robots.txt`;
+            const get = await fetch(url, { headers: { Accept: 'text/html' } });
+            const res = await fetch(url, { method: 'HEAD', headers: { Accept: 'text/html' } });
+            expect(res.status).toBe(200);
+            expect(res.headers.get('Content-Type')).toBe(get.headers.get('Content-Type'));
+            expect(res.headers.get('Content-Length')).toBe(String(ROBOTS.length));
+            expect(await res.text()).toBe('');
+            expect(await get.text()).toBe(ROBOTS);
+        } finally {
+            await server.stop(true);
+        }
+    });
+});
