@@ -1,4 +1,4 @@
-import { clsx } from '@modules/clsx';
+import { clsx } from '@cdd-team/clsx';
 import { domProps } from '@utils/dom-props';
 import { Icon } from '@components/Icon/Icon';
 import styles from './Input.module.css';

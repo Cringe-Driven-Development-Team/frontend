@@ -1,6 +1,6 @@
 import type { ReactNode } from '@cdd-team/react';
 import emptyPlanetUrl from '@assets/empty-planet.svg';
-import { clsx } from '@modules/clsx';
+import { clsx } from '@cdd-team/clsx';
 import styles from './StateBlock.module.css';
 
 /** Свойства {@link StateBlock}. */

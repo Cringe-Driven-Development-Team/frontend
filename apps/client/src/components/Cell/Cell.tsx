@@ -1,6 +1,6 @@
 import type { Cell as CellData } from '@api/trpc';
 import { IconButton } from '@components/IconButton/IconButton';
-import { clsx } from '@modules/clsx';
+import { clsx } from '@cdd-team/clsx';
 import styles from './Cell.module.css';
 
 /** Свойства {@link Cell}. */

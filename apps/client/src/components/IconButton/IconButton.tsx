@@ -1,4 +1,4 @@
-import { clsx } from '@modules/clsx';
+import { clsx } from '@cdd-team/clsx';
 import { Icon } from '@components/Icon/Icon';
 import type { IconName } from '@components/Icon/icons';
 import styles from './IconButton.module.css';

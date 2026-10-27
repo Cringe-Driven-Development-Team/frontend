@@ -32,7 +32,9 @@
     "apps/client": {
       "name": "@cdd/client",
       "dependencies": {
-        "@cdd-team/react": "^1.2.1",
+        "@cdd-team/clsx": "^0.1.0",
+        "@cdd-team/react": "^1.7.0",
+        "@cdd-team/router": "^0.1.0",
         "@cdd-team/zustand": "^1.0.1",
         "@trpc/client": "^11.19.0",
         "@trpc/server": "^11.19.0",
@@ -89,9 +91,13 @@
 
     "@aws/lambda-invoke-store": ["@aws/lambda-invoke-store@0.3.0", "", {}, "sha512-sl4Bm6yiMNYrZKkqqDFWN0UfnWhlS8ivKxrYl+6t0gCLrqr8y3B2IqZZbFRkfaVVp7C/baApyh71P+LeE1A2sQ=="],
 
+    "@cdd-team/clsx": ["@cdd-team/clsx@0.1.0", "", {}, "sha512-ZvH93wX1hFzVdFIFnzFqRWvDsljYa9YqZEU2SEQgTbmQ8SKNden7l8tHfwtCEto93sJd+ssg9ZuzPOxJwADSHA=="],
+
     "@cdd-team/oxlint-plugin-jsdoc": ["@cdd-team/oxlint-plugin-jsdoc@0.1.2", "", { "peerDependencies": { "oxlint": ">=1.86.0" } }, "sha512-JeDHB9I0QrA7ueL8tvEEa/nw0q1+yacnOdw5Cn8iKaTFqhDhbqAaaGhYxQxUYWTPnoLcZpPs7yy1vJ8IYDPfig=="],
 
-    "@cdd-team/react": ["@cdd-team/react@1.2.1", "", {}, "sha512-YUzDEmHAYR8CtW8xg6vT3EjOq7aX3z8g4aRECYagzr2EhFSXO/HH7YJP5NvzJO/97tgyOFSpR4nS0FFw+59pxA=="],
+    "@cdd-team/react": ["@cdd-team/react@1.7.0", "", {}, "sha512-GVSEAAcok4bs0rczWFPM4RICNYFIxB7G/G1Ub61fil2WtNdttXlhd6uIWYO/f8C4a0qoZTDqwbzHL55EOaq1oQ=="],
+
+    "@cdd-team/router": ["@cdd-team/router@0.1.0", "", { "dependencies": { "@cdd-team/clsx": "^0.1.0" }, "peerDependencies": { "@cdd-team/react": "^1.7.0" } }, "sha512-fZ1ADShfXgABfjlx2pi4VK6Fy/Rp6tdWmT1cjcsWop+Nj+gqGuUjMpu99BKt4o5OjbAgk22jZ5S3VM9OiI2AMg=="],
 
     "@cdd-team/vite-plugin-bff-html": ["@cdd-team/vite-plugin-bff-html@0.2.1", "", { "peerDependencies": { "vite": "^8.3.3" } }, "sha512-fkGkkxzIWAl7UQ7EUcxSiXmakA8Bxad15EDTewTn0dbP8VwkNf6cDrmuJ48ds3YKFl2MEPasNMttn/00gfT8CA=="],
 

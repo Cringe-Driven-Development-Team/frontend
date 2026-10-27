@@ -2,7 +2,7 @@ import { createRoot } from '@cdd-team/react';
 
 import { onSessionLost } from './api/trpc';
 import { readBootstrap } from './bootstrap';
-import { RouterProvider } from './modules/router';
+import { RouterProvider } from '@cdd-team/router';
 import { router } from './router';
 import { setPreloadedNotebook } from './stores/preloaded';
 import { initSession, loseSession } from './stores/session';

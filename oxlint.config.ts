@@ -23,17 +23,5 @@ export default defineConfig({
         // Экспортируемый код документируется JSDoc (README, «Документация кода»)
         'cdd/require-jsdoc': 'error',
         'cdd/check-param-names': 'error',
-        // Модули из src/modules импортируются только через их index.ts
-        'no-restricted-imports': [
-            'error',
-            {
-                patterns: [
-                    {
-                        group: ['@modules/*/*', '**/modules/*/*'],
-                        message: 'Импортируй модуль через его index.ts: @modules/<имя>',
-                    },
-                ],
-            },
-        ],
     },
 });

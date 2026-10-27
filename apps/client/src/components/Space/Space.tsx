@@ -1,4 +1,4 @@
-import { clsx } from '@modules/clsx';
+import { clsx } from '@cdd-team/clsx';
 import styles from './Space.module.css';
 
 const WIDTH = 1440;

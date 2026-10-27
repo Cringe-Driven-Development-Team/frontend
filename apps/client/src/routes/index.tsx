@@ -1,5 +1,5 @@
 import { PAGES } from '@cdd/bff/pages';
-import { createRoute } from '@modules/router';
+import { createRoute } from '@cdd-team/router';
 import { NotebooksPage } from '@pages/NotebooksPage/NotebooksPage';
 import { authRoute } from './auth';
 
