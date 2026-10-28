@@ -5,6 +5,7 @@ import { delimiter, dirname, join, resolve } from 'node:path';
 import { bffHtml } from '@cdd-team/vite-plugin-bff-html';
 import { defineConfig, loadEnv } from 'vite';
 import mkcert from 'vite-plugin-mkcert';
+import { releaseMetaPlugin, staticUrlPlugin } from './vite/plugins.ts';
 
 /**
  * Адрес без слеша в конце; без протокола считается https.
@@ -97,26 +98,8 @@ export default defineConfig(({ command, mode }) => {
             // HTML страниц — от BFF (пользователь в bootstrap и Set-Cookie сессии, как на проде),
             // Vite добавляет в него клиент HMR; /api/trpc из server.proxy плагин не трогает
             bffHtml(bffUrl),
-            {
-                // var() не работает внутри url() и в @font-face, а HTML-подстановку Vite к CSS не
-                // применяет: адрес static подставляется вместо %VITE_STATIC_URL% в CSS здесь
-                name: 'static-url',
-                enforce: 'pre',
-                transform: (code: string, id: string) =>
-                    /\.css($|\?)/.test(id)
-                        ? { code: code.replaceAll('%VITE_STATIC_URL%', staticUrl), map: null }
-                        : undefined,
-            },
-            {
-                name: 'release-meta',
-                transformIndexHtml: () => [
-                    {
-                        tag: 'meta',
-                        attrs: { name: 'release', content: sha || 'dev' },
-                        injectTo: 'head',
-                    },
-                ],
-            },
+            staticUrlPlugin(staticUrl),
+            releaseMetaPlugin(sha || 'dev'),
         ],
     };
 });
