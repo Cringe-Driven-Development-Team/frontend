@@ -1,6 +1,6 @@
 @font-face {
     font-family: 'Onest';
-    src: url('%STATIC_URL%/fonts/onest-variable.woff2') format('woff2');
+    src: url('%VITE_STATIC_URL%/fonts/onest-variable.woff2') format('woff2');
     font-weight: 400 600;
     font-style: normal;
     font-display: swap;

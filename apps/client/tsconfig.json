@@ -39,5 +39,5 @@
         "noUnusedLocals": false,
         "noUnusedParameters": false
     },
-    "include": ["src", "vite.config.ts"]
+    "include": ["src", "vite", "vite.config.dev.ts", "vite.config.prod.ts"]
 }

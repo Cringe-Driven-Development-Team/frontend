@@ -113,8 +113,9 @@ vite берёт их оттуда.
 - `assets/` — SVG (знак логотипа, иконки) и favicon: Vite встраивает их в бандл.
   Картинки и шрифты лежат в репозитории
   [static](https://github.com/Cringe-Driven-Development-Team/static) и берутся с
-  `https://static.cellestial.ru` (переменная `STATIC_URL` в `.env`). В CSS адрес пишется как
-  `url('%STATIC_URL%/img/…')`: плагин в `apps/client/vite.config.ts` подставляет его при сборке и в dev.
+  `https://static.cellestial.ru` (переменная `VITE_STATIC_URL` в `.env`). В `index.html` адрес пишется как
+  `%VITE_STATIC_URL%` и подставляется штатно Vite, в CSS — как `url('%VITE_STATIC_URL%/img/…')`, его
+  подставляет плагин `static-url` из `apps/client/vite/plugins.ts`. Обе подстановки — при сборке и в dev.
 
 Стили компонентов и страниц — CSS Modules: `import styles from './X.module.css'`,
 в JSX `className={styles.peek}`, несколько классов — через `clsx` из `@cdd-team/clsx`.
