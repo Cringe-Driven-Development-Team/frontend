@@ -3,7 +3,7 @@ import { dirname } from 'node:path';
 
 import { createBff } from './bff.ts';
 import { env } from './env.ts';
-import { loadPublicFiles } from './public.ts';
+import { loadClientAssets, loadPublicFiles } from './public.ts';
 import { loadTemplate } from './template.ts';
 
 const STOP_TIMEOUT_MS = 10_000;
@@ -16,6 +16,10 @@ async function start(): Promise<void> {
         publicFiles = env.SKIP_PUBLIC_FILES
             ? new Map()
             : await loadPublicFiles(dirname(env.HTML_TEMPLATE));
+        if (env.SERVE_CLIENT_ASSETS) {
+            const assets = await loadClientAssets(dirname(env.HTML_TEMPLATE));
+            publicFiles = new Map([...publicFiles, ...assets]);
+        }
     } catch (err) {
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);

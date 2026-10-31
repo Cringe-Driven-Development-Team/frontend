@@ -92,6 +92,7 @@ Wiki описывает код на исходном SHA, а не провере
 
 ```bash
 bun run dev        # клиент (Vite, HTTPS) и BFF: HTML и /api/trpc — через BFF
+bun run dev:pwa    # production-сборка и BFF на http://localhost:4173: проверка PWA и service worker, без HMR
 bun run dev:trust-windows  # только WSL: разово доверить CA mkcert в Windows
 bun run check      # oxfmt --check, oxlint, tsc во всех пакетах
 bun run build      # сборка, клиент — в apps/client/dist/
