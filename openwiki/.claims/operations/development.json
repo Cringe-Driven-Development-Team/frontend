@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:27967f097a8b3c84d8987a30c70f0e4adde6d5542c915bda69957dcd72f8117c",
+  "claims": [
+    {
+      "id": "claim_9ac13efe227144a9869b7eb8120d7808",
+      "statement": "Bun workspaces и Turbo запускают dev/build/check/test из корня; манифест требует Bun >=1.4.0 и Node >=22.19.0.",
+      "evidence": [
+        {
+          "resource": "repo://package.json#L1-L45",
+          "version": "repo-lines-v1:sha256:ec01196243895b07ae8c29ed544c32f7cbd1ccde442abf1929966415fa6695ea:eyJzZWxlY3RlZExpbmVDb3VudCI6NDUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3ZjMxNzQxYzJiNzMwNTMxYWRiY2Q2NzIxYjY3NzQ0M2VjZTJjOTNiMDQ5ZjdiMDFhZDNhNGZlYWRlM2QwNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_35a02bd000a34170a2b62902b4a4d4d6",
+      "statement": "Vite dev включает mkcert, /api/trpc proxy и bffHtml для HTML; dev BFF задаёт defaults и импортирует обычный entrypoint.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/src/dev.ts#L1-L9",
+          "version": "repo-lines-v1:sha256:bd714a55d17b02c0af52c16908117e6c664c3d71806afebfaf41d4abbdbe7d04:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZWJjNDFmMzg0NDNhMmUzODUzNDRmYzJmOGViMTM1M2M3NWFmN2UxODAyZmViZTgzMWIyYzQ1NmJlNTYzM2ZkYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODU2YmZkNGY2Y2Y3MjNiMjY3YmUyYjI1MzZjMTljYWYwODE3MGM1ZDRkNDI2MjEyMGJhNDhmOGNjOTExNzY2OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://apps/client/vite.config.dev.ts#L57-L84",
+          "version": "repo-lines-v1:sha256:3fd4e665632b1d4a47f26b28f197df6313f77c37302a15b582ea187e919577ee:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MjZmYmM5ZTNlZGNlYzUwZWRmZmI4MjQ3NDBjNTk0ZjcyNjZhOWNmODViMjgxMzZiMTU5ZTM2NTM5ZDlmYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_7d6a0bbb0ac44e0db6feefed1140d1ef",
+      "statement": "BFF tests используют preload окружения и fake Go; клиентские тесты управляют fetch настоящего tRPC-клиента, не проверяя стенд.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/bunfig.toml#L1-L3",
+          "version": "repo-lines-v1:sha256:03b11b43925443394b7feca983fe45674630263f4a955019d69db6b59b49df19:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjc1NTY5MzQ1ZTg2NDIwMTQ5YmI3YTVlOGY0Zjk3MzJlZmRmMTUzNjRiZDFmZTQ2MGIxZDhhZGFjOWIyOGFkNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGE0ZWM3MzZlMDZkNTk3ZDIxNGIyMzdiMjBjY2U5ZTBmMzgyYzRmMWE0MmU3ODRlMTBiOWQ2ZGZiNDY0NmM4NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://apps/bff/test/bff.test.ts#L1-L23",
+          "version": "repo-lines-v1:sha256:9f520b8f4260884bc36ee8661d5e0cfa3a5702dc0733c2818710c847fbb3f29a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxMTFhMmM1NjNlNmYyOTA5YjMxNWRjODBiZTZmNDViNzFiYzNmOWZmODQyMjk4MWE2ZTc1NjJjYTlhZTM0NmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlN2MxNzRkZWYwODE0MmJjYThkODdjYzYyZDllZDZkMjg0OTM3YWJlMTUxOWRjYmVlOTQ1MzAwZTgyZDFmNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzMzk1YWVlZWM5OTllZTU2ZTljYWQ4MDBjNzBkNDNhZjcyZDljMTcyYmUyYjQ4ZWFjMzRjMjZiYmZhYmU3NmIifQ"
+        },
+        {
+          "resource": "repo://apps/client/test/session.test.ts#L1-L46",
+          "version": "repo-lines-v1:sha256:e5f9fdf98679ad1b1ac7a6b6e6bc9fcf9fb37792a4dc4698e7674242151b0753:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmYjM2ZWRhNGUxOTg5Y2JlZjJmN2FjZjk4OTU5MWFkZGE5OTI3YTM5YmQ5MWI2YjlhMWQ0YWFjZDU5MThkY2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiNjc4ZWI2ZDZmODZkOGU5ODNmZTcwZWEwZWZlYTBmMzE3NTA0YzhkMThhNjJjZWI4Njk2MzBlZDAyMjc2OGMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3c5d60dfa0f34c98a3c61d7edfb457ed",
+      "statement": "BFF отвергает неверную конфигурацию с выводом только имён; слушать начинает после загрузки шаблона и публичных файлов.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/src/env.ts#L6-L40",
+          "version": "repo-lines-v1:sha256:39f8ca767fe999158dd837edff134b102481439d405f66a25af70d48e5d9ea7d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkOTZiMmNjNWM1MmRjY2I0ZGYyYTI2ZDliYzYzMzNiYzc3NWNiYTEyZTZhOTk4MWE1ZWYyMmUxYzI5ZWMwZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4NTA1YTc1Y2Y4NjFmMzYxMDU2YmYwODVjYzBhM2ZmZDAwY2Y5N2E3NzhmNWRkN2RmMzExMzFiYzI3MTcyNjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlZjRjZTI3ZGRlZWRjNDIwNzdmODUwYjZjNmM0Y2QyN2RjMjEyMjBiZDFkNDlhNWE0N2Q2MTczODIxZmZjNGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://apps/bff/src/index.ts#L11-L25",
+          "version": "repo-lines-v1:sha256:2eb3d0ec2982964e78b314b40364455de93355079d89cf1a869cb2be8f57b27a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkNzdjNjEyNzY2Y2QxMjgwYzg2ZGE2YmJkOWFkODliNzc3NDYyNmZhYjhmNWViZDdjOTYyZWE1ZjNlODBjMDgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0ZTQyMDhjZDZmZmI4YzRhMzU0N2IyZjU0YWRhMTk5NzhjM2YzNjVlNzhmOTUwMmVmNTE0NWNkZDJhYTg1NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNhMDU0MDRkNjVjZjA2NTczZjRkMDNiMzliZjQ3OGNkYWVhMDQ3ZTZkZWQwNzlkNTYxZmVlMTI1MWZjM2Y3NGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImM1ODZjYjhmMzkxMGNhNjExNmZkOTY5N2RhZTJjMTNhMGFlNmEyZGNmYTg2MDlkOWVkYjRiZTdiNjUxODI5MmQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_aa7d3003b95d40d195e40d469f68e050",
+      "statement": "Vite использует tsconfig aliases и static URL; release SHA и CDN URL вместе задают release base, иначе /; BFF собирается в dist/bff.js.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/package.json#L9-L18",
+          "version": "repo-lines-v1:sha256:a26659b3c722c5af7053e1a35bbd4d304c4797b3f70397961f7e8427edb1ee93:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwOGYxYjMxODg3Y2U0ZWE2NmU0ODI3MjdiMTY5MWUxMDRmMjVmZTEzYWZiYjVjZDczYjI0NjExMjRkMzkzZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4MjhhOTNlNTE1MmY1NjliODdlYWNhYmJlNGM4NDVhNDJiYWJjNGY3OWZiMzIxMTI4M2RhMDhiMWEzYmIyNzYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIyODYwYjYwNzY5YTFiODEwNjVhMjdhMjM4ZTc3ODdmYzYzZWYwMjllMzFkNDE2Y2MxOTY2NzU3M2FiOGY3ZWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY4OGZlMGZjZWM0NWFmMTc0MjIzNmVjN2IxZTg3Yjg2Njg3NWRhZjM3MjUwZGRhZTQ2ODlmZDllNjE0N2JmM2YifQ"
+        },
+        {
+          "resource": "repo://apps/client/vite.config.prod.ts#L4-L14",
+          "version": "repo-lines-v1:sha256:d96467482a1d8f771692faa60147ef59cde31d9d6550b33e1de6b51257b6a836:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3MjZmYmM5ZTNlZGNlYzUwZWRmZmI4MjQ3NDBjNTk0ZjcyNjZhOWNmODViMjgxMzZiMTU5ZTM2NTM5ZDlmYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyZDExY2FmNDNlOTdlZjM2OWU2YmVlZDFhMjY4YmQwNTgzOGYyOWI5ZGQyNTRiZjY5YmE2NDg4NDE0NzIzNGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQxZTQxMjc0YzUyOWM4MWQxZDdmZGZhMTI0NTdiYzU1NzBhYzQyY2RhY2NlMzI1NWQzNTYwOGE4NTUyZDRiMGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIifQ"
+        },
+        {
+          "resource": "repo://apps/client/vite/shared.ts#L20-L40",
+          "version": "repo-lines-v1:sha256:2a55cb57090039d9fd9f0fab32c952af780e1c8da46b439afc84ec342bb2a512:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1NmFkNWYxMmY2YzNmZGQxNDAzODVmYzhmZTJlMjQ1ODcxNjE4OWVmZThiMjNmZDBmMmNiMjljYmNjYzA2ZjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFhMWQxYTYzMzkwMjI5Yzc5ODM0N2U4M2EwNDA1NDQxYzk0MDAwMzUyODRhZDE2OGMxYmY2Y2RmMWQ3MGEzNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUwMTU2NjRkY2I0ZWQ3ZDZhZDYwZmQ1OTQxMWY3ZWE5ZDI1N2E5NjFhMDZkZDI0MDgxMzUzN2YwM2JiMWY0ZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cdbd579730de414c96579af1da8b7921",
+      "statement": "CI Check делает frozen install, check, test, build; publish ограничен push main командного репозитория и PRODUCTION_ENABLED, публикация отделена от выкладки.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/ci.yml#L23-L52",
+          "version": "repo-lines-v1:sha256:407a84e3ca5954dac04a8179d7972e36940ba42a7862a831b68adbf06cc757a6:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ1YzQ4OGIyMTFlNDZhZWE4YjMyNDU1OGYwZTRiMjViMWNkZTk1MjMyMDg4NDI1MTg0NTI2OWZmYjFkNzAwOTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxZjY5YWUzMzAyMTVjODY4Njk4N2NlYTU5YmVmOWRhMzMxYTIyMzVlMzJkNjAxOTJiYmNlMGNmNTZiZDY0MGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU3M2EyMmFmYjViODg3MjNmNjUwZDE3YWFjNTc1MTQ2NmZmOTNmY2Q3MDFhZDhlOTBiOGE1Yjc3YzQyN2I3ZGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjU3OGFmYzQwZDFkMDlmYjc0MjJkZDc0ODlkYWUzMmY5ZDFlYTQzNWU1MDYxYmFmMmYxYTU3MThkNjA3ZjQ3YjkifQ"
+        },
+        {
+          "resource": "repo://docs/release.md#L25-L43",
+          "version": "repo-lines-v1:sha256:3f80d86d9796035d95d34c1fdfcb65820c15a57304865408570c90718e692217:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwYzRhNjJiZTFmNmExZjZkZWFkOGNlZTI1MjJiNjQ2OGFmMDRkNWM5NDk5ZTY2ZTE1ZTdmYzkyZWFjMTczMTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIyM2Q5NGJmYzAwMDYyZDNkYzc4MTk0ZTUwMjkyNDQyMzEwYTUzMGQ0NWVkNzdiMDNjNTdmMjJmYTVlOTRiY2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmMmY3NjZhN2QwYjhkN2MwNTY3ZjFhN2VjNTI0NTNkNDMyOWU1MzVhMDg2ZTEyZmJmMmIzOWE1MzRlZGE5ODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4OTJjYTFhMTQwNzcwMzM0OTZmMzU2MzVhYjE5YjM1NGI2MGEyMDNlMjllMjhkZTdiNTdjODk1MTI3MzgxZDUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-10-31T14:41:46.617Z"
+  }
+}

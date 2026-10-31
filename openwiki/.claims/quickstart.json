@@ -1,0 +1,74 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:49cd9e1c5a978550f190b77ce7a2e606ebdfa8f6f6b49f4a49705ab13a135bf5",
+  "claims": [
+    {
+      "id": "claim_19a4a1038bc943e7ac7fb914c500c1c6",
+      "statement": "Монорепозиторий объединяет клиент, BFF и schemas; клиент стартует из bootstrap, BFF обслуживает HTML и tRPC, Orval создаёт Go-клиент и zod-схемы.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/src/bff.ts#L17-L37",
+          "version": "repo-lines-v1:sha256:9a65bc27bf49df2249f31419bef5b4d2c3c39faa7963fea38e5cba654f6c8003:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlZTg2OTBmMzI4Mzg4NjI4MmIwYzgxMDgwZjA4Y2QzYmQ1Y2MyNTQzZWNmOTZiMWY5MjRjYjUxYTUzN2Q0OTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUzMTA1ZGExMzgzNzg2YWZiMDJmYWQyZTRlNDdlMjEyYTNiN2YzODE3OGE0NTVhZWIyNzRmYjVhZjEyMjllMmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljZDlkOTJlZmM3ZWYyNjg3MGM1MTA0ZWRlZjZiMzYxNzFkYmZkODUyMGQ2NzZhNTk0OGJmYWExZTg0ZmFhNDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
+        {
+          "resource": "repo://apps/client/src/main.tsx#L13-L36",
+          "version": "repo-lines-v1:sha256:e37986a477b2f2214e13dc0834edbd016778627b31134162487ca4222ab716fb:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2MWM3YTk5N2VkZDkxYmRiYmQ5YmUyZDRhN2VlNWFiY2FlNWVkN2RjMTdkY2VkZTcyOGQ3ZWVlYzg2ZDQ4NTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNmZTk5ZWYwMGVmZWQzNGM1MmViZGNjMzM5NWFjMDQ5OTU2NjQ3Yzk5Mzc2ZjlmNjY1NWM0OGNlZDc3MDk0MjciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhmYWZiOWRmYjU4OGNhN2EyZjIwODg0NGRlMjAyN2U5ZDdlOWZkNjIxNjY0YTA0Mzk4ZGM0YmE0ZDU0NzAwZTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://orval.config.ts#L3-L27",
+          "version": "repo-lines-v1:sha256:9825eefe071a6704dd8a9d8a2cffeeabd74deb02fa123eb1ee23b7df10bf2c00:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhiYjgwNmI0MmNjZmYzN2YwODdjMTc4ZTcyMjE3NmEzNTEyZWRjYWY2ZGFmNTk5YTI5NGM5ZTk1OTNkMzE0OGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjoyLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI2NDFlM2RlOTllYTZkNTgyYjAxOGJiOThkMWQzYzU1OTY0MTU2OGNiY2EyNzU5NGE0MzRkNDAwYzgzYTU2ZjUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://package.json#L1-L28",
+          "version": "repo-lines-v1:sha256:101fd7e5e831002f356322f1dda04f1471a1d034d3074046953d02bfe2fc099f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhNzVjMGY1NjdmYzhiODY2ZDIyMjdjNWQyYmEzY2I3NjJhYThkMGM1MTQ2YzlkZTA4NTEwM2JlZDMyOWQ1MDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmYmMwMDhlZmI4OGQ2ODk2N2I4ODYxMjdiYWQwNTQ1OTU5NTQ0ZjI2OWU2NzIyNjE2ZTQ2MGE2MTJmYmZmZTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2c7407beeafd4143a530cff995905445",
+      "statement": "Корневые команды dev/check/test/build и test:scripts запускают разработку и проверки; тесты BFF и клиента используют управляемые зависимости, а не прод.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/test/bff.test.ts#L1-L23",
+          "version": "repo-lines-v1:sha256:9f520b8f4260884bc36ee8661d5e0cfa3a5702dc0733c2818710c847fbb3f29a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxMTFhMmM1NjNlNmYyOTA5YjMxNWRjODBiZTZmNDViNzFiYzNmOWZmODQyMjk4MWE2ZTc1NjJjYTlhZTM0NmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlN2MxNzRkZWYwODE0MmJjYThkODdjYzYyZDllZDZkMjg0OTM3YWJlMTUxOWRjYmVlOTQ1MzAwZTgyZDFmNDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImYzMzk1YWVlZWM5OTllZTU2ZTljYWQ4MDBjNzBkNDNhZjcyZDljMTcyYmUyYjQ4ZWFjMzRjMjZiYmZhYmU3NmIifQ"
+        },
+        {
+          "resource": "repo://apps/client/test/session.test.ts#L1-L46",
+          "version": "repo-lines-v1:sha256:e5f9fdf98679ad1b1ac7a6b6e6bc9fcf9fb37792a4dc4698e7674242151b0753:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVmYjM2ZWRhNGUxOTg5Y2JlZjJmN2FjZjk4OTU5MWFkZGE5OTI3YTM5YmQ5MWI2YjlhMWQ0YWFjZDU5MThkY2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImZiNjc4ZWI2ZDZmODZkOGU5ODNmZTcwZWEwZWZlYTBmMzE3NTA0YzhkMThhNjJjZWI4Njk2MzBlZDAyMjc2OGMifQ"
+        },
+        {
+          "resource": "repo://package.json#L9-L28",
+          "version": "repo-lines-v1:sha256:c6cbec6c78f95cdee1b5a7a732c384602e2f34e4348f84109bcdd7b88c747f4e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUwOGYxYjMxODg3Y2U0ZWE2NmU0ODI3MjdiMTY5MWUxMDRmMjVmZTEzYWZiYjVjZDczYjI0NjExMjRkMzkzZTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhNzVjMGY1NjdmYzhiODY2ZDIyMjdjNWQyYmEzY2I3NjJhYThkMGM1MTQ2YzlkZTA4NTEwM2JlZDMyOWQ1MDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzZjJmMTFhNmQxNGY1NGQ5MTRiYmU5Zjc1NDE2YmNiY2E4OGYwYzE4MDRkM2Y5NWVlMmFhNmMxZTc2NTE5NjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmYmMwMDhlZmI4OGQ2ODk2N2I4ODYxMjdiYWQwNTQ1OTU5NTQ0ZjI2OWU2NzIyNjE2ZTQ2MGE2MTJmYmZmZTQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ebc4d0a5278f43fdb8615488545dcb3f",
+      "statement": "Freshness checker требует quickstart, complete checkpoint, полный SHA и ancestry; затем сравнивает разрешённые source paths до target SHA.",
+      "evidence": [
+        {
+          "resource": "repo://scripts/openwiki-check.ts#L4-L34",
+          "version": "repo-lines-v1:sha256:a3b37920195735ce5023c90fdb1e17aa0b8a1e311bd97f646dbfe5049275d670:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImViYzRlM2FhM2NlYzEzNmMxYWViZTU0MWEwODhhMGU1ZjAxNmJmZjViMWRlZTUwZDdhY2I5ZDc3ODE2MDAwYjciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg0ZTQyMDhjZDZmZmI4YzRhMzU0N2IyZjU0YWRhMTk5NzhjM2YzNjVlNzhmOTUwMmVmNTE0NWNkZDJhYTg1NDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImExNDFiNTczNzI4N2NjZjdlYzY0NTcwMjc5MTdmYWNhZjE0Yjg4OTUwYzBmY2U1MzFmNWUxMTNiMTI4ZGRkNjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY4OGU0YjUzOWMyMzJhZDViZTg1YzVlNmFkNjNhNjNlOTk3YjgzMGYwNDRkMmExMTI3OGQyMDRlNTQ3MzNkOTcifQ"
+        },
+        {
+          "resource": "repo://scripts/openwiki-check.ts#L41-L102",
+          "version": "repo-lines-v1:sha256:9c55455dff9c488e99dabbd119ae3852e865802b1392d1bbff1f2e20f8c2a654:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc4MmQ0OGJhYzg2MjdhYzZkYTU2NjgwMjI1ODRhM2QyYWMyOTJiNzFiNDJlMDY1NTQ0NzIwOWVkNWQ1ODg0NTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2M2M0NDgyNzAxMzI5ODc5M2RmM2QzZTkyYzE1NWViNGU4MzJlMThhMDA1MThkNTc5OWQ1MDFkOTAyMjBjMTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcyODdmM2IxMzU0OTg4MWFhMzkwMTI2ZDhjNDJkYWMxYmQ2OWFkYjkxNjNjNDMxNjNiZmYxYWQyOTEyOGQ2ZTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhNzZlZjRlOWUzNGNmNmQ2MDQ2NWZiYTQ4Y2ZlYjM2NTVlMGQzMjBmNTRjNGU5ZjcwNWMyZTI2MjhjOTYwYjQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a122ac73a25746199bc92ea0a0d85ed7",
+      "statement": "Инструкции frontend направляют за картой в docs, за Go в backend, инфраструктурой в infra, внутренностями @cdd-team в frontend-packages; stale wiki служит указателем.",
+      "evidence": [
+        {
+          "resource": "repo://AGENTS.md#L19-L44",
+          "version": "repo-lines-v1:sha256:3143e3115cd6d6f22dce4c3080d5ad8e0adcb0f4cd778e1e0d34b79b75bcb72e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlOWZhZDY3ZGIzMmYyYmRhNzNlNTc4NTgxM2YwYTJiZmQ2Y2M2MDBhOGNhYTk3NzA0YzQ4OTJjZWI0YjgxOWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1NmI4OTYzOTRjZTQ3MTQ4ZWRkMzAyZjE4YzAxMDg3OGQzZTRjNjA4YTg4ZDI4NmQ5OTMwZjBjYzFlMTE5ZTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjYmJjYTg1ZmU2MTQ4OTRmNjM3ZWViYzg1ODZhMjg2MzJkZTkyNzgyMTRjNjhlZWJkYTA1MzAzYTM3ZmMzYmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc4Njc0NGQ3Zjg0MzE5ZjQwMGM2OGE0N2UyZmI5Y2MyMDY3YzNiMzI0YTBhNTNiY2QzYWI4OWZjMDJlMWE1M2EifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-10-31T14:41:46.617Z"
+  }
+}
