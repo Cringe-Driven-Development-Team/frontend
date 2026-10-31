@@ -16,8 +16,30 @@ export default defineConfig(({ mode }) => {
             VitePWA({
                 // манифест и иконки отдаёт BFF со своего origin (PUBLIC_FILES): с CDN манифест не примут
                 base: '/',
-                // service worker регистрирует frontend#49
+                // регистрирует src/serviceWorker.ts
                 injectRegister: false,
+                includeManifestIcons: false,
+                workbox: {
+                    // sw.js — один файл: его, как и манифест, отдаёт BFF
+                    inlineWorkboxRuntime: true,
+                    sourcemap: false,
+                    // кеш — только самостоятельная офлайн-страница; JS и CSS SPA всегда с CDN, а HTML
+                    // и RPC с данными пользователя не кешируются (docs: трек «Офлайн-режим»)
+                    globPatterns: ['offline.html'],
+                    navigateFallback: null,
+                    runtimeCaching: [
+                        {
+                            urlPattern: ({ request }) => request.mode === 'navigate',
+                            handler: 'NetworkOnly',
+                            options: { precacheFallback: { fallbackURL: '/offline.html' } },
+                        },
+                    ],
+                    // в кеше нет файлов SPA, поэтому новая версия не расходится с открытой вкладкой
+                    // и вступает сразу, без перезагрузки
+                    skipWaiting: true,
+                    clientsClaim: true,
+                    cleanupOutdatedCaches: true,
+                },
                 manifest: {
                     name: 'Cellestial',
                     short_name: 'Cellestial',

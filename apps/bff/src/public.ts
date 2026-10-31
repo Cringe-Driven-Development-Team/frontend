@@ -5,6 +5,8 @@ import { join } from 'node:path';
  * копирует в образ упаковка. JS и CSS сюда не входят: они на CDN.
  */
 export const PUBLIC_FILES: readonly string[] = [
+    'sw.js',
+    'offline.html',
     'manifest.webmanifest',
     'pwa-192.png',
     'pwa-512.png',
