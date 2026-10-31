@@ -9,6 +9,11 @@ test('публичные файлы попадают в образ', async () =>
         expect(dockerfile).toContain(`apps/client/dist/${name}`);
         expect(ignore).toContain(`!apps/client/dist/${name}`);
     }
+    // строка с отступом — только продолжение инструкции предыдущей
+    const lines = dockerfile.split('\n');
+    lines.forEach((line, index) => {
+        if (line.startsWith(' ')) expect(lines[index - 1]).toEndWith('\\');
+    });
     // одна обратная косая в конце строки — продолжение инструкции
     expect(dockerfile).not.toContain('\\\\');
 });

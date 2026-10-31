@@ -13,8 +13,8 @@ export const useConnectionStore = create<ConnectionState>()(() => ({
 const setLost = (lost: boolean): void => useConnectionStore.setState({ lost });
 
 /**
- * `fetch`, который следит за соединением: любой HTTP-ответ, в том числе ошибка, означает, что BFF
- * доступен, а отказ запроса — что ответа получить не удалось.
+ * `fetch`, который следит за соединением: любой полученный целиком HTTP-ответ, в том числе ошибка,
+ * означает, что BFF доступен, а отказ запроса или обрыв тела — что ответа получить не удалось.
  * @param input адрес
  * @param [init] параметры запроса
  * @returns ответ `fetch`
@@ -25,6 +25,8 @@ export async function fetchTracked(
 ): Promise<Response> {
     try {
         const response = await fetch(input, init);
+        // тело тоже может оборваться: BFF доступен, только когда ответ получен целиком
+        await response.clone().arrayBuffer();
         setLost(false);
         return response;
     } catch (error) {

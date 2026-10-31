@@ -23,3 +23,24 @@ test('HTTP-ошибка — BFF доступен, предупреждение �
     expect((await fetchTracked('/api')).status).toBe(503);
     expect(useConnectionStore.getState().lost).toBe(false);
 });
+
+test('обрыв тела после заголовков — соединение потеряно', async () => {
+    const body = new ReadableStream({
+        pull(controller) {
+            controller.enqueue(new TextEncoder().encode('[{"result"'));
+            controller.error(new TypeError('network error'));
+        },
+    });
+    answer(() => Promise.resolve(new Response(body)));
+    await expect(fetchTracked('/api')).rejects.toThrow('network error');
+    expect(useConnectionStore.getState().lost).toBe(true);
+});
+
+test('невалидный JSON, полученный целиком, — не потеря соединения', async () => {
+    useConnectionStore.setState({ lost: true });
+    answer(() => Promise.resolve(new Response('<html>')));
+    const response = await fetchTracked('/api');
+    expect(useConnectionStore.getState().lost).toBe(false);
+    // тело остаётся доступным для tRPC
+    expect(await response.text()).toBe('<html>');
+});
