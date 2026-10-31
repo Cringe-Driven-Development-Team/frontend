@@ -7,7 +7,7 @@
         "moduleDetection": "force",
         "jsx": "react-jsx",
         "jsxImportSource": "@cdd-team/react",
-        "types": ["vite/client"],
+        "types": ["vite/client", "vite-plugin-pwa/client"],
 
         // Bundler mode
         "moduleResolution": "bundler",
