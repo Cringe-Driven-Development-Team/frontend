@@ -29,10 +29,26 @@ import {
     type User,
 } from './client.ts';
 import { unwrap } from './errors.ts';
+import { bearerFetch } from './fetch.ts';
+
+// shortcut: операций backend#22 ещё нет в Apidog, поэтому вызовы написаны вручную;
+// после `bun run sync` заменить на сгенерированные updateCurrentUser и changePassword
+const sendJson = (method: string, path: string, body: unknown, init: RequestInit) =>
+    bearerFetch<{ status: number; data: unknown }>(path, {
+        ...init,
+        method,
+        headers: {
+            ...Object.fromEntries(new Headers(init.headers)),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
 
 /** Вызовы Go от имени сессии. */
 export type Go = {
     getCurrentUser(): Promise<User>;
+    updateLogin(login: string): Promise<User>;
+    changePassword(body: { current_password: string; new_password: string }): Promise<void>;
     listNotebooks(): Promise<NotebookSummary[]>;
     getNotebook(id: number): Promise<Notebook>;
     createNotebook(body: CreateNotebookRequest): Promise<Notebook>;
@@ -51,6 +67,18 @@ export function createGo(session: Session): Go {
     return {
         getCurrentUser: async () =>
             unwrap(await session.call(getCurrentUser), [200], GetCurrentUserResponse),
+        updateLogin: async (login) =>
+            unwrap(
+                await session.call((init) => sendJson('PATCH', '/users/me', { login }, init)),
+                [200],
+                GetCurrentUserResponse,
+            ),
+        changePassword: async (body) => {
+            unwrap(
+                await session.call((init) => sendJson('PUT', '/users/me/password', body, init)),
+                [204],
+            );
+        },
         listNotebooks: async () =>
             unwrap(await session.call(listNotebooks), [200], ListNotebooksResponse),
         getNotebook: async (id) =>
