@@ -1,14 +1,18 @@
 import { afterEach, expect, test } from 'bun:test';
 import { fetchTracked, useConnectionStore } from '@stores/connection';
+import { useToastStore } from '@stores/toast';
 
 const realFetch = globalThis.fetch;
 const answer = (result: () => Promise<Response>) => {
     globalThis.fetch = result as unknown as typeof fetch;
 };
 
+const shownToast = () => useToastStore.getState().toast?.text;
+
 afterEach(() => {
     globalThis.fetch = realFetch;
     useConnectionStore.setState({ lost: false });
+    useToastStore.setState({ toast: null });
 });
 
 test('отказ запроса — соединение потеряно, ошибка не проглатывается', async () => {
@@ -43,4 +47,22 @@ test('невалидный JSON, полученный целиком, — не �
     expect(useConnectionStore.getState().lost).toBe(false);
     // тело остаётся доступным для tRPC
     expect(await response.text()).toBe('<html>');
+});
+
+test('«Соединение восстановлено» — один раз на восстановление', async () => {
+    answer(() => Promise.resolve(new Response('[]')));
+
+    // обычный ответ при доступной сети — без уведомления
+    await fetchTracked('/api');
+    expect(shownToast()).toBeUndefined();
+
+    useConnectionStore.setState({ lost: true });
+    await fetchTracked('/api');
+    expect(shownToast()).toBe('Соединение восстановлено');
+    expect(useConnectionStore.getState().lost).toBe(false);
+
+    // следующие ответы — не новое восстановление
+    useToastStore.setState({ toast: null });
+    await fetchTracked('/api');
+    expect(shownToast()).toBeUndefined();
 });

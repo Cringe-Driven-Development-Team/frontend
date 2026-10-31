@@ -1,4 +1,5 @@
 import { create } from '@cdd-team/zustand';
+import { showToast } from '@stores/toast';
 
 interface ConnectionState {
     /** Запрос к BFF не получил ответа или браузер сообщил об отсутствии сети */
@@ -11,6 +12,12 @@ export const useConnectionStore = create<ConnectionState>()(() => ({
 }));
 
 const setLost = (lost: boolean): void => useConnectionStore.setState({ lost });
+
+// Уведомляет один раз: только на переходе от потери соединения к полученному ответу BFF
+const confirmConnection = (): void => {
+    if (useConnectionStore.getState().lost) showToast('Соединение восстановлено');
+    setLost(false);
+};
 
 /**
  * `fetch`, который следит за соединением: любой полученный целиком HTTP-ответ, в том числе ошибка,
@@ -27,7 +34,7 @@ export async function fetchTracked(
         const response = await fetch(input, init);
         // тело тоже может оборваться: BFF доступен, только когда ответ получен целиком
         await response.clone().arrayBuffer();
-        setLost(false);
+        confirmConnection();
         return response;
     } catch (error) {
         setLost(true);
