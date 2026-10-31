@@ -46,14 +46,15 @@ bun run build
 [BFF](https://docs.cellestial.ru/modules/2/tracks/bff), спека и план —
 `docs/superpowers/specs/2026-10-21-bff-design.md`, `docs/superpowers/plans/2026-10-21-bff.md`.
 
-| Переменная      | Что это                                                                               |
-| --------------- | ------------------------------------------------------------------------------------- |
-| `SESSION_KEY`   | ключ AES-256-GCM сессии: base64 ровно 32 байт (`openssl rand -base64 32`), обязателен |
-| `APP_ORIGIN`    | origin приложения без пути (`https://cellestial.ru`) — для CSRF, обязателен           |
-| `GO_API_URL`    | адрес Go с префиксом API (`http://api:8080/api/v1`), обязателен                       |
-| `PORT`          | порт BFF, по умолчанию `3000`                                                         |
-| `BFF_KEY`       | S2S-ключ для Go (`X-BFF-Key`), на двух VPS                                            |
-| `HTML_TEMPLATE` | `index.html` сборки клиента, по умолчанию `/app/client/index.html` (путь в образе)    |
+| Переменная          | Что это                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| `SESSION_KEY`       | ключ AES-256-GCM сессии: base64 ровно 32 байт (`openssl rand -base64 32`), обязателен |
+| `APP_ORIGIN`        | origin приложения без пути (`https://cellestial.ru`) — для CSRF, обязателен           |
+| `GO_API_URL`        | адрес Go с префиксом API (`http://api:8080/api/v1`), обязателен                       |
+| `PORT`              | порт BFF, по умолчанию `3000`                                                         |
+| `BFF_KEY`           | S2S-ключ для Go (`X-BFF-Key`), на двух VPS                                            |
+| `HTML_TEMPLATE`     | `index.html` сборки клиента, по умолчанию `/app/client/index.html` (путь в образе)    |
+| `SKIP_PUBLIC_FILES` | `1` — не отдавать манифест и иконки, задаёт `bun run dev`: без сборки клиента их нет  |
 
 По прямому запросу страницы BFF решает, можно ли её открыть (`apps/bff/src/html.ts`). Список путей
 страниц — `PAGES` в `apps/bff/src/pages.ts` (`@cdd/bff/pages`); из него же берут `path` маршруты
