@@ -45,6 +45,19 @@ bun run dev
 - [Контекст проекта](https://docs.cellestial.ru/project-context) — общая архитектура и планы.
 - [AGENTS.md](AGENTS.md) — локальные правила для агента.
 
+## OpenWiki
+
+Собственная wiki описывает код frontend на исходном SHA; она не доказывает выкладку на прод.
+После bootstrap вход — `openwiki/quickstart.md`; до него пользуйтесь локальными инструкциями выше.
+Проверка: `bun scripts/openwiki-check.ts --against <полный актуальный SHA frontend/main>`.
+При `stale` сверяйте нужный факт с актуальным исходником.
+Владелец вручную обновляет wiki из соседнего docs:
+`bun run wiki:update-local --repo ../frontend` (после первоначального OpenWiki init).
+Страницы и checkpoint идут отдельным wiki-only PR; модель в CI не запускается.
+Настройка общего поиска четырёх соседних клонов через `openwiki link` —
+[README docs](https://github.com/Cringe-Driven-Development-Team/docs#readme).
+Без MCP читайте Markdown; код командных пакетов ищите в `frontend-packages`.
+
 ## Как работать с задачами
 
 Задачи команды собраны на общей [доске](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1).
