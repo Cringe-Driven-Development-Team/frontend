@@ -2,3 +2,8 @@
 *
 !apps/bff/dist/bff.js
 !apps/client/dist/index.html
+!apps/client/dist/manifest.webmanifest
+!apps/client/dist/pwa-192.png
+!apps/client/dist/pwa-512.png
+!apps/client/dist/pwa-maskable-512.png
+!apps/client/dist/apple-touch-icon.png

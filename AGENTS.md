@@ -83,7 +83,7 @@ Wiki описывает код на исходном SHA, а не провере
   так же Hono, `@trpc/server` и `serialize-javascript` в `apps/bff` — по задаче frontend#2,
   `@trpc/client` в `apps/client` — по задаче frontend#5 (с ним `@trpc/server`: `observable` для своего link
   и типы; в бандл идёт только то, что берёт сам `@trpc/client`), `vite-plugin-mkcert` — локальный
-  HTTPS dev по решению команды в frontend#5.
+  HTTPS dev по решению команды в frontend#5, `vite-plugin-pwa` — манифест PWA по задаче frontend#48.
 - Бэкенд: https://github.com/Cringe-Driven-Development-Team/backend. Клиент ходит только в BFF;
   BFF — в Go по `GO_API_URL` (локально по умолчанию — Cloud Mock Apidog,
   [локальные правила](docs/local-development.md#клиент-через-bff)).

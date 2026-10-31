@@ -1,5 +1,5 @@
 // Точка входа BFF: запросы принимаются только после проверки конфигурации, шаблона и public.
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 
 import { createBff } from './bff.ts';
 import { env } from './env.ts';
@@ -13,7 +13,9 @@ async function start(): Promise<void> {
     let publicFiles: Map<string, Bun.BunFile>;
     try {
         template = await loadTemplate(env.HTML_TEMPLATE);
-        publicFiles = await loadPublicFiles(join(dirname(env.HTML_TEMPLATE), 'public'));
+        publicFiles = env.SKIP_PUBLIC_FILES
+            ? new Map()
+            : await loadPublicFiles(dirname(env.HTML_TEMPLATE));
     } catch (err) {
         console.error(err instanceof Error ? err.message : String(err));
         process.exit(1);
