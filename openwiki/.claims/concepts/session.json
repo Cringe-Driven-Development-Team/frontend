@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:44753e2d922ce01ca5eef22b54b6b1ce71a00fa450d5e6e57444af7e4f204c5e",
+  "claims": [
+    {
+      "id": "claim_3785182eb3b54fc695e42cbafb0979d1",
+      "statement": "BFF шифрует токены и сроки AES-GCM в HttpOnly Secure SameSite=Lax cookie; повреждённая или просроченная сессия удаляется без Go.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/src/session/cookies.ts#L1-L35",
+          "version": "repo-lines-v1:sha256:4a025d86cf5c9221d90acaf740a95cf510e8fa2dea86e3e4ec71cf16a74eea16:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdlMTY4OTlhOGM5Nzc5MjE2OWRmNjRhZWVkYjc2MTQ4NGFlYjA4MmI1ZjczMDdhMjVhN2VhNTcyOTAwZGJmMDQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0OGJiYzY4MmU2OWU5OTU2ZTVlNDJkMDFlOWMxMDUzZjg5ODA0ZjZiMTdjZjA3MzFhY2IxZjc4MzQ4ZjQwNzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMyNTA1MzVkZjRhNjA2OWU0Mjk0NmExNzQ1NTM3NGE1MjgzYTVjMTYxYmE1ZGEwN2ZhM2JhZGQ4NTFhZTU3YTEifQ"
+        },
+        {
+          "resource": "repo://apps/bff/src/session/crypto.ts#L4-L70",
+          "version": "repo-lines-v1:sha256:c97091acfb2172d830f45316c8efccd7073632b1762debcb0e96e3cea48f6a57:eyJzZWxlY3RlZExpbmVDb3VudCI6NjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMTZlYmNkMTBlOWEwZTJhNGNiNTc3NzIzMjZkM2ExYTIxZmM5Y2Y3NDA1MzMxMmY3OTI4ZDM0N2M4NDA3NGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQ0MzExNDNhNDE0MTllMGJkMmE2NGM0NWI0ZWJhOTBlNDUzZTMxMzQzMDc0MWMzYWIyMDdhN2EzMWNkNWFiNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://apps/bff/src/session/session.ts#L129-L142",
+          "version": "repo-lines-v1:sha256:6d7b5509897fa8e17b7a770bdf2f9212fb1824cee61d6895ca5ab2033f6d5b81:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0YWQxYWFmNDk1ZDdmMzg0OGJlODM4N2FkYzY3OGU0YmU5YjZkZWQ5ZGU0YTliOTYyZjE0NThkMjQ4OTQ5OGUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_55c3a8b8f8bb438f9674667382085ee7",
+      "statement": "Auth login/register возвращают пользователя, сохраняя токены в сессии; logout завершает локальную сессию даже при сбое отзыва в Go.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/src/router/auth.ts#L6-L26",
+          "version": "repo-lines-v1:sha256:cf160f8ca78ae6d09d67f9cac7b1c0595a9ce8a8d0c79c7edc50a0652122aeaa:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM5ZWI3ZmNkMTUxMmY3NDViNTgwYzQyMzZlYTk2YjZmN2I4MjUzMjEzNWY3ZDNiNjY0NGZkNGFlODQwZWU3ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5OTBlYjZjY2RiMGZlZmNjM2M5YTg4M2M4NzljOTg2NmJlMzM5MzFjYWFhYmYzNjYyZDdhYzRjNDEzZWM4YjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM4MWVjNzk4NDEyZWNjM2UwODYxYWM0MjU1NzMxNzYwYmM3ZjMyYzFjY2UzYjYzYTU4ZDQyYjlhYTVjZmVhMmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3b56d304362c44caaed23259645c2995",
+      "statement": "CSRF проверяется до сессии: X-CSRF для всех RPC, Origin и при наличии Sec-Fetch-Site для POST; клиент ставит X-CSRF и same-origin credentials.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/src/context.ts#L11-L31",
+          "version": "repo-lines-v1:sha256:7945b5c526f02cde58334d59a93461b855ed560719c8a5eb5a82514f5c9be4b1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxOTI2ZTMxNjZiODc2ZDk0ZDY5NDQxNjJkMjM3Mzk2NWU1OTJiOWY2ZTA0OWRjYjU2MzY0ZmVmY2Q2ODliYTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NzExODQyNDllOGFjNzhkODQwM2Y4ZmEwNmI1ZTFkN2E2OGUyYTJlZmQ2MDAxMGY4NTM3MGE1ODc5ZDdhMjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYwZjU5OGE5YjI3OGU4YzAzODYxZDg4ODE1Zjk1MjAzOThiZWY2MTdiM2MzNTYwY2E5YzJjMjdiYTZlODczNTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        },
+        {
+          "resource": "repo://apps/client/src/api/trpc.ts#L92-L107",
+          "version": "repo-lines-v1:sha256:7eafa91055f1ee086a45d95fcbe1988d4b5e191d3325f8f205f57a471e4409fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY2ZjViNDBiMTU4NDU3ZDE3ODY0ZjIxNzkwNzg2ZGQ1YTJlY2RiNjRiNjZhNjUxZjc4OGQ0ZTI1Y2QzMzAzZDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImJjZGM4MzVlZmI2ZWIxYzM0ZWYxNzY3ODE5YTc0ZDkwZGVjMDI4YTkwMWM5ZDRlOTc5N2Q4YWIwMjZjZGY2NzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQwMzRkYmQ3OTEzOWQ1ZThiN2I3MjRhNDE0NTFjNjE3Y2JhNmY2ODg3YjhlODI0YzIyZWMyZjczMGNiNzQxYmIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_97418f13ae3a42fb8e1928f9b2e534e0",
+      "statement": "session.call заранее обновляет access и после 401 делает один повтор; повторный 401 завершает сессию, иные ошибки refresh её не удаляют.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/src/session/session.ts#L13-L14",
+          "version": "repo-lines-v1:sha256:71159b662c4bd7a295ef25f277f3a9bdc1ab5e2d971ff34af96821ef12c6292c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTcwOWI4ZmE2MmEyY2Y0MWM0YWY4ZTYzZmRhOTMwZTNkM2ExNTEwZDIyZDZmOTQ0ZWNjYjU0NjI3NDgxZmE2MiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2UwMDM0YTIxZGNlZWRkMjgzYzVhYzYyMTVhODM3YTk5MGZlNGFmYzIxNzJkZTdmYjQ2MzM0OGMyOGM5MTQyNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTA2ZjQxM2ZmMzY2NjQ5NTNlYjk1MjJkMTg3NDM0ZDBlZDAyMDE3Y2MyYWVlZDNlNDRiZTcwOThkNGJjMjNiNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNGViYzc1YWE2MTRiNWUzYjEzYWIyZTRhZTIyMWMzOGUwMzY3YjIzZGEyNjUzMjQ0MzkzYTkyOWVkNjUyNTU1NyJ9"
+        },
+        {
+          "resource": "repo://apps/bff/src/session/session.ts#L73-L125",
+          "version": "repo-lines-v1:sha256:57205bff492322b137c0eb880e482fef3987fd94a17e33ed18f89f377f04b29e:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzNGUzMTZkNzY0YzYwMjM4OWE5MjBkMTE0ZGEyNDIyNWVlYTgxZjMzNTE5Njk4Nzg4MTJkNjNmMGQxMDE0NzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkMzFlNTY4NWFmZTVlY2UzZmMwNjBkMDA5ZWYwZjMzN2E0OTdiMWM5ZjE1OGNkMDBkNGNmYjg0YTgyNDMzMWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZkZWE2YTJmYTIyNTI3OTA0MDIzYzYyYTgzNGQ1NTZhOWY0MzIwMjU2NjhmZjg0MDNlNjlmMWIxOGVlZTMwMGUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d7fc02b4fc4241a1b10e7acf3c0fca28",
+      "statement": "Refresh объединяется process-local Map по SHA-256 токена; успех кешируется 10 секунд, ошибка сразу забывается.",
+      "evidence": [
+        {
+          "resource": "repo://apps/bff/src/session/refresh.ts#L15-L67",
+          "version": "repo-lines-v1:sha256:3887db59d5a0f516e6e773dc5906d3aa898b1c2ff4ade78164028dee8242cd97:eyJzZWxlY3RlZExpbmVDb3VudCI6NTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2MWEyNjE1YjNkZTNlOWUxMmFmYjFhZDY2OTNjYzAwOTQ4ODM4ZGM2NzVkOGQyNTMzNGJjOWMzMzBmZDM2ZjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZjYwODVmMmRiY2I4MWY0MDA1MGVjZmQzOWU0YjhjYWY1MzJiMTE3Nzg5OGI0ZTE2OGMxOWFhNDI2ZTg4YjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5ZTc2MzU1Y2YxMTk5NDgwYzNmOTk4MzZiMTQ4NmM4NDFkODkxZmFhZDkwNGM2MDhlMDkzMDIyZDM3NTdhZWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ccbfee17c7e34bed86b4a2580f1ec003",
+      "statement": "sessionLink отвергает результаты другого поколения; UNAUTHORIZED текущего поколения приводит к потере сессии и переходу на вход.",
+      "evidence": [
+        {
+          "resource": "repo://apps/client/src/api/trpc.ts#L21-L90",
+          "version": "repo-lines-v1:sha256:88c81eeddc586d72d6231a051ec2125bb7c3296613e380e3e021af95c4072a91:eyJzZWxlY3RlZExpbmVDb3VudCI6NzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU3NGM5ZmE1YmMxOGE2YzYwNjk0YTFmODZlNmM1Yzc0YTVkMmI4ZDQ4YTU4ZDg2N2UyNzMyMTg1ZDJiOWQ0ODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YzEzNTkwNjY1NjMyM2QxYzVlYTQxNjU0ZWU2NmFmYjU4NWFjZGNmYWVhY2ExMjFkNWUzMGJmMTkzZWVkZDciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIzYzZmYjM1OTQ0MDE5NWI4MWNhZDkyYmU1MmExMjVlOWNmODA2YTIxNmI5MzU2OWQ5Zjk1YzQ2MjYxN2M0ODYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE4OGQxZWIyMDhlOTI4MWExNWJlMDUzZWViYzhkM2E5ZWU2NTU4MTZmNTMyNzM0MmVlOGRhYzMzZGEwMTQ1ZTEifQ"
+        },
+        {
+          "resource": "repo://apps/client/src/main.tsx#L29-L34",
+          "version": "repo-lines-v1:sha256:9d9e2683f998c0a9bd790a9bf1b45d797513fe08565b7b1708e4930fc4234552:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNjQ2YWNiY2VjOTJmZTZmZmZkZmQwYWI1Y2ZkY2NlNDhmMDNjNmQxNzYwNTc0ZjAyYmExZTg4NDcwZTFmODRkNyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZjZmNWI0MGIxNTg0NTdkMTc4NjRmMjE3OTA3ODZkZDVhMmVjZGI2NGI2NmE2NTFmNzg4ZDRlMjVjZDMzMDNkMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjljY2FmMzdhNjdlMTk4MjlhYTgxMTc3OGE5YTg0MmJmZDAxMWIzNDhjZTk2NDJjNDVmMDc5MzI5MmQ1OTkyOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjIsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjJmMzlhOTVhYTFhNWNhN2QxOTI1MTkyOWMzNTgxOTA1ZTY3M2Q1NDhlNzcyNjJhNTViOGI0OWJkMGY2ZmZhYyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_66e03f8e405e473ca12ccb7b0d99303d",
+      "statement": "switchSession сериализует смены, блокирует новые защищённые запросы и ждёт отправленные до auth; UNAUTHORIZED при ожидании сохраняет потерю сессии даже при неуспехе auth.",
+      "evidence": [
+        {
+          "resource": "repo://apps/client/src/api/trpc.ts#L126-L164",
+          "version": "repo-lines-v1:sha256:51925f54d1c19504e3854b3d87680ea3f8b9f45d6a6b20f594cb8e8f9349f385:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3ZmYwNzk5YzM2YTQ4MTgxOThlM2RlN2ExNmQ1YzVmNDVlYjExNmRjYmMzZTM2ZGJlZGFkMDhjYTk3NGY0Y2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://apps/client/src/stores/session.ts#L73-L112",
+          "version": "repo-lines-v1:sha256:5dc96f86d6d1be8f4d0d9b57644eeb8ea5bc6c5af7bfc31fc8ed390dd1bd1905:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2MWVjNDc5OGVhZTYyYzVhMzYwZjYyMmRlOWJmODRmYWFjYTc1NTY1NzkzNWUzMjExZTUxYjkyNjA4OTMxMGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdlZjgxYmNmYWRlNWI2N2Y1ZjFhZGZjZDY4YTAwMDk5ZGIxOGJhNGIxZDUzMjlmOGU2YTM4NmMzMWJlYWIzNWQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.7.2",
+    "at": "2026-10-31T14:41:46.617Z"
+  }
+}

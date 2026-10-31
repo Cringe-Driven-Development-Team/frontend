@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "pages": {
+    "/openwiki/architecture/request-flow.md": {
+      "pageVersion": "sha256:f42ba71c2fcc03bfaaea6f02fbcfcb180b9a1c56c3f5a3071c2d65352c1987aa",
+      "completedBy": "codex",
+      "completedRunId": "17a2dd24-8989-41a1-9fc6-8386a30a1048",
+      "gitHead": "1dad3c77a90c4ebdb151649a788f890c640dfafb",
+      "sourceFingerprint": "sha256:2b9396d41717a15e8fafd91c2a523145abc17522354c6abbd8fed26e99afb0a0"
+    },
+    "/openwiki/concepts/session.md": {
+      "pageVersion": "sha256:44753e2d922ce01ca5eef22b54b6b1ce71a00fa450d5e6e57444af7e4f204c5e",
+      "completedBy": "codex",
+      "completedRunId": "17a2dd24-8989-41a1-9fc6-8386a30a1048",
+      "gitHead": "1dad3c77a90c4ebdb151649a788f890c640dfafb",
+      "sourceFingerprint": "sha256:2b9396d41717a15e8fafd91c2a523145abc17522354c6abbd8fed26e99afb0a0"
+    },
+    "/openwiki/integrations/contracts.md": {
+      "pageVersion": "sha256:ccc2e34e8dfed50fe94820cf7b15ffb3487f5ce17e4a58569ec396ee4461eda1",
+      "completedBy": "codex",
+      "completedRunId": "17a2dd24-8989-41a1-9fc6-8386a30a1048",
+      "gitHead": "1dad3c77a90c4ebdb151649a788f890c640dfafb",
+      "sourceFingerprint": "sha256:2b9396d41717a15e8fafd91c2a523145abc17522354c6abbd8fed26e99afb0a0"
+    },
+    "/openwiki/operations/development.md": {
+      "pageVersion": "sha256:27967f097a8b3c84d8987a30c70f0e4adde6d5542c915bda69957dcd72f8117c",
+      "completedBy": "codex",
+      "completedRunId": "17a2dd24-8989-41a1-9fc6-8386a30a1048",
+      "gitHead": "1dad3c77a90c4ebdb151649a788f890c640dfafb",
+      "sourceFingerprint": "sha256:2b9396d41717a15e8fafd91c2a523145abc17522354c6abbd8fed26e99afb0a0"
+    },
+    "/openwiki/quickstart.md": {
+      "pageVersion": "sha256:49cd9e1c5a978550f190b77ce7a2e606ebdfa8f6f6b49f4a49705ab13a135bf5",
+      "completedBy": "codex",
+      "completedRunId": "17a2dd24-8989-41a1-9fc6-8386a30a1048",
+      "gitHead": "1dad3c77a90c4ebdb151649a788f890c640dfafb",
+      "sourceFingerprint": "sha256:2b9396d41717a15e8fafd91c2a523145abc17522354c6abbd8fed26e99afb0a0"
+    }
+  }
+}
