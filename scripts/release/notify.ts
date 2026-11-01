@@ -1,3 +1,5 @@
+import { appendFileSync } from 'node:fs';
+import { readPRChanges, type PRChanges } from './catalog.ts';
 import { ReleaseError, checkSha, isSha, need, siteUrl } from './env.ts';
 import { runUrl } from './github.ts';
 import type { MergedPR, PublishedRelease } from './catalog.ts';
@@ -116,53 +118,96 @@ export function readyMessage(
     };
 }
 
-async function changes(range: string | undefined): Promise<string[]> {
-    if (!range) return ['Список изменений недоступен: предыдущая версия неизвестна.'];
+function markdown(value: string): string {
+    return escape(value)
+        .replace(/[\\`*_[\]()]/g, '\\$&')
+        .replace(/[\r\n]+/g, ' ');
+}
+
+async function changes(
+    base: string | undefined,
+    head: string | undefined,
+): Promise<{ data?: PRChanges; reportUrl?: string }> {
+    let data: PRChanges | undefined;
     try {
-        const api = process.env.GITHUB_API_URL || 'https://api.github.com';
-        const res = await fetch(
-            `${api}/repos/${process.env.GITHUB_REPOSITORY}/compare/${range}?per_page=100`,
-            {
-                headers: {
-                    Accept: 'application/vnd.github+json',
-                    ...(process.env.GITHUB_TOKEN
-                        ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-                        : {}),
-                },
-                signal: AbortSignal.timeout(5000),
-            },
-        );
-        if (!res.ok) throw new Error(`GitHub: ${res.status}`);
-        const data = (await res.json()) as {
-            total_commits: number;
-            commits: { commit: { message: string } }[];
-        };
-        const entries = data.commits.slice(0, 3).map(({ commit }) => {
-            const message = commit.message.startsWith('Merge pull request ')
-                ? commit.message.split('\n').filter(Boolean).slice(1).join(' ')
-                : commit.message.split('\n')[0]!;
-            return `• ${escape(message.replace(/\s+/g, ' ').slice(0, 140))}`;
-        });
-        const remaining = data.total_commits - entries.length;
-        if (remaining > 0) {
-            const last = remaining % 10;
-            const word =
-                remaining % 100 >= 11 && remaining % 100 <= 14
-                    ? 'коммитов'
-                    : last === 1
-                      ? 'коммит'
-                      : last >= 2 && last <= 4
-                        ? 'коммита'
-                        : 'коммитов';
-            entries.push(`Ещё ${remaining} ${word} — в сравнении.`);
-        }
-        return entries.length ? entries : ['Нет изменений между этими версиями.'];
+        data = await readPRChanges(checkSha(base), checkSha(head));
     } catch {
-        console.warn(
-            '::warning::Список изменений GitHub недоступен; отправляем карточку со ссылками.',
-        );
-        return ['Список изменений недоступен — откройте сравнение версий.'];
+        console.warn('::warning::Состав изменений недоступен; отправляем результат выкатки.');
     }
+    let reportUrl: string | undefined;
+    try {
+        const url = runUrl();
+        if (!url) throw new ReleaseError('Нет текущего Actions run');
+        const report = [
+            '## Состав выпуска',
+            `${base && isSha(base) ? base : 'неизвестно'} → ${head && isSha(head) ? head : 'неизвестно'}`,
+            ...(data
+                ? [
+                      `[Сравнение версий](${data.compareUrl})`,
+                      ...data.prs.map((pr) =>
+                          [
+                              `- [#${pr.number}: ${markdown(pr.title)}](${pr.url})`,
+                              ...data.issues
+                                  .filter((issue) => issue.prNumbers.includes(pr.number))
+                                  .map(
+                                      (issue) =>
+                                          `  - [${markdown(issue.title)}](${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${issue.repo}/issues/${issue.number})`,
+                                  ),
+                          ].join('\n'),
+                      ),
+                      ...(data.prs.length ? [] : ['Связанных PR нет']),
+                  ]
+                : ['Отчёт неполный: Состав изменений недоступен']),
+        ].join('\n\n');
+        appendFileSync(need('GITHUB_STEP_SUMMARY'), `\n${report}\n`);
+        reportUrl = `${url}#summary`;
+    } catch {
+        console.warn('::warning::Полный отчёт недоступен; отправляем результат выкатки.');
+    }
+    return { data, reportUrl };
+}
+
+function titleLink(title: string, url: string): string {
+    const chars = [...title.replace(/\s+/g, ' ')];
+    const text = chars.length > 140 ? `${chars.slice(0, 139).join('')}…` : chars.join('');
+    return `• <a href="${escape(url)}">${escape(text)}</a>`;
+}
+
+function taskLines(data: PRChanges): string[] {
+    return [
+        ...data.issues.map((issue) =>
+            titleLink(
+                issue.title,
+                `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${issue.repo}/issues/${issue.number}`,
+            ),
+        ),
+        ...data.prs
+            .filter((pr) => !data.issues.some((issue) => issue.prNumbers.includes(pr.number)))
+            .map((pr) => titleLink(pr.title, pr.url)),
+        ...(data.prs.length ? [] : ['Связанных PR нет']),
+    ];
+}
+
+function visibleLength(text: string): number {
+    return [...text.replace(/<[^>]*>/g, '').replace(/&(amp|lt|gt|quot);/g, '_')].length;
+}
+
+function fitList(before: string[], entries: string[], after: string[], reportUrl?: string): string {
+    const footer = reportUrl
+        ? `<a href="${escape(reportUrl)}">Полный список PR и задач</a>`
+        : 'Полный отчёт недоступен';
+    const selected: string[] = [];
+    for (const entry of entries) {
+        if (visibleLength([...before, ...selected, entry, footer, ...after].join('\n')) > 4096)
+            break;
+        selected.push(entry);
+    }
+    return [
+        ...before,
+        ...selected,
+        ...(selected.length < entries.length ? [footer] : []),
+        ...after,
+    ].join('\n');
 }
 
 function deploymentState(status: string): string[] {
@@ -183,11 +228,12 @@ function deploymentState(status: string): string[] {
         : status === 'success'
           ? []
           : ['<b>Этап сбоя:</b> не определён — см. логи запуска.'];
+    lines.push(
+        `Health Check ${env.RELEASE_HEALTH_STATUS === 'success' ? '✅' : env.RELEASE_HEALTH_STATUS === 'failure' ? '❌' : '⚪'}`,
+    );
     // результат этого запуска — по его проверкам, а не по истории GitHub
     if (env.RELEASE_HEALTH_STATUS === 'success') {
-        lines.push(
-            '<b>Этот запуск:</b> проверен — работает выбранный образ, HTML, RPC и ассеты в порядке.',
-        );
+        return lines;
     } else if (env.RELEASE_SWITCH_STATUS === 'success') {
         lines.push(
             env.RELEASE_HEALTH_STATUS === 'failure'
@@ -281,30 +327,29 @@ export async function notify(what: string, status: string, sha?: string): Promis
     const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
     const repo = `${server}/${GITHUB_REPOSITORY}`;
     const keyboard = uploaded ? [[button('Выкатить', `${repo}/actions/workflows/cd.yml`)]] : [];
+    let text = lines.join('\n');
     if (what === 'deploy' || what === 'rollback') {
-        lines[0] = `<b>${lines[0]}</b>`;
         const before = process.env.RELEASE_BEFORE_SHA;
-        const range =
-            before && isSha(before) && sha && isSha(sha)
-                ? what === 'rollback'
-                    ? `${sha}...${before}`
-                    : `${before}...${sha}`
-                : undefined;
-        // полные SHA и digest остаются в тексте, после хода выпуска
-        lines.splice(
-            1,
-            0,
-            `${escape(siteUrl())} · production`,
-            '',
-            `<b>Версия:</b> ${revision(before, repo)} → ${revision(sha, repo)}`,
-            '<i>Слева — последний подтверждённый выпуск по истории GitHub Deployments: он показывает ' +
-                'прошлую проверку, а не то, что запущено сейчас.</i>',
-            '',
-            `<b>${what === 'rollback' ? 'Отменённые изменения' : 'Изменения'}</b>`,
-            ...(await changes(range)),
-            '',
-            ...deploymentState(status),
-            '',
+        const report = await changes(
+            what === 'rollback' ? sha : before,
+            what === 'rollback' ? before : sha,
+        );
+        const entries = report.data ? taskLines(report.data) : ['Состав изменений недоступен'];
+        if (report.data && report.data.prs.length > 6 && !report.reportUrl)
+            entries.push('Полный отчёт недоступен');
+        text = fitList(
+            [
+                `<b>${lines[0]}</b>`,
+                `${escape(siteUrl())} · production`,
+                '',
+                `<b>Версия:</b> ${revision(before, repo)} → ${revision(sha, repo)}`,
+                '<i>Слева — последний подтверждённый выпуск по истории GitHub Deployments: он показывает прошлую проверку, а не то, что запущено сейчас.</i>',
+                '',
+                `<b>${what === 'rollback' ? 'Отменённые задачи' : 'Задачи'}</b>`,
+            ],
+            entries,
+            ['', ...deploymentState(status), '', ...lines.slice(1)],
+            report.reportUrl,
         );
         if (
             status === 'success' ||
@@ -315,22 +360,17 @@ export async function notify(what: string, status: string, sha?: string): Promis
                 button('↩️ Откатить', `${repo}/actions/workflows/rollback.yml`),
             ]);
         }
-        const links = [
-            button(
-                'Изменения',
-                range
-                    ? `${repo}/compare/${range}`
-                    : `${repo}/commits/${sha && isSha(sha) ? sha : 'main'}`,
-            ),
-        ];
-        if (process.env.GITHUB_RUN_ID)
-            links.push(
-                button(
-                    what === 'rollback' ? 'Логи отката' : 'Логи выкатки',
-                    `${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`,
-                ),
+        const prs = report.data?.prs ?? [];
+        if (prs.length > 6) {
+            if (report.reportUrl) keyboard.push([button('Все PR выпуска', report.reportUrl)]);
+        } else {
+            const buttons = prs.map((pr) =>
+                button(prs.length === 1 ? 'PR' : `PR #${pr.number}`, pr.url),
             );
-        keyboard.push(links);
+            for (let i = 0; i < buttons.length; i += 2) keyboard.push(buttons.slice(i, i + 2));
+        }
+        if (process.env.GITHUB_RUN_ID)
+            keyboard.push([button(what === 'rollback' ? 'Логи отката' : 'Логи выкатки', runUrl())]);
     }
-    await sendTelegram({ text: lines.join('\n'), keyboard });
+    await sendTelegram({ text, keyboard });
 }
