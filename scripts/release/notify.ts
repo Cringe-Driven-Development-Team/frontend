@@ -1,5 +1,53 @@
 import { ReleaseError, isSha, need, siteUrl } from './env.ts';
 
+/** Сообщение и кнопки существующей темы выкаток. */
+export interface TelegramMessage {
+    text: string;
+    keyboard?: { text: string; url: string }[][];
+}
+/** Подтверждённый отказ без доставки; его безопасно повторить. */
+export class TelegramRejectedError extends ReleaseError {}
+
+/** Единственный транспорт Telegram; возвращает подтверждённый message_id. */
+export async function sendTelegram(message: TelegramMessage): Promise<number> {
+    const token = need('TELEGRAM_BOT_TOKEN');
+    const chat = need('TELEGRAM_CHAT_ID');
+    const topic = process.env.TELEGRAM_TOPIC_ID;
+    if (topic && (!Number.isSafeInteger(Number(topic)) || Number(topic) <= 0))
+        throw new TelegramRejectedError('Некорректный TELEGRAM_TOPIC_ID');
+    try {
+        const res = await fetch(
+            `${process.env.TELEGRAM_API || 'https://api.telegram.org'}/bot${token}/sendMessage`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chat,
+                    text: message.text,
+                    parse_mode: 'HTML',
+                    link_preview_options: { is_disabled: true },
+                    ...(message.keyboard?.length
+                        ? { reply_markup: { inline_keyboard: message.keyboard } }
+                        : {}),
+                    ...(topic ? { message_thread_id: Number(topic) } : {}),
+                }),
+                signal: AbortSignal.timeout(20_000),
+            },
+        );
+        const body = (await res.json()) as { ok?: boolean; result?: { message_id?: number } };
+        if (res.status >= 400 && res.status < 500 && body.ok === false)
+            throw new TelegramRejectedError(`Telegram отклонил сообщение: HTTP ${res.status}`);
+        const id = body.result?.message_id;
+        if (!res.ok || body.ok !== true || !Number.isSafeInteger(id) || id! <= 0)
+            throw new ReleaseError('Telegram: доставка не подтверждена');
+        return id!;
+    } catch (error) {
+        if (error instanceof TelegramRejectedError) throw error;
+        // Текст сетевой ошибки может содержать bot token в URL.
+        throw new ReleaseError('Telegram: доставка не подтверждена; проверьте тему перед повтором');
+    }
+}
+
 function escape(value: string): string {
     return value
         .replaceAll('&', '&amp;')
@@ -141,9 +189,6 @@ function mentionActor(actor: string, rawMap: string | undefined): string {
  * @param [sha] sha релиза
  */
 export async function notify(what: string, status: string, sha?: string): Promise<void> {
-    const token = need('TELEGRAM_BOT_TOKEN');
-    const chat = need('TELEGRAM_CHAT_ID');
-    const topic = process.env.TELEGRAM_TOPIC_ID;
     const { GITHUB_ACTOR, GITHUB_REPOSITORY } = process.env;
 
     // залитый релиз пользователи не видят: выкатывает его человек, кнопка ведёт на запуск CD
@@ -216,19 +261,5 @@ export async function notify(what: string, status: string, sha?: string): Promis
             );
         keyboard.push(links);
     }
-    const api = process.env.TELEGRAM_API || 'https://api.telegram.org';
-    const res = await fetch(`${api}/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_id: chat,
-            text: lines.join('\n'),
-            parse_mode: 'HTML',
-            link_preview_options: { is_disabled: true },
-            ...(keyboard.length ? { reply_markup: { inline_keyboard: keyboard } } : {}),
-            ...(topic ? { message_thread_id: Number(topic) } : {}),
-        }),
-        signal: AbortSignal.timeout(20_000),
-    });
-    if (!res.ok) throw new ReleaseError(`Telegram не принял сообщение: ответ ${res.status}`);
+    await sendTelegram({ text: lines.join('\n'), keyboard });
 }

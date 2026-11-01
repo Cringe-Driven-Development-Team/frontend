@@ -20,7 +20,7 @@ test('карточка выкатки показывает полные SHA и d
     let text = '';
     globalThis.fetch = (async (_input: string | URL | Request, init?: RequestInit) => {
         text = (JSON.parse(String(init?.body)) as { text: string }).text;
-        return Response.json({ ok: true });
+        return Response.json({ ok: true, result: { message_id: 1 } });
     }) as typeof fetch;
     await notify('Выкатка', 'success', sha);
     expect(text).toContain(`<code>${sha}</code>`);
