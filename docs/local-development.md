@@ -26,13 +26,14 @@ bun run build
 
 Все команды запускаются из корня, зависимости ставит один `bun install`
 
-| Команда                                             | Что делает                                                       |
-| --------------------------------------------------- | ---------------------------------------------------------------- |
-| `bun run dev`                                       | клиент и BFF на `https://localhost:5173` — «Клиент через BFF»    |
-| `bun run dev:trust-windows`                         | только WSL: разово доверить CA mkcert в Windows для Chrome       |
-| `bun run build`                                     | сборка всех пакетов, клиент — в `apps/client/dist`               |
-| `bun run check`                                     | `oxfmt --check`, `oxlint` и `tsc` во всех пакетах и в `scripts/` |
-| `bun run lint`, `bun run typecheck`, `bun run test` | по отдельности, тоже во всех пакетах                             |
+| Команда                                             | Что делает                                                          |
+| --------------------------------------------------- | ------------------------------------------------------------------- |
+| `bun run dev`                                       | клиент и BFF на `https://localhost:5173` — «Клиент через BFF»       |
+| `bun run dev:pwa`                                   | production-сборка и BFF на `http://localhost:4173` — «Проверка PWA» |
+| `bun run dev:trust-windows`                         | только WSL: разово доверить CA mkcert в Windows для Chrome          |
+| `bun run build`                                     | сборка всех пакетов, клиент — в `apps/client/dist`                  |
+| `bun run check`                                     | `oxfmt --check`, `oxlint` и `tsc` во всех пакетах и в `scripts/`    |
+| `bun run lint`, `bun run typecheck`, `bun run test` | по отдельности, тоже во всех пакетах                                |
 
 `build`, `lint`, `typecheck` и `test` идут через `turbo run`: пакет собирается после своих
 зависимостей, а повторный запуск без изменений берёт результат из кеша `.turbo/`
@@ -46,15 +47,16 @@ bun run build
 [BFF](https://docs.cellestial.ru/modules/2/tracks/bff), спека и план —
 `docs/superpowers/specs/2026-10-21-bff-design.md`, `docs/superpowers/plans/2026-10-21-bff.md`.
 
-| Переменная          | Что это                                                                               |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| `SESSION_KEY`       | ключ AES-256-GCM сессии: base64 ровно 32 байт (`openssl rand -base64 32`), обязателен |
-| `APP_ORIGIN`        | origin приложения без пути (`https://cellestial.ru`) — для CSRF, обязателен           |
-| `GO_API_URL`        | адрес Go с префиксом API (`http://api:8080/api/v1`), обязателен                       |
-| `PORT`              | порт BFF, по умолчанию `3000`                                                         |
-| `BFF_KEY`           | S2S-ключ для Go (`X-BFF-Key`), на двух VPS                                            |
-| `HTML_TEMPLATE`     | `index.html` сборки клиента, по умолчанию `/app/client/index.html` (путь в образе)    |
-| `SKIP_PUBLIC_FILES` | `1` — не отдавать манифест и иконки, задаёт `bun run dev`: без сборки клиента их нет  |
+| Переменная            | Что это                                                                                                    |
+| --------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `SESSION_KEY`         | ключ AES-256-GCM сессии: base64 ровно 32 байт (`openssl rand -base64 32`), обязателен                      |
+| `APP_ORIGIN`          | origin приложения без пути (`https://cellestial.ru`) — для CSRF, обязателен                                |
+| `GO_API_URL`          | адрес Go с префиксом API (`http://api:8080/api/v1`), обязателен                                            |
+| `PORT`                | порт BFF, по умолчанию `3000`                                                                              |
+| `BFF_KEY`             | S2S-ключ для Go (`X-BFF-Key`), на двух VPS                                                                 |
+| `HTML_TEMPLATE`       | `index.html` сборки клиента, по умолчанию `/app/client/index.html` (путь в образе)                         |
+| `SERVE_CLIENT_ASSETS` | `1` — BFF сам отдаёт JS и CSS из `assets/` рядом с шаблоном, задаёт `bun run dev:pwa`; на проде они на CDN |
+| `SKIP_PUBLIC_FILES`   | `1` — не отдавать манифест и иконки, задаёт `bun run dev`: без сборки клиента их нет                       |
 
 По прямому запросу страницы BFF решает, можно ли её открыть (`apps/bff/src/html.ts`). Список путей
 страниц — `PAGES` в `apps/bff/src/pages.ts` (`@cdd/bff/pages`); из него же берут `path` маршруты
@@ -87,6 +89,28 @@ SESSION_KEY=$(openssl rand -base64 32) APP_ORIGIN=http://localhost:3000 \
   GO_API_URL=<адрес Cloud Mock> HTML_TEMPLATE=apps/client/dist/index.html \
   bun apps/bff/src/index.ts
 ```
+
+### Проверка PWA
+
+`bun run dev` работает с HMR и без service worker. Для установки, service worker и офлайн-страницы:
+
+```sh
+bun run dev:pwa   # http://localhost:4173
+```
+
+Команда собирает клиент production-конфигом без `RELEASE_SHA` и `CDN_URL` и запускает BFF: HTML с
+bootstrap, `/api/trpc`, `/sw.js`, манифест, `/offline.html` и JS/CSS сборки идут с одного origin. Go —
+как в `bun run dev`, Docker не нужен. HMR нет: после изменений клиента запустите команду заново.
+
+Вход работает: Chrome и Firefox считают `localhost` безопасным и принимают Secure-cookie сессии. Safari
+её по HTTP не принимает, проверяйте в Chrome.
+
+Service worker остаётся в браузере и после остановки команды, на `https://localhost:5173` он не влияет:
+у другого origin свой. Удалить — DevTools → Application → Service workers → Unregister.
+
+Офлайн-страница: откройте адрес с сетью, дождитесь активного service worker в DevTools → Application,
+остановите команду и откройте адрес снова. Панель Network → Offline не отключает запросы самого service
+worker: для этого есть флажок Offline в Application → Service workers.
 
 Образ и локальный Compose:
 

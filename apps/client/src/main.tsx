@@ -4,7 +4,9 @@ import { onSessionLost } from './api/trpc';
 import { readBootstrap } from './bootstrap';
 import { RouterProvider } from '@cdd-team/router';
 import { router } from './router';
+import { registerServiceWorker } from './serviceWorker';
 import { setPreloadedNotebook } from './stores/preloaded';
+import { watchConnection } from '@stores/connection';
 import { initSession, loseSession } from './stores/session';
 import { showToast } from './stores/toast';
 import './styles/tokens.css';
@@ -32,5 +34,8 @@ onSessionLost(() => {
     showToast('Сессия закончилась — войдите снова', 'info');
     void router.navigate({ to: '/login', replace: true });
 });
+
+registerServiceWorker();
+watchConnection();
 
 if (started) createRoot(container).render(<RouterProvider router={router} />);

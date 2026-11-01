@@ -38,6 +38,7 @@
         "@cdd-team/zustand": "^1.0.1",
         "@trpc/client": "^11.19.0",
         "@trpc/server": "^11.19.0",
+        "workbox-window": "7.4.1",
       },
       "devDependencies": {
         "@cdd-team/vite-plugin-bff-html": "^0.2.1",

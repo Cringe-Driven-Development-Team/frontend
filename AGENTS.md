@@ -83,7 +83,7 @@ Wiki описывает код на исходном SHA, а не провере
   так же Hono, `@trpc/server` и `serialize-javascript` в `apps/bff` — по задаче frontend#2,
   `@trpc/client` в `apps/client` — по задаче frontend#5 (с ним `@trpc/server`: `observable` для своего link
   и типы; в бандл идёт только то, что берёт сам `@trpc/client`), `vite-plugin-mkcert` — локальный
-  HTTPS dev по решению команды в frontend#5, `vite-plugin-pwa` — манифест PWA по задаче frontend#48.
+  HTTPS dev по решению команды в frontend#5, `vite-plugin-pwa` — манифест PWA по задаче frontend#48, с ним `workbox-window` — регистратор service worker `virtual:pwa-register` по задаче frontend#49.
 - Бэкенд: https://github.com/Cringe-Driven-Development-Team/backend. Клиент ходит только в BFF;
   BFF — в Go по `GO_API_URL` (локально по умолчанию — Cloud Mock Apidog,
   [локальные правила](docs/local-development.md#клиент-через-bff)).
@@ -92,6 +92,7 @@ Wiki описывает код на исходном SHA, а не провере
 
 ```bash
 bun run dev        # клиент (Vite, HTTPS) и BFF: HTML и /api/trpc — через BFF
+bun run dev:pwa    # production-сборка и BFF на http://localhost:4173: проверка PWA и service worker, без HMR
 bun run dev:trust-windows  # только WSL: разово доверить CA mkcert в Windows
 bun run check      # oxfmt --check, oxlint, tsc во всех пакетах
 bun run build      # сборка, клиент — в apps/client/dist/
@@ -118,6 +119,7 @@ vite берёт их оттуда.
 - `api/trpc.ts` — клиент BFF `trpc` (единственный экземпляр), типы процедур и учёт сессии в транспорте.
 - `components/` — UI-kit по Components из макета: `Button`, `Input`, `Icon`, `Logo`, `Moon`,
   `Snackbar`, `Toast`, `Space`. Каждый компонент — папка с `.tsx` и `.module.css`.
+- `serviceWorker.ts` — регистрация service worker; его кеш настроен в `vite.config.prod.ts`, офлайн-страница — `public/offline.html`.
 - `layouts/RootLayout.tsx` — `<main>` с `<Outlet />`, тост и снекбар. Второй `<main>` на страницах не нужен.
 - `router.ts` — экземпляр роутера `@cdd-team/router` (API как у TanStack Router) и регистрация его
   типов через `Register`. Импорт роутера — только из `@cdd-team/router`.
