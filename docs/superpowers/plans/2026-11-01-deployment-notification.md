@@ -77,9 +77,13 @@
 
     ```ts
     // RELEASE_HEALTH_STATUS → строка в payload.text
-    ['success', 'Health Check ✅'][('failure', 'Health Check ❌')][('skipped', 'Health Check ⚪')][
-        ('cancelled', 'Health Check ⚪')
-    ][(undefined, 'Health Check ⚪')];
+    const cases = [
+        ['success', 'Health Check ✅'],
+        ['failure', 'Health Check ❌'],
+        ['skipped', 'Health Check ⚪'],
+        ['cancelled', 'Health Check ⚪'],
+        [undefined, 'Health Check ⚪'],
+    ];
     ```
 
     `success` health + `failure` retention даёт зелёный Health Check, красный общий итог и «Этап сбоя: Retention». Провал/отмена switch сохраняет сведения о неизвестном состоянии прода. Старого длинного успешного абзаца нет.

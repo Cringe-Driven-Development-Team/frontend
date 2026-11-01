@@ -218,28 +218,25 @@ async function linkedIssues(number: number): Promise<LinkedIssue[]> {
     return result;
 }
 
-/** Весь фактически опубликованный и выкаченный состав из проверенных Deployments. */
-export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnapshot> {
-    const main = new Set((await git(repoDir, 'rev-list', 'origin/main')).split('\n'));
-    const [artifacts, production] = await Promise.all([
-        listDeployments<ArtifactsPayload>('release-artifacts'),
-        listDeployments<ProductionPayload>('production'),
-    ]);
-    const prs = new Map<number, MergedPR>();
+async function mergedPRs(): Promise<(MergedPR & { title: string })[]> {
+    const prs: (MergedPR & { title: string })[] = [];
     for (let page = 1; ; page++) {
         const rows = await api<
             {
                 number: number;
                 html_url: string;
+                title: string;
                 merge_commit_sha: string | null;
                 merged_at: string | null;
             }[]
         >(`/pulls?state=closed&per_page=100&page=${page}`);
         for (const row of rows)
-            if (row.merged_at && row.merge_commit_sha && main.has(row.merge_commit_sha)) {
+            if (row.merged_at && row.merge_commit_sha) {
                 if (!Number.isSafeInteger(row.number) || row.number <= 0)
                     throw new ReleaseError('Некорректный номер PR');
-                prs.set(row.number, {
+                if (typeof row.title !== 'string') throw new ReleaseError('Нет названия PR');
+                prs.push({
+                    title: row.title,
                     number: row.number,
                     url: `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${need('GITHUB_REPOSITORY')}/pull/${row.number}`,
                     mergeSha: row.merge_commit_sha,
@@ -247,6 +244,68 @@ export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnaps
             }
         if (rows.length < 100) break;
     }
+    return prs;
+}
+
+async function issuesForPRs(numbers: number[]): Promise<LinkedIssue[]> {
+    const issues = new Map<string, LinkedIssue>();
+    for (const number of numbers)
+        for (const issue of await linkedIssues(number)) {
+            const old = issues.get(issue.id);
+            if (old) old.prNumbers.push(number);
+            else issues.set(issue.id, issue);
+        }
+    return [...issues.values()];
+}
+
+/** PR и закрывающие задачи фактической разницы двух версий. */
+export interface PRChanges {
+    prs: (MergedPR & { title: string })[];
+    issues: LinkedIssue[];
+    compareUrl: string;
+}
+
+/** Читает все страницы сравнения; сообщения коммитов и имя base ветки не определяют состав. */
+export async function readPRChanges(baseSha: string, headSha: string): Promise<PRChanges> {
+    const base = checkSha(baseSha);
+    const head = checkSha(headSha);
+    const commits = new Set<string>();
+    for (let page = 1; ; page++) {
+        const batch = await api<{ total_commits: number; commits: { sha: string }[] }>(
+            `/compare/${base}...${head}?per_page=100&page=${page}`,
+        );
+        if (
+            !Number.isSafeInteger(batch.total_commits) ||
+            batch.total_commits < 0 ||
+            !Array.isArray(batch.commits)
+        )
+            throw new ReleaseError('Некорректное сравнение версий');
+        const previous = commits.size;
+        for (const commit of batch.commits) commits.add(checkSha(commit.sha));
+        if (commits.size === batch.total_commits) break;
+        if (commits.size <= previous || commits.size > batch.total_commits)
+            throw new ReleaseError('Неполное сравнение версий');
+    }
+    const prs = (await mergedPRs())
+        .filter((pr) => commits.has(pr.mergeSha))
+        .toSorted((a, b) => a.number - b.number);
+    return {
+        prs,
+        issues: await issuesForPRs(prs.map((pr) => pr.number)),
+        compareUrl: `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${need('GITHUB_REPOSITORY')}/compare/${base}...${head}`,
+    };
+}
+
+/** Весь фактически опубликованный и выкаченный состав из проверенных Deployments. */
+export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnapshot> {
+    const main = new Set((await git(repoDir, 'rev-list', 'origin/main')).split('\n'));
+    const [artifacts, production] = await Promise.all([
+        listDeployments<ArtifactsPayload>('release-artifacts'),
+        listDeployments<ProductionPayload>('production'),
+    ]);
+    const prs = new Map<number, MergedPR>(
+        (await mergedPRs()).filter((pr) => main.has(pr.mergeSha)).map((pr) => [pr.number, pr]),
+    );
     const members = async (sha: string) => {
         if (!main.has(checkSha(sha))) throw new ReleaseError(`Выпуск ${sha} не входит в main`);
         const ancestors = new Set((await git(repoDir, 'rev-list', sha)).split('\n'));
@@ -315,13 +374,7 @@ export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnaps
         if (!deployedShas.includes(record.sha)) deployedShas.push(record.sha);
     }
     const included = new Set(published.flatMap((release) => release.prNumbers));
-    const issues = new Map<string, LinkedIssue>();
-    for (const number of included)
-        for (const issue of await linkedIssues(number)) {
-            const old = issues.get(issue.id);
-            if (old) old.prNumbers.push(number);
-            else issues.set(issue.id, issue);
-        }
+    const issues = await issuesForPRs([...included]);
     return {
         published: published.toSorted(
             (a, b) => Date.parse(a.readyAt) - Date.parse(b.readyAt) || a.id - b.id,
@@ -329,6 +382,6 @@ export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnaps
         deployed,
         deployedShas,
         prs,
-        issues: [...issues.values()],
+        issues,
     };
 }
