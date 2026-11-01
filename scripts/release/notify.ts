@@ -1,4 +1,5 @@
-import { ReleaseError, isSha, need, siteUrl } from './env.ts';
+import { ReleaseError, checkSha, isSha, need, siteUrl } from './env.ts';
+import { runUrl } from './github.ts';
 import type { MergedPR, PublishedRelease } from './catalog.ts';
 
 /** Сообщение и кнопки существующей темы выкаток. */
@@ -238,6 +239,21 @@ function mentionActor(actor: string, rawMap: string | undefined): string {
  * @param [sha] sha релиза
  */
 export async function notify(what: string, status: string, sha?: string): Promise<void> {
+    if (what === 'Начало') {
+        if (status !== 'success')
+            throw new ReleaseError('Начало выкатки отправляется только перед Switch');
+        const actor = process.env.GITHUB_TRIGGERING_ACTOR || process.env.GITHUB_ACTOR;
+        await sendTelegram({
+            text: [
+                `Выкатка релиза <code>${checkSha(sha)}</code> началась`,
+                ...(actor
+                    ? [`Запустил: ${mentionActor(actor, process.env.TELEGRAM_USER_MAP)}`]
+                    : []),
+                `<a href="${escape(runUrl())}">Логи выкатки</a>`,
+            ].join('\n'),
+        });
+        return;
+    }
     const { GITHUB_ACTOR, GITHUB_REPOSITORY } = process.env;
 
     // залитый релиз пользователи не видят: выкатывает его человек, кнопка ведёт на запуск CD

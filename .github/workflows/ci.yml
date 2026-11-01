@@ -112,7 +112,7 @@ jobs:
           IMAGE_REF: ${{ steps.image.outputs.image_ref }}
         run: bun run release register "$SHA" "$IMAGE_REF"
       - name: Send to tg
-        if: always()
+        if: failure() || cancelled()
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}

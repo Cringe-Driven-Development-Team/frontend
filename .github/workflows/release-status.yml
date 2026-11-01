@@ -1,0 +1,54 @@
+name: Release status
+
+on:
+  workflow_run:
+    workflows: [CI, CD, Rollback]
+    types: [completed]
+    branches: [main]
+  pull_request_target:
+    types: [enqueued]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+  issues: read
+  deployments: write
+
+# Каждый run перечитывает накопленные события: вытеснение ожидающего run их не теряет.
+concurrency:
+  group: release-automation
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'Cringe-Driven-Development-Team/frontend' && github.ref == 'refs/heads/main' && vars.PRODUCTION_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      ADD_TO_PROJECT_PAT: ${{ secrets.ADD_TO_PROJECT_PAT }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+      TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
+      TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
+    steps:
+      # Никогда не checkout head PR или артефакты исходного workflow_run.
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - name: Reconcile board and prepare reports
+        id: sync
+        run: bun run release sync
+      # Summary предыдущего шага уже опубликован; ошибка доски не скрывает готовность.
+      - name: Send pending notifications
+        if: always() && steps.sync.outputs.allowed == 'true'
+        run: bun run release notify-pending
