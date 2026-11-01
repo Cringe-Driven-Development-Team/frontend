@@ -2,7 +2,7 @@
 
 Задача: [frontend#133](https://github.com/Cringe-Driven-Development-Team/frontend/issues/133).
 PR: [frontend#134](https://github.com/Cringe-Driven-Development-Team/frontend/pull/134), ветка `web-133`.
-Статус: подход выбран владельцем; спецификация ожидает подтверждения.
+Статус: спецификация подтверждена владельцем.
 
 ## Цель и границы
 
