@@ -16,7 +16,7 @@ const RPC = {
     'Sec-Fetch-Site': 'same-origin',
     'Content-Type': 'application/json',
 };
-const USER = { id: 1, login: 'denis' };
+const USER = { id: 1, login: 'denis', avatar_url: null };
 const template = await loadTemplate(process.env.HTML_TEMPLATE ?? '');
 const bff = createBff(template, new Map());
 
@@ -448,7 +448,11 @@ describe('HTML', () => {
     });
 
     test('строки пользователя не создают элементов и восстанавливаются байт в байт', async () => {
-        const user = { id: 7, login: '</script><script>alert(1)</script><!-- "\'&Привет ' };
+        const user = {
+            id: 7,
+            login: '</script><script>alert(1)</script><!-- "\'&Привет ',
+            avatar_url: null,
+        };
         const html = await renderBootstrap(template, { user }, new Headers()).text();
         let scripts = 0;
         await new HTMLRewriter()
@@ -512,7 +516,7 @@ describe('robots.txt', () => {
 describe('смена логина и пароля', () => {
     test('updateLogin шлёт PATCH /users/me и возвращает пользователя', async () => {
         const tokens = goTokens();
-        const renamed = { id: 1, login: 'orbit' };
+        const renamed = { id: 1, login: 'orbit', avatar_url: null };
         useGo({ 'PATCH /users/me': () => Response.json(renamed) });
         const res = await rpc('users.updateLogin', {
             body: { login: 'orbit' },
@@ -543,7 +547,7 @@ describe('смена логина и пароля', () => {
         expect(go?.calls).toHaveLength(0);
     });
 
-    test('changePassword шлёт PUT /users/me/password', async () => {
+    test('changePassword шлёт PUT /users/me/password и завершает сессию', async () => {
         useGo({ 'PUT /users/me/password': () => new Response(null, { status: 204 }) });
         const body = { current_password: 'old-password', new_password: 'new-password' };
         const res = await rpc('users.changePassword', {
@@ -552,17 +556,18 @@ describe('смена логина и пароля', () => {
         });
         expect(res.status).toBe(200);
         expect(go?.calls[0]?.body).toEqual(body);
+        expect(cleared(res)).toBe(true);
     });
 
     test('неверный текущий пароль не завершает сессию', async () => {
-        useGo({ 'PUT /users/me/password': () => goError(400, 'invalid_credentials') });
+        useGo({ 'PUT /users/me/password': () => goError(400, 'invalid_current_password') });
         const res = await rpc('users.changePassword', {
             body: { current_password: 'wrong-password', new_password: 'new-password' },
             cookie: await cookie(goTokens().issue()),
         });
         expect(await errorOf(res)).toMatchObject({
             code: 'BAD_REQUEST',
-            appCode: 'invalid_credentials',
+            appCode: 'invalid_current_password',
         });
         expect(cleared(res)).toBe(false);
     });

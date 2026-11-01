@@ -5,9 +5,16 @@ import { Button } from '@components/Button/Button';
 import { Icon } from '@components/Icon/Icon';
 import { Input } from '@components/Input/Input';
 import { clsx } from '@cdd-team/clsx';
+import { useNavigate } from '@cdd-team/router';
+import { loseSession } from '@stores/session';
 import { hideSnackbar, showSnackbar } from '@stores/snackbar';
 import { showToast } from '@stores/toast';
-import { passwordRules, validateConfirm, validateNewPassword } from '@utils/credentials';
+import {
+    passwordRules,
+    validateConfirm,
+    validateNewPassword,
+    validatePassword,
+} from '@utils/credentials';
 import styles from './ProfilePage.module.css';
 
 const EMPTY = { current: '', next: '', confirm: '' };
@@ -18,7 +25,8 @@ type Field = keyof typeof EMPTY;
 
 /**
  * Раздел «Смена пароля». Кнопка активна, когда заполнены все поля. Неверный текущий пароль —
- * ошибка под его полем, новый пароль и повтор остаются; после успеха поля очищаются.
+ * ошибка под его полем, новый пароль и повтор остаются. После успеха Go отзывает все сессии:
+ * пользователь становится гостем и входит заново с новым паролем.
  * @returns раздел с формой
  */
 export function PasswordForm() {
@@ -26,6 +34,8 @@ export function PasswordForm() {
     const [revealed, setRevealed] = useState(HIDDEN);
     const [submitted, setSubmitted] = useState(false);
     const [wrongCurrent, setWrongCurrent] = useState(false);
+    const [rejectedNext, setRejectedNext] = useState<string | undefined>(undefined);
+    const navigate = useNavigate();
     const [pending, setPending] = useState(false);
     const [life] = useState({ alive: true });
 
@@ -37,6 +47,7 @@ export function PasswordForm() {
     );
 
     const validation: Partial<Record<Field, string>> = {
+        current: validatePassword(values.current),
         next: validateNewPassword(values.current, values.next),
         confirm: validateConfirm(values.next, values.confirm),
     };
@@ -50,21 +61,22 @@ export function PasswordForm() {
                 current_password: values.current,
                 new_password: values.next,
             });
-            if (!life.alive) return;
-            setValues(EMPTY);
-            setRevealed(HIDDEN);
-            setSubmitted(false);
-            showToast('Изменения сохранены');
+            loseSession();
+            showToast('Пароль изменён. Войдите с новым паролем');
+            navigate({ to: '/login', replace: true });
+            return;
         } catch (error) {
             if (!life.alive) return;
-            if (isRpcError(error) && error.data?.appCode === 'invalid_credentials') {
+            const code = isRpcError(error) ? error.data?.appCode : undefined;
+            if (code === 'invalid_current_password') {
                 setWrongCurrent(true);
                 document.getElementById(fieldId('current'))?.focus();
+            } else if (code === 'validation_error' && isRpcError(error)) {
+                setRejectedNext('Новый пароль не подходит');
+                document.getElementById(fieldId('next'))?.focus();
             } else {
-                showSnackbar('Не удалось изменить пароль', {
-                    label: 'Повторить',
-                    onClick: () => void send(),
-                });
+                // Результат неизвестен: контракт запрещает повторять запрос автоматически
+                showSnackbar('Не удалось изменить пароль. Проверьте, какой пароль действует');
             }
         }
         if (life.alive) setPending(false);
@@ -76,7 +88,9 @@ export function PasswordForm() {
         event.preventDefault();
         if (pending || !filled) return;
         setSubmitted(true);
-        const invalid = (['next', 'confirm'] as const).find((field) => validation[field]);
+        const invalid = (['current', 'next', 'confirm'] as const).find(
+            (field) => validation[field],
+        );
         if (invalid) {
             document.getElementById(fieldId(invalid))?.focus();
             return;
@@ -93,7 +107,11 @@ export function PasswordForm() {
             name={field}
             value={values[field]}
             placeholder={placeholder}
-            error={field === 'current' && wrongCurrent ? 'Неверный текущий пароль' : errorOf(field)}
+            error={
+                field === 'current' && wrongCurrent
+                    ? 'Неверный текущий пароль'
+                    : ((field === 'next' ? rejectedNext : undefined) ?? errorOf(field))
+            }
             disabled={pending}
             autocomplete={autocomplete}
             revealed={revealed[field]}
@@ -103,6 +121,7 @@ export function PasswordForm() {
             onValueChange={(value) => {
                 setValues((current) => ({ ...current, [field]: value }));
                 if (field === 'current') setWrongCurrent(false);
+                if (field === 'next') setRejectedNext(undefined);
                 hideSnackbar();
             }}
         />

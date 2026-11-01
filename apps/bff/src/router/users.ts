@@ -1,5 +1,4 @@
-import { RegisterUserBody } from '@cdd/schemas';
-import { z } from 'zod';
+import { ChangeCurrentUserPasswordBody, UpdateCurrentUserBody } from '@cdd/schemas';
 
 import { authedProcedure, router } from '../trpc.ts';
 
@@ -7,17 +6,14 @@ import { authedProcedure, router } from '../trpc.ts';
 export const users = router({
     me: authedProcedure.query(({ ctx }) => ctx.go.getCurrentUser()),
     updateLogin: authedProcedure
-        .input(RegisterUserBody.pick({ login: true }))
-        .mutation(({ ctx, input }) => ctx.go.updateLogin(input.login)),
+        .input(UpdateCurrentUserBody)
+        .mutation(({ ctx, input }) => ctx.go.updateCurrentUser(input)),
+    // Go отзывает все сессии пользователя, поэтому cookie больше не нужна
     changePassword: authedProcedure
-        .input(
-            z.object({
-                current_password: z.string().min(1),
-                new_password: RegisterUserBody.shape.password,
-            }),
-        )
+        .input(ChangeCurrentUserPasswordBody)
         .mutation(async ({ ctx, input }) => {
-            await ctx.go.changePassword(input);
+            await ctx.go.changeCurrentUserPassword(input);
+            ctx.session.end();
             return { ok: true as const };
         }),
 });
