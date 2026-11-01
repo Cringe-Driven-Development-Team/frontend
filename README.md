@@ -25,6 +25,11 @@ bun run dev
 попросит подтвердить доверие локальному сертификату; в WSL с Chrome в Windows после этого нужен
 `bun run dev:trust-windows` — [«Первый запуск»](docs/local-development.md#первый-запуск).
 Перед PR выполните `bun run check` и `bun run build`.
+
+`bun run dev` работает с HMR и без service worker. Проверить PWA и офлайн-режим локально —
+`bun run dev:pwa`: он собирает клиент production-конфигом и запускает BFF на `http://localhost:4173`,
+Docker не нужен. HMR там нет, после изменений клиента команду надо запустить заново. Подробнее —
+[«Проверка PWA»](docs/local-development.md#проверка-pwa).
 Подробности — в [локальной разработке](docs/local-development.md).
 
 ## Монорепа

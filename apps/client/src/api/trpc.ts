@@ -2,6 +2,7 @@ import type { AppRouter, RouterOutputs } from '@cdd/bff';
 import { TRPCClientError, createTRPCClient, httpBatchLink, type TRPCLink } from '@trpc/client';
 // observable — та же утилита, что внутри самого @trpc/client: так пишутся свои link
 import { observable } from '@trpc/server/observable';
+import { fetchTracked } from '@stores/connection';
 
 /** Пользователь, как его отдаёт `users.me`. */
 export type User = RouterOutputs['users']['me'];
@@ -101,7 +102,7 @@ export const trpc = createTRPCClient<AppRouter>({
             // длинный батч GET делится, чтобы не упереться в лимит URL прокси
             maxURLLength: 2000,
             headers: { 'X-CSRF': '1' },
-            fetch: (url, init) => fetch(url, { ...init, credentials: 'same-origin' }),
+            fetch: (url, init) => fetchTracked(url, { ...init, credentials: 'same-origin' }),
         }),
     ],
 });
