@@ -1,13 +1,8 @@
 import { appendFileSync } from 'node:fs';
 import { api, graphql, runUrl } from './github.ts';
 import { need, ReleaseError } from './env.ts';
-import {
-    isDeployed,
-    readReleaseSnapshot,
-    readTrustedRun,
-    type MergedPR,
-    type ReleaseSnapshot,
-} from './catalog.ts';
+import { isDeployed, readReleaseSnapshot, type MergedPR, type ReleaseSnapshot } from './catalog.ts';
+import { readAutomationSource } from './source.ts';
 import { syncBoard, type BoardResult } from './board.ts';
 import { ensureBaseline, prepareNotice } from './journal.ts';
 import { queueMessage, readyMessage } from './notify.ts';
@@ -227,36 +222,18 @@ export async function prepareAutomation(repoDir: string): Promise<SyncResult> {
     let event: Event;
     let baseline: string;
     try {
-        if (
-            process.env.GITHUB_REPOSITORY !== REPOSITORY ||
-            process.env.GITHUB_REF !== 'refs/heads/main'
-        )
-            return result;
-        event = (await Bun.file(need('GITHUB_EVENT_PATH')).json()) as Event;
-        if (event.repository?.full_name !== REPOSITORY) return result;
-        switch (process.env.GITHUB_EVENT_NAME) {
-            case 'workflow_dispatch':
-                break;
-            case 'workflow_run': {
-                const source = event.workflow_run;
-                if (
-                    !source ||
-                    source.head_branch !== 'main' ||
-                    !['push', 'workflow_dispatch'].includes(source.event)
-                )
-                    return result;
-                const trusted = await readTrustedRun(source.id);
-                if ((source.event === 'push') !== (trusted.kind === 'publish'))
-                    throw new ReleaseError('Событие workflow_run не совпало с Actions API');
-                break;
-            }
-            case 'pull_request_target':
-                if (event.action !== 'enqueued' || event.pull_request?.base.ref !== 'main')
-                    return result;
-                break;
-            default:
-                return result;
-        }
+        const source = await readAutomationSource();
+        if (!source) return result;
+        event =
+            source.kind === 'queue'
+                ? {
+                      pull_request: {
+                          number: source.number,
+                          updated_at: source.updatedAt,
+                          base: { ref: 'main' },
+                      },
+                  }
+                : {};
         result.allowed = true;
         baseline = await ensureBaseline(repoDir);
     } catch (error) {

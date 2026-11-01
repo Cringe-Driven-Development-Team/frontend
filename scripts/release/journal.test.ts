@@ -173,3 +173,21 @@ test('транспорт проверяет ok/message_id и сохраняет 
     response = () => Response.json({ ok: false }, { status: 400 });
     await expect(sendTelegram({ text: 'x' })).rejects.toBeInstanceOf(TelegramRejectedError);
 });
+
+test('выбор queue и ключа не проверяет старый ready и не отправляет другие сообщения', async () => {
+    await prepareNotice(notice);
+    await prepareNotice({ ...notice, kind: 'queue', key: 'queue:chosen', reportUrl: null });
+    await prepareNotice({ ...notice, kind: 'queue', key: 'queue:other', reportUrl: null });
+    f.deploy(f.b);
+    f.requests.length = 0;
+    const result = await sendPending(f.dir, 'queue', 'queue:chosen');
+    expect(result.sent).toBe(1);
+    expect(posts).toBe(1);
+    expect(f.statuses.get(1000)?.[0]?.state).toBe('pending');
+    expect(f.statuses.get(1002)?.[0]?.state).toBe('pending');
+    expect(f.requests.some((r) => r.url.searchParams.get('environment') === 'production')).toBe(
+        false,
+    );
+    expect((await sendPending(f.dir, 'ready')).sent).toBe(0);
+    expect(f.statuses.get(1000)?.[0]?.state).toBe('inactive');
+});
