@@ -288,14 +288,21 @@ export async function notify(what: string, status: string, sha?: string): Promis
     if (what === 'start') {
         if (status !== 'success')
             throw new ReleaseError('Начало выкатки отправляется только перед Switch');
+        checkSha(sha);
         const actor = process.env.GITHUB_TRIGGERING_ACTOR || process.env.GITHUB_ACTOR;
+        const report = await changes(process.env.RELEASE_BEFORE_SHA, sha);
+        const entries = report.data
+            ? report.data.prs.length
+                ? report.data.prs.map((pr) => titleLink(pr.title, pr.url))
+                : ['Связанных PR нет']
+            : ['Состав изменений недоступен'];
         await sendTelegram({
-            text: [
-                `Выкатка релиза <code>${checkSha(sha)}</code> началась`,
-                ...(actor
-                    ? [`Запустил: ${mentionActor(actor, process.env.TELEGRAM_USER_MAP)}`]
-                    : []),
-            ].join('\n'),
+            text: fitList(
+                ['Выкатка началась'],
+                entries,
+                actor ? [`Запустил: ${mentionActor(actor, process.env.TELEGRAM_USER_MAP)}`] : [],
+                report.reportUrl,
+            ),
             keyboard: [[button('Логи выкатки', runUrl())]],
         });
         return;

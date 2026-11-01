@@ -37,42 +37,35 @@ test('карточка выкатки показывает полные SHA и d
     expect(text).toContain(`<code>sha256:${digest}</code>`);
 });
 
-test('начало выкатки показывает инициатора и кнопку логов без запроса compare', async () => {
-    const original = { ...process.env };
-    Object.assign(process.env, {
-        TELEGRAM_BOT_TOKEN: 'token',
-        TELEGRAM_CHAT_ID: '1',
-        GITHUB_REPOSITORY: 'owner/repo',
-        GITHUB_RUN_ID: '12',
-        GITHUB_ACTOR: 'original',
-        GITHUB_TRIGGERING_ACTOR: 'retry<&',
-    });
-    const messages: {
-        text: string;
-        reply_markup?: { inline_keyboard: { text: string; url: string }[][] };
-    }[] = [];
-    globalThis.fetch = (async (input, init) => {
-        expect(String(input)).toContain('/sendMessage');
-        messages.push(JSON.parse(String(init?.body)));
-        return Response.json({ ok: true, result: { message_id: 1 } });
-    }) as typeof fetch;
-    try {
-        await notify('start', 'success', 'a'.repeat(40));
-        expect(messages).toHaveLength(1);
-        expect(messages[0]?.text).toContain('началась');
-        expect(messages[0]?.text).toContain('a'.repeat(40));
-        expect(messages[0]?.text).toContain('retry&lt;&amp;');
-        expect(messages[0]?.text).not.toContain('Логи выкатки');
-        expect(messages[0]?.reply_markup?.inline_keyboard).toEqual([
-            [{ text: 'Логи выкатки', url: 'https://github.com/owner/repo/actions/runs/12' }],
-        ]);
-        delete process.env.GITHUB_TRIGGERING_ACTOR;
-        await notify('start', 'success', 'b'.repeat(40));
-        expect(messages[1]?.text).toContain('original');
-    } finally {
-        for (const key of Object.keys(process.env)) if (!(key in original)) delete process.env[key];
-        Object.assign(process.env, original);
-    }
+test('начало выкатки показывает PR, текущего инициатора и кнопку логов', async () => {
+    const f = alertFixture(1);
+    Object.assign(process.env, { GITHUB_ACTOR: 'original', GITHUB_TRIGGERING_ACTOR: 'retry<&' });
+    await notify('start', 'success', f.b);
+    expect(payload().text).toContain('Выкатка началась');
+    expect(payload().text).toContain('PR title 1');
+    expect(payload().text).toContain('/pull/1');
+    expect(payload().text).toContain('retry&lt;&amp;');
+    expect(payload().text).not.toContain(f.b);
+    expect(payload().text).not.toContain('Frontend. 1');
+    expect(payload().reply_markup?.inline_keyboard).toEqual([
+        [
+            {
+                text: 'Логи выкатки',
+                url: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/12`,
+            },
+        ],
+    ]);
+    expect(await summary()).toContain(f.b);
+    expect(
+        f.requests.some(
+            (r) =>
+                r.url.pathname.includes('/deployments') ||
+                String(r.body?.query).includes('mutation'),
+        ),
+    ).toBe(false);
+    delete process.env.GITHUB_TRIGGERING_ACTOR;
+    await notify('start', 'success', f.b);
+    expect(payload().text).toContain('original');
 });
 
 test.each([
@@ -337,4 +330,61 @@ test('длинные названия сокращают только Telegram, 
     expect(report).toContain('/issues/40');
     expect(report).toContain('😀'.repeat(1));
     expect(report).toContain('\\[');
+});
+
+test.each([0, 3])('начало выкатки с %i PR не выбирает случайный первый', async (count) => {
+    const f = alertFixture(count);
+    await notify('start', 'success', f.b);
+    if (!count) expect(payload().text).toContain('Связанных PR нет');
+    else {
+        for (let i = 1; i <= count; i++) expect(payload().text).toContain(`PR title ${i}`);
+        expect(payload().text.indexOf('PR title 1')).toBeLessThan(
+            payload().text.indexOf('PR title 3'),
+        );
+    }
+});
+
+test.each(['unknown', 'http'])(
+    'начало при %s всё равно сообщает о старте и даёт логи',
+    async (kind) => {
+        const f = alertFixture(1);
+        if (kind === 'unknown') delete process.env.RELEASE_BEFORE_SHA;
+        const original = f.extra;
+        f.extra = (url, body, init) =>
+            kind === 'http' && url.pathname.includes('/compare/')
+                ? Response.json({}, { status: 503 })
+                : original?.(url, body, init);
+        await notify('start', 'success', f.b);
+        expect(payload().text).toContain('Выкатка началась');
+        expect(payload().text).toContain('Состав изменений недоступен');
+        expect(payload().reply_markup?.inline_keyboard[0]?.[0]?.text).toBe('Логи выкатки');
+    },
+);
+
+test('длинный список PR начала сокращается, полный текст и SHA остаются в Summary', async () => {
+    const f = alertFixture(40);
+    const title = '<long>😀'.repeat(40);
+    for (const pr of f.pulls) pr.title = `${title} ${pr.number}`;
+    await notify('start', 'success', f.b);
+    expect(payload().text).toContain('&lt;long&gt;');
+    expect(payload().text).not.toContain(f.b);
+    expect(payload().text).toContain('#summary');
+    expect(
+        [
+            ...payload()
+                .text.replace(/<[^>]*>/g, '')
+                .replace(/&(amp|lt|gt|quot);/g, '_'),
+        ].length,
+    ).toBeLessThanOrEqual(4096);
+    const report = await summary();
+    expect(report).toContain('/pull/40');
+    expect(report).toContain(f.b);
+    expect(report.match(/😀/g)).toHaveLength(1600);
+});
+
+test('начало валидирует SHA и success до чтения состава и отправки', async () => {
+    const f = alertFixture(1);
+    await expect(notify('start', 'success', 'bad')).rejects.toThrow();
+    await expect(notify('start', 'failure', f.b)).rejects.toThrow();
+    expect(f.requests).toHaveLength(0);
 });

@@ -32,6 +32,9 @@ test('CD сообщает о начале непосредственно пер�
     expect(steps[at - 1]?.run).toBe('bun run release notify start success "$SHA"');
     expect(steps[at - 1]?.['continue-on-error']).toBe(true);
     expect(steps[at - 1]?.if).toBeUndefined();
+    expect(steps[at - 1]?.env?.RELEASE_BEFORE_SHA).toBe(
+        '${{ steps.confirmed.outputs.before_sha }}',
+    );
     expect(
         steps.find((step) => step.run === 'bun run release notify deploy "$STATUS" "$SHA"')?.if,
     ).toBe('always()');

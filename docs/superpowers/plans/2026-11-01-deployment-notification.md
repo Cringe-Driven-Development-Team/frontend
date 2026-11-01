@@ -44,7 +44,7 @@
 - Produces in `catalog.ts`: `export interface PRChanges { prs: (MergedPR & { title: string })[]; issues: LinkedIssue[]; compareUrl: string }` и `export async function readPRChanges(baseSha: string, headSha: string): Promise<PRChanges>`.
 - Private shared helpers: `mergedPRs(): Promise<(MergedPR & { title: string })[]>`, `issuesForPRs(numbers: number[]): Promise<LinkedIssue[]>`; оба используются и новым запросом, и `readReleaseSnapshot`.
 
-- [ ] **1. Добавить тесты в `catalog.test.ts` и расширить HTTP fixture.**
+- [x] **1. Добавить тесты в `catalog.test.ts` и расширить HTTP fixture.**
       В `fixture.ts` добавить `title: 'PR N'` для PR; Compare API fixture возвращает страницы SHA из настоящего `git rev-list --reverse BASE..HEAD` тестового репозитория. Использовать существующий `f.extra` для ошибок и необычных страниц.
       Основные assertions:
 
@@ -59,10 +59,10 @@
 
     Отдельные тесты: `root..b` включает [1, 2], исключает outside PR [3]; подставленные сообщения коммитов и base ветки не влияют на выбор. 101 compare commit и 101 merged PR требуют следующей страницы; несколько GraphQL-страниц читаются полностью. Общая issue двух PR получает `prNumbers: [1, 2]`, несколько issues одного PR сохраняются; PR без issues сохраняет title/url. Invalid SHA отклоняется до HTTP; HTTP failure и GraphQL errors отклоняют `readPRChanges`.
 
-- [ ] **2. Запустить RED:** `bun test scripts/release/catalog.test.ts` — новые тесты падают из-за отсутствия `readPRChanges`; старые остаются зелёными.
-- [ ] **3. Реализовать чтение в `catalog.ts`.** Вынести существующие циклы PR и объединения issues в указанные private helpers; сохранить проверки номера PR, пагинацию и исключение unmerged записей. Snapshot по-прежнему фильтрует merged SHA по достижимости из `origin/main`. Новый запрос валидирует оба SHA, собирает SHA всех страниц `/compare/BASE...HEAD?per_page=100&page=N`, выбирает PR по `mergeSha`, сортирует по номеру и читает связи только выбранных PR. Пустая страница до достижения заявленного `total_commits` считается неполным ответом, а не успехом. Не вызывать `readReleaseSnapshot` для построения сообщения и не разбирать текст merge-коммитов.
-- [ ] **4. Запустить GREEN:** `bun test scripts/release/catalog.test.ts scripts/release/board.test.ts scripts/release/sync.test.ts scripts/release/journal.test.ts` — все тесты проходят, прежняя логика доски/публикации сохранена.
-- [ ] **5. Коммит:** `feat(release): read PR and issue changes between release versions`.
+- [x] **2. Запустить RED:** `bun test scripts/release/catalog.test.ts` — новые тесты падают из-за отсутствия `readPRChanges`; старые остаются зелёными.
+- [x] **3. Реализовать чтение в `catalog.ts`.** Вынести существующие циклы PR и объединения issues в указанные private helpers; сохранить проверки номера PR, пагинацию и исключение unmerged записей. Snapshot по-прежнему фильтрует merged SHA по достижимости из `origin/main`. Новый запрос валидирует оба SHA, собирает SHA всех страниц `/compare/BASE...HEAD?per_page=100&page=N`, выбирает PR по `mergeSha`, сортирует по номеру и читает связи только выбранных PR. Пустая страница до достижения заявленного `total_commits` считается неполным ответом, а не успехом. Не вызывать `readReleaseSnapshot` для построения сообщения и не разбирать текст merge-коммитов.
+- [x] **4. Запустить GREEN:** `bun test scripts/release/catalog.test.ts scripts/release/board.test.ts scripts/release/sync.test.ts scripts/release/journal.test.ts` — все тесты проходят, прежняя логика доски/публикации сохранена.
+- [x] **5. Коммит:** `feat(release): read PR and issue changes between release versions`.
 
 ### Task 2: Итог, Health Check, кнопки и полный отчёт
 
@@ -72,7 +72,7 @@
 - Produces: прежний `notify(what: string, status: string, sha?: string): Promise<void>` с новым итогом; private `changes(base: string | undefined, head: string | undefined): Promise<{ data?: PRChanges; reportUrl?: string }>` для использования также в Task 3.
 - `changes` пишет полный Markdown-отчёт через `GITHUB_STEP_SUMMARY`; `reportUrl` возвращает только после успешной записи, как `${runUrl()}#summary`. При недоступных SHA/data пишет помеченный неполный отчёт, если файл доступен, и возвращает `data: undefined`. Ошибки чтения и записи обрабатываются отдельно: уже полученные данные не пропадают из-за файла Summary.
 
-- [ ] **1. Написать RED-тесты в `notify.test.ts` на настоящий `notify` и исходящий JSON Telegram.** Использовать общий release fixture и перехват Telegram через `f.extra`; Summary — временный файл внутри `f.dir`. Проверять payload и содержимое файла, а не приватные helpers.
+- [x] **1. Написать RED-тесты в `notify.test.ts` на настоящий `notify` и исходящий JSON Telegram.** Использовать общий release fixture и перехват Telegram через `f.extra`; Summary — временный файл внутри `f.dir`. Проверять payload и содержимое файла, а не приватные helpers.
       Матрица бейджа:
 
     ```ts
@@ -91,11 +91,11 @@
     Итог содержит уникальные названия issues со ссылками; PR без issue — title и URL PR. Summary содержит все PR, все связи, оба полных SHA и compare URL, даже при семи PR. Rollback при `before=b`, `sha=a` читает диапазон `a..b` и показывает «Отменённые задачи».
     Ошибки GraphQL/HTTP показывают «Состав изменений недоступен», но Telegram получает результат. Отсутствующий/незаписываемый Summary показывает «Полный отчёт недоступен» при необходимости полного списка и не создаёт мёртвую кнопку. Длинные названия с `<>&`, Markdown и эмодзи не ломают HTML/ссылки; сокращается список в Telegram, но не отчёт. Проверить не более 4096 видимых символов, наличие итога/SHA/бейджа/управляющих кнопок и ссылки на полный отчёт при сокращении.
 
-- [ ] **2. Запустить RED:** `bun test scripts/release/notify.test.ts` — новые проверки формата и клавиатуры падают.
-- [ ] **3. Обновить `notify.ts`.** Заменить старое чтение трёх commit subjects на `changes`; CD передаёт `before, sha`, Rollback — `sha, before`. Добавить краткий бейдж в `deploymentState`, сохранив полезные ветки сбоя. Формировать строки задач, объединяя issue по node ID; добавлять fallback для каждого PR без задачи. Сокращать длинное название до 140 символов, как прежние строки изменений, сохраняя URL; полный текст хранить в отчёте. Укладывать список в остаток бюджета после фиксированной части сообщения и ссылки на отчёт. Неполный состав явно помечать. Экранировать HTML в Telegram и Markdown в Summary. Не добавлять новые параметры CLI или зависимости.
-- [ ] **4. Добавить права и тест workflows.** В `cd.yml` и `rollback.yml` добавить только `pull-requests: read` и `issues: read` к существующим правам. `workflows.test.ts` проверяет оба разрешения и сохранение `continue-on-error: true`/`always()` у итогового Telegram шага. Новый запрос использует API, поэтому глубокий checkout и `actions: read` не нужны.
-- [ ] **5. Запустить GREEN:** `bun test scripts/release/notify.test.ts scripts/release/workflows.test.ts scripts/release/journal.test.ts scripts/release/sync.test.ts`; `actionlint .github/workflows/cd.yml .github/workflows/rollback.yml` — exit 0. При отсутствии `actionlint` в PATH использовать `/home/oleg/go/bin/actionlint`.
-- [ ] **6. Коммит:** `feat(release): show linked tasks PR buttons and health badge`.
+- [x] **2. Запустить RED:** `bun test scripts/release/notify.test.ts` — новые проверки формата и клавиатуры падают.
+- [x] **3. Обновить `notify.ts`.** Заменить старое чтение трёх commit subjects на `changes`; CD передаёт `before, sha`, Rollback — `sha, before`. Добавить краткий бейдж в `deploymentState`, сохранив полезные ветки сбоя. Формировать строки задач, объединяя issue по node ID; добавлять fallback для каждого PR без задачи. Сокращать длинное название до 140 символов, как прежние строки изменений, сохраняя URL; полный текст хранить в отчёте. Укладывать список в остаток бюджета после фиксированной части сообщения и ссылки на отчёт. Неполный состав явно помечать. Экранировать HTML в Telegram и Markdown в Summary. Не добавлять новые параметры CLI или зависимости.
+- [x] **4. Добавить права и тест workflows.** В `cd.yml` и `rollback.yml` добавить только `pull-requests: read` и `issues: read` к существующим правам. `workflows.test.ts` проверяет оба разрешения и сохранение `continue-on-error: true`/`always()` у итогового Telegram шага. Новый запрос использует API, поэтому глубокий checkout и `actions: read` не нужны.
+- [x] **5. Запустить GREEN:** `bun test scripts/release/notify.test.ts scripts/release/workflows.test.ts scripts/release/journal.test.ts scripts/release/sync.test.ts`; `actionlint .github/workflows/cd.yml .github/workflows/rollback.yml` — exit 0. При отсутствии `actionlint` в PATH использовать `/home/oleg/go/bin/actionlint`.
+- [x] **6. Коммит:** `feat(release): show linked tasks PR buttons and health badge`.
 
 ### Task 3: Названия PR в начале выкатки и документация
 
@@ -104,12 +104,12 @@
 - Consumes: private `changes(base, head)` из Task 2, `RELEASE_BEFORE_SHA` и текущий `notify('start', 'success', sha)`.
 - Produces: начало CD с названиями PR вместо SHA, текущим actor и прежней кнопкой логов. CLI и вызовы конечного уведомления сохраняются.
 
-- [ ] **1. Написать RED-тесты в `notify.test.ts` и `workflows.test.ts`.** Для одного PR текст содержит title, ссылку на PR, «Выкатка началась» и текущего triggering actor; не содержит полного SHA. Для нескольких PR — все titles со ссылками в порядке номеров. При 0 PR — «Связанных PR нет»; при неизвестном before/API failure — «Состав изменений недоступен»; SHA при этом по-прежнему проверяется до отправки. Длинный список сокращается в бюджете, полный список и SHA доступны в Summary; кнопка «Логи выкатки» ведёт на текущий run во всех исходах. Существующий тест «без запроса compare» заменить: начало теперь сознательно читает состав, но не трогает prod, Deployments или доску. Проверить, что CD start step получает точное `RELEASE_BEFORE_SHA: '${{ steps.confirmed.outputs.before_sha }}'` и остаётся непосредственно перед Switch с `continue-on-error: true`.
-- [ ] **2. Запустить RED:** `bun test scripts/release/notify.test.ts scripts/release/workflows.test.ts` — новые проверки старта падают.
-- [ ] **3. Обновить start-ветку `notify.ts` и env шага `Deployment started` в `cd.yml`.** Сначала сохранить `checkSha(sha)` и ограничение `status === 'success'`, затем использовать общий `changes(before, sha)`. В тексте показывать PR titles, не issue titles; переиспользовать правила экранирования/бюджета/отчёта из Task 2. Кнопка старта только «Логи выкатки», а ссылка на полный состав при сокращении — в тексте. Валидация SHA не зависит от его отображения. `GITHUB_STEP_SUMMARY` отдельный для каждого шага: начало и итог пишут каждый свой полный отчёт, без собственного кеша или дедупликации файлов.
-- [ ] **4. Обновить `docs/release.md`, раздел Telegram.** Описать обе новые карточки, состояния Health Check, задачи и PR без issues, границу 6/7, Actions Summary, поведение при ошибках. Убрать устаревшие обещания первых трёх коммитов и SHA в тексте начала; не менять правила доски или выкатки.
-- [ ] **5. Финальная проверка:** `bun run check`, `bun run test`, `bun run build`, actionlint для двух workflows и `git diff --check` — exit 0. Просмотреть diff относительно `d0de887946a727190a34aa73797100c0719e461f`; только согласованные файлы/поведение. Проверки Telegram — на HTTP boundary, без реальной рассылки или запуска CD.
-- [ ] **6. Коммит:** `feat(release): show PR titles when deployment starts`.
+- [x] **1. Написать RED-тесты в `notify.test.ts` и `workflows.test.ts`.** Для одного PR текст содержит title, ссылку на PR, «Выкатка началась» и текущего triggering actor; не содержит полного SHA. Для нескольких PR — все titles со ссылками в порядке номеров. При 0 PR — «Связанных PR нет»; при неизвестном before/API failure — «Состав изменений недоступен»; SHA при этом по-прежнему проверяется до отправки. Длинный список сокращается в бюджете, полный список и SHA доступны в Summary; кнопка «Логи выкатки» ведёт на текущий run во всех исходах. Существующий тест «без запроса compare» заменить: начало теперь сознательно читает состав, но не трогает prod, Deployments или доску. Проверить, что CD start step получает точное `RELEASE_BEFORE_SHA: '${{ steps.confirmed.outputs.before_sha }}'` и остаётся непосредственно перед Switch с `continue-on-error: true`.
+- [x] **2. Запустить RED:** `bun test scripts/release/notify.test.ts scripts/release/workflows.test.ts` — новые проверки старта падают.
+- [x] **3. Обновить start-ветку `notify.ts` и env шага `Deployment started` в `cd.yml`.** Сначала сохранить `checkSha(sha)` и ограничение `status === 'success'`, затем использовать общий `changes(before, sha)`. В тексте показывать PR titles, не issue titles; переиспользовать правила экранирования/бюджета/отчёта из Task 2. Кнопка старта только «Логи выкатки», а ссылка на полный состав при сокращении — в тексте. Валидация SHA не зависит от его отображения. `GITHUB_STEP_SUMMARY` отдельный для каждого шага: начало и итог пишут каждый свой полный отчёт, без собственного кеша или дедупликации файлов.
+- [x] **4. Обновить `docs/release.md`, раздел Telegram.** Описать обе новые карточки, состояния Health Check, задачи и PR без issues, границу 6/7, Actions Summary, поведение при ошибках. Убрать устаревшие обещания первых трёх коммитов и SHA в тексте начала; не менять правила доски или выкатки.
+- [x] **5. Финальная проверка:** `bun run check`, `bun run test`, `bun run build`, actionlint для двух workflows и `git diff --check` — exit 0. Просмотреть diff относительно `d0de887946a727190a34aa73797100c0719e461f`; только согласованные файлы/поведение. Проверки Telegram — на HTTP boundary, без реальной рассылки или запуска CD.
+- [x] **6. Коммит:** `feat(release): show PR titles when deployment starts`.
 
 ## Передача и завершение
 
