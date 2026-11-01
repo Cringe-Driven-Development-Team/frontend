@@ -234,12 +234,12 @@ function mentionActor(actor: string, rawMap: string | undefined): string {
 
 /**
  * Сообщение в Telegram о результате заливки, выкатки или отката.
- * @param what что произошло: Заливка, Выкатка или Откат
+ * @param what тип события: publish, deploy, rollback или start
  * @param status итог job: success, failure или cancelled
  * @param [sha] sha релиза
  */
 export async function notify(what: string, status: string, sha?: string): Promise<void> {
-    if (what === 'Начало') {
+    if (what === 'start') {
         if (status !== 'success')
             throw new ReleaseError('Начало выкатки отправляется только перед Switch');
         const actor = process.env.GITHUB_TRIGGERING_ACTOR || process.env.GITHUB_ACTOR;
@@ -254,18 +254,24 @@ export async function notify(what: string, status: string, sha?: string): Promis
         });
         return;
     }
+    const label = new Map([
+        ['publish', 'Заливка'],
+        ['deploy', 'Выкатка'],
+        ['rollback', 'Откат'],
+    ]).get(what);
+    if (!label) throw new ReleaseError(`Неизвестный тип уведомления: ${what}`);
     const { GITHUB_ACTOR, GITHUB_REPOSITORY } = process.env;
 
     // залитый релиз пользователи не видят: выкатывает его человек, кнопка ведёт на запуск CD
-    const uploaded = what === 'Заливка' && status === 'success';
+    const uploaded = what === 'publish' && status === 'success';
     const lines = [
         uploaded
             ? '📦 Релиз фронта залит, ждёт выкатки'
             : status === 'success'
-              ? `✅ ${what} фронта: успешно`
+              ? `✅ ${label} фронта: успешно`
               : status === 'cancelled'
-                ? `⚪ ${what} фронта: отменено`
-                : `❌ ${what} фронта: ошибка`,
+                ? `⚪ ${label} фронта: отменено`
+                : `❌ ${label} фронта: ошибка`,
     ];
     if (sha) lines.push(`Релиз <code>${sha}</code>`);
     const digest = digestOf(process.env.RELEASE_IMAGE_REF);
@@ -275,12 +281,12 @@ export async function notify(what: string, status: string, sha?: string): Promis
     const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
     const repo = `${server}/${GITHUB_REPOSITORY}`;
     const keyboard = uploaded ? [[button('Выкатить', `${repo}/actions/workflows/cd.yml`)]] : [];
-    if (what === 'Выкатка' || what === 'Откат') {
+    if (what === 'deploy' || what === 'rollback') {
         lines[0] = `<b>${lines[0]}</b>`;
         const before = process.env.RELEASE_BEFORE_SHA;
         const range =
             before && isSha(before) && sha && isSha(sha)
-                ? what === 'Откат'
+                ? what === 'rollback'
                     ? `${sha}...${before}`
                     : `${before}...${sha}`
                 : undefined;
@@ -294,7 +300,7 @@ export async function notify(what: string, status: string, sha?: string): Promis
             '<i>Слева — последний подтверждённый выпуск по истории GitHub Deployments: он показывает ' +
                 'прошлую проверку, а не то, что запущено сейчас.</i>',
             '',
-            `<b>${what === 'Откат' ? 'Отменённые изменения' : 'Изменения'}</b>`,
+            `<b>${what === 'rollback' ? 'Отменённые изменения' : 'Изменения'}</b>`,
             ...(await changes(range)),
             '',
             ...deploymentState(status),
@@ -320,7 +326,7 @@ export async function notify(what: string, status: string, sha?: string): Promis
         if (process.env.GITHUB_RUN_ID)
             links.push(
                 button(
-                    what === 'Откат' ? 'Логи отката' : 'Логи выкатки',
+                    what === 'rollback' ? 'Логи отката' : 'Логи выкатки',
                     `${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`,
                 ),
             );

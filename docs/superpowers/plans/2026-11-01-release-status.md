@@ -450,7 +450,7 @@ Expected: после sync 0 Telegram POST, после notify-pending один PO
 **Interfaces:**
 
 - Consumes: Task 4 команды `sync`, `notify-pending`, output `allowed`.
-- Produces: workflow `Release status`; команда `bun run release notify Начало success "$SHA"` через прежний notify() с новым вариантом what, не отдельный транспорт.
+- Produces: workflow `Release status`; команда `bun run release notify start success "$SHA"` через прежний notify() с новым вариантом what, не отдельный транспорт.
 
 - [ ] **Step 1: Написать падающие проверки YAML и начала выкатки.**
 
@@ -462,7 +462,7 @@ test('CD сообщает о начале непосредственно пер�
     const cd = Bun.YAML.parse(await Bun.file('.github/workflows/cd.yml').text());
     const steps = cd.jobs.cd.steps;
     const at = steps.findIndex((step) => step.id === 'switch');
-    expect(steps[at - 1].run).toBe('bun run release notify Начало success "$SHA"');
+    expect(steps[at - 1].run).toBe('bun run release notify start success "$SHA"');
     expect(steps[at - 1]['continue-on-error']).toBe(true);
     expect(steps[at - 1].if).toBeUndefined(); // обычное success(), а не always()
 });

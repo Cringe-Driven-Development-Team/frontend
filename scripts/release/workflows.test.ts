@@ -28,11 +28,11 @@ test('CD сообщает о начале непосредственно пер�
     const cd = await workflow('cd.yml');
     const steps = cd.jobs.cd!.steps;
     const at = steps.findIndex((step) => step.id === 'switch');
-    expect(steps[at - 1]?.run).toBe('bun run release notify Начало success "$SHA"');
+    expect(steps[at - 1]?.run).toBe('bun run release notify start success "$SHA"');
     expect(steps[at - 1]?.['continue-on-error']).toBe(true);
     expect(steps[at - 1]?.if).toBeUndefined();
     expect(
-        steps.find((step) => step.run === 'bun run release notify Выкатка "$STATUS" "$SHA"')?.if,
+        steps.find((step) => step.run === 'bun run release notify deploy "$STATUS" "$SHA"')?.if,
     ).toBe('always()');
 });
 
@@ -76,7 +76,16 @@ test('синхронизация слушает main CI/CD и очередь, н
 test('CI оставляет только сообщение о провале публикации', async () => {
     const ci = await workflow('ci.yml');
     const send = ci.jobs.publish!.steps.find(
-        (step) => step.run === 'bun run release notify Заливка "$STATUS" "$SHA"',
+        (step) => step.run === 'bun run release notify publish "$STATUS" "$SHA"',
     )!;
     expect(send.if).toBe('failure() || cancelled()');
+});
+
+test('Rollback использует тип уведомления rollback', async () => {
+    const config = await workflow('rollback.yml');
+    expect(
+        config.jobs.rollback!.steps.some(
+            (step) => step.run === 'bun run release notify rollback "$STATUS" "$SHA"',
+        ),
+    ).toBe(true);
 });

@@ -34,7 +34,7 @@ const USAGE = `Использование: bun run release <команда>
   retention                       удалить старые ассеты
   sync                            сверить доску и подготовить отчёты/уведомления
   notify-pending                  отправить подготовленные уведомления
-  notify <Заливка|Выкатка|Откат|Начало> <success|failure|cancelled> [sha]`;
+  notify <publish|deploy|rollback|start> <success|failure|cancelled> [sha]`;
 
 async function main(command: string | undefined, args: string[]): Promise<void> {
     switch (command) {

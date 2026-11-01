@@ -121,7 +121,7 @@ jobs:
           TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
           RELEASE_IMAGE_REF: ${{ steps.image.outputs.image_ref || steps.published.outputs.image_ref }}
           STATUS: ${{ job.status }}
-        run: bun run release notify Заливка "$STATUS" "$SHA"
+        run: bun run release notify publish "$STATUS" "$SHA"
 
   course-sync:
     needs: [check]
