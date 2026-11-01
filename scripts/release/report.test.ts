@@ -118,3 +118,119 @@ test('failed_enrichment_writes_incomplete_summary_without_advertising_it', async
     expect(readFileSync(process.env.GITHUB_STEP_SUMMARY, 'utf8')).toContain('Отчёт неполный');
     expect(readFileSync(process.env.GITHUB_OUTPUT, 'utf8')).toContain('report_url=\n');
 });
+
+test('разница версий содержит только вошедшие PR и настоящие закрывающие связи', async () => {
+    const result = await readChangeReport(REPO, f.a, f.b);
+    expect(result.prs.map((pr) => pr.number)).toEqual([2]);
+    expect(result.prs[0]?.title).toBe('PR 2');
+    expect(result.issues[0]?.prNumbers).toEqual([2]);
+    expect(result).toMatchObject({ baseSha: f.a, headSha: f.b });
+    expect((await readChangeReport(REPO, f.root, f.b)).prs.map((pr) => pr.number)).toEqual([1, 2]);
+    expect((await readChangeReport(REPO, f.a, f.a)).prs).toEqual([]);
+    f.pulls[0]!.merged_at = '';
+    expect((await readChangeReport(REPO, f.root, f.b)).prs.map((pr) => pr.number)).toEqual([2]);
+});
+
+test('разница не теряет PR и commit со второй страницы', async () => {
+    const rows = Array.from({ length: 101 }, (_, i) => ({
+        ...f.pulls[0]!,
+        number: i + 1,
+        merge_commit_sha: (i + 1).toString(16).padStart(40, '0'),
+    }));
+    f.pulls.splice(0, f.pulls.length, ...rows);
+    f.extra = (url) => {
+        if (!url.pathname.includes('/compare/')) return;
+        const page = Number(url.searchParams.get('page'));
+        return Response.json({
+            total_commits: 101,
+            commits: rows
+                .slice((page - 1) * 100, page * 100)
+                .map((pr) => ({ sha: pr.merge_commit_sha })),
+        });
+    };
+    const result = await readChangeReport(REPO, f.a, f.b);
+    expect(result.prs).toHaveLength(101);
+    expect(result.prs.at(-1)?.number).toBe(101);
+    expect(result.issues).toHaveLength(101);
+});
+
+test('общие задачи объединяются, несколько страниц связей и PR без задачи сохраняются', async () => {
+    f.extra = (url, body) => {
+        if (url.pathname !== '/graphql') return;
+        const vars = body?.variables as { number: number; cursor?: string };
+        const nodes =
+            vars.number === 2
+                ? []
+                : [
+                      {
+                          id: vars.cursor ? 'shared' : 'first',
+                          number: vars.cursor ? 10 : 11,
+                          title: 'Frontend. issue',
+                          repository: { nameWithOwner: process.env.GITHUB_REPOSITORY },
+                      },
+                  ];
+        return Response.json({
+            data: {
+                repository: {
+                    pullRequest: {
+                        closingIssuesReferences: {
+                            nodes,
+                            pageInfo: {
+                                hasNextPage: vars.number === 1 && !vars.cursor,
+                                endCursor: 'next',
+                            },
+                        },
+                    },
+                },
+            },
+        });
+    };
+    const first = await readChangeReport(REPO, f.root, f.b);
+    expect(first.issues.map((issue) => issue.id)).toEqual(['first', 'shared']);
+    expect(first.prs[1]?.title).toBe('PR 2');
+    f.extra = (url) =>
+        url.pathname === '/graphql'
+            ? Response.json({
+                  data: {
+                      repository: {
+                          pullRequest: {
+                              closingIssuesReferences: {
+                                  nodes: [
+                                      {
+                                          id: 'shared',
+                                          number: 10,
+                                          title: 'Frontend. shared',
+                                          repository: {
+                                              nameWithOwner: process.env.GITHUB_REPOSITORY,
+                                          },
+                                      },
+                                  ],
+                                  pageInfo: { hasNextPage: false, endCursor: null },
+                              },
+                          },
+                      },
+                  },
+              })
+            : undefined;
+    expect((await readChangeReport(REPO, f.root, f.b)).issues[0]?.prNumbers).toEqual([1, 2]);
+});
+
+test('неверный SHA отклоняется до HTTP запроса', async () => {
+    await expect(readChangeReport(REPO, 'bad', f.b)).rejects.toThrow();
+    expect(f.requests).toHaveLength(0);
+});
+
+test.each(['http', 'graphql', 'partial'])(
+    'ошибка %s не выдаётся за пустую разницу',
+    async (kind) => {
+        f.extra = (url) => {
+            if (kind === 'http' && url.pathname.includes('/compare/'))
+                return Response.json({}, { status: 503 });
+            if (kind === 'graphql' && url.pathname === '/graphql')
+                return Response.json({ errors: [{ message: 'denied' }] });
+            if (kind === 'partial' && url.pathname.includes('/compare/'))
+                return Response.json({ total_commits: 1, commits: [] });
+        };
+        await expect(readChangeReport(REPO, f.a, f.b)).rejects.toThrow();
+    },
+);

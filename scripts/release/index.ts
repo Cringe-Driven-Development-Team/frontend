@@ -13,10 +13,7 @@ import {
 } from './deployments.ts';
 import { ReleaseError, checkSha, output } from './env.ts';
 import { reconcileBoard } from './sync.ts';
-import { prepareNotifications } from './notification-sync.ts';
-import { sendPending } from './journal.ts';
 import { checkImage, checkImageRef } from './image.ts';
-import { notify } from './notify.ts';
 import { retention } from './retention.ts';
 import { upload } from './upload.ts';
 import { reportRelease } from './report.ts';
@@ -36,9 +33,7 @@ const USAGE = `Использование: bun run release <команда>
   retention                       удалить старые ассеты
   sync                            сверить только доску
   report <publish|deploy|rollback> <sha>    полный отчёт без Telegram
-  prepare-notifications <current|recover>   подготовить текущее событие или восстановить пропущенные
-  notify-pending [all|queue|ready] [key]     отправить выбранные уведомления
-  notify <publish|deploy|rollback|start> <success|failure|cancelled> [sha]`;
+`;
 
 async function main(command: string | undefined, args: string[]): Promise<void> {
     switch (command) {
@@ -48,35 +43,6 @@ async function main(command: string | undefined, args: string[]): Promise<void> 
         case 'sync': {
             const result = await reconcileBoard(process.cwd());
             output('allowed', String(result.allowed));
-            if (result.errors.length) throw new ReleaseError(result.errors.join('\n'));
-            return;
-        }
-        case 'prepare-notifications': {
-            if (args.length !== 1 || (args[0] !== 'current' && args[0] !== 'recover'))
-                throw new ReleaseError(USAGE);
-            const result = await prepareNotifications(process.cwd(), args[0]);
-            output('allowed', String(result.allowed));
-            output('kind', result.kind);
-            output('first_key', result.firstKey ?? '');
-            if (result.errors.length) throw new ReleaseError(result.errors.join('\n'));
-            return;
-        }
-        case 'notify-pending': {
-            const kind = args[0] ?? 'all';
-            const key = args[1];
-            if (
-                args.length > 2 ||
-                !['all', 'queue', 'ready'].includes(kind) ||
-                (key &&
-                    (!/^(queue|ready):.+$/.test(key) ||
-                        (kind !== 'all' && !key.startsWith(`${kind}:`))))
-            )
-                throw new ReleaseError(USAGE);
-            const result = await sendPending(
-                process.cwd(),
-                kind === 'all' ? undefined : (kind as 'queue' | 'ready'),
-                key,
-            );
             if (result.errors.length) throw new ReleaseError(result.errors.join('\n'));
             return;
         }
@@ -107,9 +73,6 @@ async function main(command: string | undefined, args: string[]): Promise<void> 
             return health(checkSha(args[0]));
         case 'retention':
             return retention();
-        case 'notify':
-            if (!args[0] || !args[1]) throw new ReleaseError(USAGE);
-            return notify(args[0], args[1], args[2]);
         default:
             throw new ReleaseError(USAGE);
     }
