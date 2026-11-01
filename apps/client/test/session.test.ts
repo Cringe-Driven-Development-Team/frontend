@@ -31,7 +31,10 @@ beforeEach(() => {
     answers.clear();
     sessionLost.mockClear();
     onSessionLost(sessionLost);
-    useSessionStore.setState({ status: 'authed', user: { id: 1, login: 'denis' } });
+    useSessionStore.setState({
+        status: 'authed',
+        user: { id: 1, login: 'denis', avatar_url: null },
+    });
     globalThis.fetch = (async (input: RequestInfo | URL) => {
         const path = new URL(String(input), 'https://localhost').pathname.replace('/api/trpc/', '');
         const respond = answers.get(path);
@@ -103,7 +106,10 @@ test('факт потери не переживает смену сессии: �
     await listed;
     await first;
 
-    useSessionStore.setState({ status: 'authed', user: { id: 1, login: 'denis' } });
+    useSessionStore.setState({
+        status: 'authed',
+        user: { id: 1, login: 'denis', avatar_url: null },
+    });
     answers.set('auth.logout', networkError);
     expect(await logout()).toBe(false);
     expect(sessionLost).not.toHaveBeenCalled();
