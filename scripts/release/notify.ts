@@ -1,4 +1,54 @@
-import { ReleaseError, isSha, need, siteUrl } from './env.ts';
+import { ReleaseError, checkSha, isSha, need, siteUrl } from './env.ts';
+import { runUrl } from './github.ts';
+import type { MergedPR, PublishedRelease } from './catalog.ts';
+
+/** Сообщение и кнопки существующей темы выкаток. */
+export interface TelegramMessage {
+    text: string;
+    keyboard?: { text: string; url: string }[][];
+}
+/** Подтверждённый отказ без доставки; его безопасно повторить. */
+export class TelegramRejectedError extends ReleaseError {}
+
+/** Единственный транспорт Telegram; возвращает подтверждённый message_id. */
+export async function sendTelegram(message: TelegramMessage): Promise<number> {
+    const token = need('TELEGRAM_BOT_TOKEN');
+    const chat = need('TELEGRAM_CHAT_ID');
+    const topic = process.env.TELEGRAM_TOPIC_ID;
+    if (topic && (!Number.isSafeInteger(Number(topic)) || Number(topic) <= 0))
+        throw new TelegramRejectedError('Некорректный TELEGRAM_TOPIC_ID');
+    try {
+        const res = await fetch(
+            `${process.env.TELEGRAM_API || 'https://api.telegram.org'}/bot${token}/sendMessage`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chat,
+                    text: message.text,
+                    parse_mode: 'HTML',
+                    link_preview_options: { is_disabled: true },
+                    ...(message.keyboard?.length
+                        ? { reply_markup: { inline_keyboard: message.keyboard } }
+                        : {}),
+                    ...(topic ? { message_thread_id: Number(topic) } : {}),
+                }),
+                signal: AbortSignal.timeout(20_000),
+            },
+        );
+        const body = (await res.json()) as { ok?: boolean; result?: { message_id?: number } };
+        if (res.status >= 400 && res.status < 500 && body.ok === false)
+            throw new TelegramRejectedError(`Telegram отклонил сообщение: HTTP ${res.status}`);
+        const id = body.result?.message_id;
+        if (!res.ok || body.ok !== true || !Number.isSafeInteger(id) || id! <= 0)
+            throw new ReleaseError('Telegram: доставка не подтверждена');
+        return id!;
+    } catch (error) {
+        if (error instanceof TelegramRejectedError) throw error;
+        // Текст сетевой ошибки может содержать bot token в URL.
+        throw new ReleaseError('Telegram: доставка не подтверждена; проверьте тему перед повтором');
+    }
+}
 
 function escape(value: string): string {
     return value
@@ -16,6 +66,54 @@ function revision(sha: string | undefined, repo: string): string {
 
 function button(text: string, url: string): { text: string; url: string } {
     return { text, url };
+}
+
+/** Постановка конкретного PR в очередь, без обещания позиции. */
+export function queueMessage(pr: Pick<MergedPR, 'number' | 'url'>): TelegramMessage {
+    return { text: `<a href="${escape(pr.url)}">PR #${pr.number}</a> поставлен в очередь` };
+}
+
+/** Готовый выпуск с полным списком PR либо ссылкой на полный отчёт при переполнении. */
+export function readyMessage(
+    release: PublishedRelease,
+    prs: readonly MergedPR[],
+    reportUrl: string,
+): TelegramMessage {
+    const header = [
+        '📦 Релиз фронта залит, ждёт выкатки',
+        `Релиз <code>${release.sha}</code>`,
+        `Образ BFF <code>${escape(release.imageRef.split('@')[1]!)}</code>`,
+        `<a href="${escape(release.ciRun)}">CI выпуска</a>`,
+    ];
+    const full = [
+        ...header,
+        ...(prs.length
+            ? prs.map((pr) => `• <a href="${escape(pr.url)}">#${pr.number}</a>`)
+            : ['Новых PR нет.']),
+    ].join('\n');
+    const entities: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"' };
+    const visible = full
+        .replace(/<[^>]*>/g, '')
+        .replace(/&(amp|lt|gt|quot);/g, (_, name: string) => entities[name]!);
+    const text =
+        [...visible].length <= 4096
+            ? full
+            : [
+                  ...header,
+                  `PR в выпуске: ${prs.length}`,
+                  `<a href="${escape(reportUrl)}">Все PR выпуска</a>`,
+              ].join('\n');
+    return {
+        text,
+        keyboard: [
+            [
+                button(
+                    'Выкатить',
+                    `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${need('GITHUB_REPOSITORY')}/actions/workflows/cd.yml`,
+                ),
+            ],
+        ],
+    };
 }
 
 async function changes(range: string | undefined): Promise<string[]> {
@@ -136,26 +234,44 @@ function mentionActor(actor: string, rawMap: string | undefined): string {
 
 /**
  * Сообщение в Telegram о результате заливки, выкатки или отката.
- * @param what что произошло: Заливка, Выкатка или Откат
+ * @param what тип события: publish, deploy, rollback или start
  * @param status итог job: success, failure или cancelled
  * @param [sha] sha релиза
  */
 export async function notify(what: string, status: string, sha?: string): Promise<void> {
-    const token = need('TELEGRAM_BOT_TOKEN');
-    const chat = need('TELEGRAM_CHAT_ID');
-    const topic = process.env.TELEGRAM_TOPIC_ID;
+    if (what === 'start') {
+        if (status !== 'success')
+            throw new ReleaseError('Начало выкатки отправляется только перед Switch');
+        const actor = process.env.GITHUB_TRIGGERING_ACTOR || process.env.GITHUB_ACTOR;
+        await sendTelegram({
+            text: [
+                `Выкатка релиза <code>${checkSha(sha)}</code> началась`,
+                ...(actor
+                    ? [`Запустил: ${mentionActor(actor, process.env.TELEGRAM_USER_MAP)}`]
+                    : []),
+                `<a href="${escape(runUrl())}">Логи выкатки</a>`,
+            ].join('\n'),
+        });
+        return;
+    }
+    const label = new Map([
+        ['publish', 'Заливка'],
+        ['deploy', 'Выкатка'],
+        ['rollback', 'Откат'],
+    ]).get(what);
+    if (!label) throw new ReleaseError(`Неизвестный тип уведомления: ${what}`);
     const { GITHUB_ACTOR, GITHUB_REPOSITORY } = process.env;
 
     // залитый релиз пользователи не видят: выкатывает его человек, кнопка ведёт на запуск CD
-    const uploaded = what === 'Заливка' && status === 'success';
+    const uploaded = what === 'publish' && status === 'success';
     const lines = [
         uploaded
             ? '📦 Релиз фронта залит, ждёт выкатки'
             : status === 'success'
-              ? `✅ ${what} фронта: успешно`
+              ? `✅ ${label} фронта: успешно`
               : status === 'cancelled'
-                ? `⚪ ${what} фронта: отменено`
-                : `❌ ${what} фронта: ошибка`,
+                ? `⚪ ${label} фронта: отменено`
+                : `❌ ${label} фронта: ошибка`,
     ];
     if (sha) lines.push(`Релиз <code>${sha}</code>`);
     const digest = digestOf(process.env.RELEASE_IMAGE_REF);
@@ -165,12 +281,12 @@ export async function notify(what: string, status: string, sha?: string): Promis
     const server = process.env.GITHUB_SERVER_URL || 'https://github.com';
     const repo = `${server}/${GITHUB_REPOSITORY}`;
     const keyboard = uploaded ? [[button('Выкатить', `${repo}/actions/workflows/cd.yml`)]] : [];
-    if (what === 'Выкатка' || what === 'Откат') {
+    if (what === 'deploy' || what === 'rollback') {
         lines[0] = `<b>${lines[0]}</b>`;
         const before = process.env.RELEASE_BEFORE_SHA;
         const range =
             before && isSha(before) && sha && isSha(sha)
-                ? what === 'Откат'
+                ? what === 'rollback'
                     ? `${sha}...${before}`
                     : `${before}...${sha}`
                 : undefined;
@@ -184,7 +300,7 @@ export async function notify(what: string, status: string, sha?: string): Promis
             '<i>Слева — последний подтверждённый выпуск по истории GitHub Deployments: он показывает ' +
                 'прошлую проверку, а не то, что запущено сейчас.</i>',
             '',
-            `<b>${what === 'Откат' ? 'Отменённые изменения' : 'Изменения'}</b>`,
+            `<b>${what === 'rollback' ? 'Отменённые изменения' : 'Изменения'}</b>`,
             ...(await changes(range)),
             '',
             ...deploymentState(status),
@@ -210,25 +326,11 @@ export async function notify(what: string, status: string, sha?: string): Promis
         if (process.env.GITHUB_RUN_ID)
             links.push(
                 button(
-                    what === 'Откат' ? 'Логи отката' : 'Логи выкатки',
+                    what === 'rollback' ? 'Логи отката' : 'Логи выкатки',
                     `${repo}/actions/runs/${process.env.GITHUB_RUN_ID}`,
                 ),
             );
         keyboard.push(links);
     }
-    const api = process.env.TELEGRAM_API || 'https://api.telegram.org';
-    const res = await fetch(`${api}/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_id: chat,
-            text: lines.join('\n'),
-            parse_mode: 'HTML',
-            link_preview_options: { is_disabled: true },
-            ...(keyboard.length ? { reply_markup: { inline_keyboard: keyboard } } : {}),
-            ...(topic ? { message_thread_id: Number(topic) } : {}),
-        }),
-        signal: AbortSignal.timeout(20_000),
-    });
-    if (!res.ok) throw new ReleaseError(`Telegram не принял сообщение: ответ ${res.status}`);
+    await sendTelegram({ text: lines.join('\n'), keyboard });
 }

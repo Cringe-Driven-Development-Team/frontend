@@ -112,7 +112,7 @@ jobs:
           IMAGE_REF: ${{ steps.image.outputs.image_ref }}
         run: bun run release register "$SHA" "$IMAGE_REF"
       - name: Send to tg
-        if: always()
+        if: failure() || cancelled()
         continue-on-error: true
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -121,7 +121,7 @@ jobs:
           TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
           RELEASE_IMAGE_REF: ${{ steps.image.outputs.image_ref || steps.published.outputs.image_ref }}
           STATUS: ${{ job.status }}
-        run: bun run release notify Заливка "$STATUS" "$SHA"
+        run: bun run release notify publish "$STATUS" "$SHA"
 
   course-sync:
     needs: [check]

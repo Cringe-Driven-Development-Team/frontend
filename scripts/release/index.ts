@@ -11,7 +11,9 @@ import {
     rollbackTarget,
     startProduction,
 } from './deployments.ts';
-import { ReleaseError, checkSha } from './env.ts';
+import { ReleaseError, checkSha, output } from './env.ts';
+import { prepareAutomation } from './sync.ts';
+import { sendPending } from './journal.ts';
 import { checkImage, checkImageRef } from './image.ts';
 import { notify } from './notify.ts';
 import { retention } from './retention.ts';
@@ -30,10 +32,23 @@ const USAGE = `Использование: bun run release <команда>
   finish <deployment_id> <success|failure|error>   итог записи production
   health <sha>                    Health check: прод отдаёт выпуск через BFF
   retention                       удалить старые ассеты
-  notify <Заливка|Выкатка|Откат> <success|failure|cancelled> [sha]`;
+  sync                            сверить доску и подготовить отчёты/уведомления
+  notify-pending                  отправить подготовленные уведомления
+  notify <publish|deploy|rollback|start> <success|failure|cancelled> [sha]`;
 
 async function main(command: string | undefined, args: string[]): Promise<void> {
     switch (command) {
+        case 'sync': {
+            const result = await prepareAutomation(process.cwd());
+            output('allowed', String(result.allowed));
+            if (result.errors.length) throw new ReleaseError(result.errors.join('\n'));
+            return;
+        }
+        case 'notify-pending': {
+            const result = await sendPending(process.cwd());
+            if (result.errors.length) throw new ReleaseError(result.errors.join('\n'));
+            return;
+        }
         case 'upload':
             return upload(checkSha(args[0]), args[1]);
         case 'check':

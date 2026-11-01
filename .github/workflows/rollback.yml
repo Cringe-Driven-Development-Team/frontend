@@ -130,4 +130,4 @@ jobs:
           RELEASE_START_STATUS: ${{ steps.start.outcome }}
           RELEASE_SWITCH_STATUS: ${{ steps.switch.outcome }}
           RELEASE_HEALTH_STATUS: ${{ steps.health.outcome }}
-        run: bun run release notify Откат "$STATUS" "$SHA"
+        run: bun run release notify rollback "$STATUS" "$SHA"
