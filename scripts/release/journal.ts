@@ -1,4 +1,4 @@
-import { activationTime, isDeployed, readReleaseSnapshot } from './catalog.ts';
+import { activationTime, isDeployed, readReleaseCatalog } from './catalog.ts';
 import { checkSha, ReleaseError } from './env.ts';
 import {
     createDeployment,
@@ -99,11 +99,20 @@ export async function prepareNotice(notice: Notice): Promise<'created' | 'existi
 }
 
 /** Доставляет ожидающие сообщения; неизвестный исход требует ручной проверки. */
-export async function sendPending(repoDir: string): Promise<DeliveryResult> {
+export async function sendPending(
+    repoDir: string,
+    kind?: Notice['kind'],
+    key?: string,
+): Promise<DeliveryResult> {
     const result: DeliveryResult = { sent: 0, skipped: 0, errors: [] };
     for (const record of await journal()) {
         const payload = record.payload;
-        if (payload.kind === 'baseline') continue;
+        if (
+            payload.kind === 'baseline' ||
+            (kind && payload.kind !== kind) ||
+            (key && payload.key !== key)
+        )
+            continue;
         try {
             if (record.state === 'success' || record.state === 'inactive') {
                 result.skipped++;
@@ -117,7 +126,7 @@ export async function sendPending(repoDir: string): Promise<DeliveryResult> {
                 payload.kind === 'ready' &&
                 (await isDeployed(
                     record.sha,
-                    (await readReleaseSnapshot(repoDir)).deployedShas,
+                    (await readReleaseCatalog(repoDir)).deployedShas,
                     repoDir,
                 ))
             ) {

@@ -12,7 +12,8 @@ import {
     startProduction,
 } from './deployments.ts';
 import { ReleaseError, checkSha, output } from './env.ts';
-import { prepareAutomation } from './sync.ts';
+import { reconcileBoard } from './sync.ts';
+import { prepareNotifications } from './notification-sync.ts';
 import { sendPending } from './journal.ts';
 import { checkImage, checkImageRef } from './image.ts';
 import { notify } from './notify.ts';
@@ -32,20 +33,45 @@ const USAGE = `Использование: bun run release <команда>
   finish <deployment_id> <success|failure|error>   итог записи production
   health <sha>                    Health check: прод отдаёт выпуск через BFF
   retention                       удалить старые ассеты
-  sync                            сверить доску и подготовить отчёты/уведомления
-  notify-pending                  отправить подготовленные уведомления
+  sync                            сверить только доску
+  prepare-notifications <current|recover>   подготовить текущее событие или восстановить пропущенные
+  notify-pending [all|queue|ready] [key]     отправить выбранные уведомления
   notify <publish|deploy|rollback|start> <success|failure|cancelled> [sha]`;
 
 async function main(command: string | undefined, args: string[]): Promise<void> {
     switch (command) {
         case 'sync': {
-            const result = await prepareAutomation(process.cwd());
+            const result = await reconcileBoard(process.cwd());
             output('allowed', String(result.allowed));
             if (result.errors.length) throw new ReleaseError(result.errors.join('\n'));
             return;
         }
+        case 'prepare-notifications': {
+            if (args.length !== 1 || (args[0] !== 'current' && args[0] !== 'recover'))
+                throw new ReleaseError(USAGE);
+            const result = await prepareNotifications(process.cwd(), args[0]);
+            output('allowed', String(result.allowed));
+            output('kind', result.kind);
+            output('first_key', result.firstKey ?? '');
+            if (result.errors.length) throw new ReleaseError(result.errors.join('\n'));
+            return;
+        }
         case 'notify-pending': {
-            const result = await sendPending(process.cwd());
+            const kind = args[0] ?? 'all';
+            const key = args[1];
+            if (
+                args.length > 2 ||
+                !['all', 'queue', 'ready'].includes(kind) ||
+                (key &&
+                    (!/^(queue|ready):.+$/.test(key) ||
+                        (kind !== 'all' && !key.startsWith(`${kind}:`))))
+            )
+                throw new ReleaseError(USAGE);
+            const result = await sendPending(
+                process.cwd(),
+                kind === 'all' ? undefined : (kind as 'queue' | 'ready'),
+                key,
+            );
             if (result.errors.length) throw new ReleaseError(result.errors.join('\n'));
             return;
         }

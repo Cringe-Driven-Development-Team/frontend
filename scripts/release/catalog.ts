@@ -4,6 +4,9 @@ import {
     api,
     graphql,
     listDeployments,
+    listDeploymentRecords,
+    type Deployment,
+    type DeploymentState,
     listDeploymentStatuses,
     type ArtifactsPayload,
     type ProductionPayload,
@@ -296,13 +299,25 @@ export async function readPRChanges(baseSha: string, headSha: string): Promise<P
     };
 }
 
-/** Весь фактически опубликованный и выкаченный состав из проверенных Deployments. */
-export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnapshot> {
+/** Каталог публикаций и выкаток без закрывающих связей задач. */
+export type ReleaseCatalog = Omit<ReleaseSnapshot, 'issues'>;
+
+/** Проверенные публикации, PR и выкатки без обращения к issues/Project API. */
+export async function readReleaseCatalog(repoDir: string): Promise<ReleaseCatalog> {
     const main = new Set((await git(repoDir, 'rev-list', 'origin/main')).split('\n'));
-    const [artifacts, production] = await Promise.all([
+    const [artifacts, rawProduction] = await Promise.all([
         listDeployments<ArtifactsPayload>('release-artifacts'),
-        listDeployments<ProductionPayload>('production'),
+        listDeploymentRecords<ProductionPayload>('production'),
     ]);
+    const production: Deployment<ProductionPayload>[] = [];
+    for (const record of rawProduction) {
+        const payload = record.payload;
+        if (!payload?.action && !payload?.run && !payload?.image_ref) continue;
+        const statuses = await api<{ state: DeploymentState }[]>(
+            `/deployments/${record.id}/statuses?per_page=1`,
+        );
+        production.push({ ...record, state: statuses[0]?.state });
+    }
     const prs = new Map<number, MergedPR>(
         (await mergedPRs()).filter((pr) => main.has(pr.mergeSha)).map((pr) => [pr.number, pr]),
     );
@@ -355,10 +370,6 @@ export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnaps
     const deployedShas: string[] = [];
     for (const record of production.filter((candidate) => candidate.state === 'success')) {
         const payload = record.payload;
-        if (!payload?.action && !payload?.run && !payload?.image_ref) {
-            console.log(`production ${record.id}: запись environment без контракта BFF, пропуск`);
-            continue;
-        }
         const run = await source(payload?.run);
         const ready = published.find((release) => release.sha === record.sha);
         if (
@@ -373,8 +384,6 @@ export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnaps
         for (const number of await members(record.sha)) deployed.add(number);
         if (!deployedShas.includes(record.sha)) deployedShas.push(record.sha);
     }
-    const included = new Set(published.flatMap((release) => release.prNumbers));
-    const issues = await issuesForPRs([...included]);
     return {
         published: published.toSorted(
             (a, b) => Date.parse(a.readyAt) - Date.parse(b.readyAt) || a.id - b.id,
@@ -382,6 +391,12 @@ export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnaps
         deployed,
         deployedShas,
         prs,
-        issues,
     };
+}
+
+/** Полный состав с закрывающими связями задач для синхронизации доски. */
+export async function readReleaseSnapshot(repoDir: string): Promise<ReleaseSnapshot> {
+    const catalog = await readReleaseCatalog(repoDir);
+    const included = new Set(catalog.published.flatMap((release) => release.prNumbers));
+    return { ...catalog, issues: await issuesForPRs([...included]) };
 }
