@@ -14,7 +14,7 @@ permissions:
 env:
   SITE_URL: https://cellestial.ru
   # entrypoint выкатки BFF (infra#74) на зафиксированной ревизии infra: контракт bff_image_ref/bff_release_sha
-  INFRA_REF: 35ae002f211bf3ef43769ad0c33748f457889532
+  INFRA_REF: ae597f80bf0fcc0dbd8daa243cc61292c9760397
 
 jobs:
   cd:
