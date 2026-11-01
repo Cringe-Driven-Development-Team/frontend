@@ -18,6 +18,7 @@ const schema = z.object({
     BFF_KEY: z.preprocess(optional, z.string().optional()),
     HTML_TEMPLATE: z.preprocess(optional, z.string().default('/app/client/index.html')),
     SKIP_PUBLIC_FILES: z.preprocess(optional, z.literal('1').optional()),
+    SERVE_CLIENT_ASSETS: z.preprocess(optional, z.literal('1').optional()),
 });
 
 function parse(): z.infer<typeof schema> & { sessionKey: Uint8Array<ArrayBuffer> } {

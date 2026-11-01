@@ -1,8 +1,8 @@
 {
-    // тесты выполняет bun: его типы — только здесь, в src остаются типы браузера и Vite
+    // тесты выполняет bun: его типы — только здесь; vite/client — для CSS-модулей компонентов из стора тоста
     "extends": "../tsconfig.json",
     "compilerOptions": {
-        "types": ["bun"]
+        "types": ["bun", "vite/client"]
     },
     "include": ["."]
 }

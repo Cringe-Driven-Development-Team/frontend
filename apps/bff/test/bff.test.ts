@@ -460,6 +460,17 @@ describe('HTML', () => {
     });
 });
 
+describe('публичные файлы', () => {
+    test('офлайн-страница отдаётся до HTML-обработчика: без сессии и Go', async () => {
+        const offline = new Blob(['<h1>offline</h1>'], { type: 'text/html' }) as Bun.BunFile;
+        const app = createBff(template, new Map([['offline.html', offline]]));
+        const headers = { Accept: 'text/html' };
+        const res = await app(new Request(`${ORIGIN}/offline.html`, { headers }));
+        expect(res.status).toBe(200);
+        expect(await res.text()).toBe('<h1>offline</h1>');
+    });
+});
+
 describe('robots.txt', () => {
     const ROBOTS = 'User-agent: *\nDisallow: /api/\n';
 

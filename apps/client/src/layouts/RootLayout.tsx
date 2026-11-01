@@ -1,3 +1,4 @@
+import { OfflineBanner } from '@components/OfflineBanner/OfflineBanner';
 import { Snackbar } from '@components/Snackbar/Snackbar';
 import { Toast } from '@components/Toast/Toast';
 import { Outlet } from '@cdd-team/router';
@@ -14,6 +15,7 @@ export const RootLayout = () => {
 
     return (
         <>
+            <OfflineBanner key="offline" />
             <main key="main">
                 <Outlet />
             </main>

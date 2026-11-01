@@ -49,7 +49,8 @@ interface RawDeployment {
     created_at: string;
 }
 
-async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+/** Запрос REST API текущего репозитория с проверкой HTTP-ошибок. */
+export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     const base = process.env.GITHUB_API_URL || 'https://api.github.com';
     const res = await fetch(`${base}/repos/${need('GITHUB_REPOSITORY')}${path}`, {
         ...init,
@@ -69,6 +70,53 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     return (await res.json()) as T;
 }
 
+/** GraphQL с явным токеном: Project PAT не смешивается с репозиторным. */
+export async function graphql<T>(
+    query: string,
+    variables: Record<string, unknown>,
+    token: string,
+): Promise<T> {
+    const res = await fetch(process.env.GITHUB_GRAPHQL_URL || 'https://api.github.com/graphql', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, variables }),
+        signal: AbortSignal.timeout(20_000),
+    });
+    if (!res.ok) throw new ReleaseError(`GitHub GraphQL: HTTP ${res.status}`);
+    const result = (await res.json()) as { data?: T; errors?: unknown[] };
+    if (result.errors?.length || !result.data)
+        throw new ReleaseError('GitHub GraphQL: ответ содержит ошибки или не содержит data');
+    return result.data;
+}
+
+/** Статус Deployment с временем и пояснением. */
+export interface DeploymentStatus {
+    state: DeploymentState;
+    createdAt: string;
+    description: string;
+}
+
+/** Все страницы статусов: первое подтверждение могло находиться давно в истории. */
+export async function listDeploymentStatuses(id: number): Promise<DeploymentStatus[]> {
+    const result: DeploymentStatus[] = [];
+    for (let page = 1; ; page++) {
+        const batch = await api<
+            { state: DeploymentState; created_at: string; description: string }[]
+        >(`/deployments/${id}/statuses?per_page=100&page=${page}`);
+        if (!Array.isArray(batch)) throw new ReleaseError(`Некорректные статусы Deployment ${id}`);
+        for (const item of batch) {
+            if (!Number.isFinite(Date.parse(item.created_at)))
+                throw new ReleaseError(`Нет времени статуса Deployment ${id}`);
+            result.push({
+                state: item.state,
+                createdAt: item.created_at,
+                description: item.description ?? '',
+            });
+        }
+        if (batch.length < 100) return result;
+    }
+}
+
 function parsePayload(payload: unknown): unknown {
     // GitHub отдаёт payload объектом, но записи, созданные строкой, приходят строкой
     if (typeof payload !== 'string') return payload;
@@ -80,15 +128,15 @@ function parsePayload(payload: unknown): unknown {
 }
 
 /**
- * Deployments окружения, от новых к старым, с последним статусом каждого.
+ * Deployments окружения от новых к старым, без запросов статусов.
  * @param environment окружение
  * @param [sha] только записи этого коммита
  * @returns записи
  */
-export async function listDeployments<P>(
+export async function listDeploymentRecords<P>(
     environment: string,
     sha?: string,
-): Promise<Deployment<P>[]> {
+): Promise<Omit<Deployment<P>, 'state'>[]> {
     const query = new URLSearchParams({ environment, per_page: String(PAGE_SIZE) });
     if (sha) query.set('sha', sha);
     // вся история: цель отката и защита ассетов могут лежать дальше первой страницы
@@ -99,20 +147,29 @@ export async function listDeployments<P>(
         raw.push(...batch);
         if (batch.length < PAGE_SIZE) break;
     }
-    const result: Deployment<P>[] = [];
-    for (const item of raw) {
-        const statuses = await api<{ state: DeploymentState }[]>(
-            `/deployments/${item.id}/statuses?per_page=1`,
-        );
-        result.push({
+    return raw
+        .map((item) => ({
             id: item.id,
             sha: item.sha,
             payload: parsePayload(item.payload) as P,
             createdAt: item.created_at,
-            state: statuses[0]?.state,
-        });
+        }))
+        .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id);
+}
+
+/** Deployments с последним статусом каждого, без фильтрации истории. */
+export async function listDeployments<P>(
+    environment: string,
+    sha?: string,
+): Promise<Deployment<P>[]> {
+    const result: Deployment<P>[] = [];
+    for (const item of await listDeploymentRecords<P>(environment, sha)) {
+        const statuses = await api<{ state: DeploymentState }[]>(
+            `/deployments/${item.id}/statuses?per_page=1`,
+        );
+        result.push({ ...item, state: statuses[0]?.state });
     }
-    return result.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id);
+    return result;
 }
 
 /**

@@ -9,12 +9,14 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
+  issues: read
   deployments: write
 
 env:
   SITE_URL: https://cellestial.ru
   # entrypoint выкатки BFF (infra#74) на зафиксированной ревизии infra: контракт bff_image_ref/bff_release_sha
-  INFRA_REF: 35ae002f211bf3ef43769ad0c33748f457889532
+  INFRA_REF: ae597f80bf0fcc0dbd8daa243cc61292c9760397
 
 jobs:
   cd:
@@ -92,6 +94,15 @@ jobs:
           printf '%s\n' "$ANSIBLE_VAULT_PASSWORD" > "$RUNNER_TEMP/deploy/vault-pass"
           ssh-keygen -F cellestial.ru -f "$RUNNER_TEMP/deploy/known_hosts" > /dev/null
           echo "ANSIBLE_VAULT_PASSWORD_FILE=$RUNNER_TEMP/deploy/vault-pass" >> "$GITHUB_ENV"
+      - name: Deployment started
+        continue-on-error: true
+        env:
+          RELEASE_BEFORE_SHA: ${{ steps.confirmed.outputs.before_sha }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+          TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
+          TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
+        run: bun run release notify start success "$SHA"
       # публичный образ — без GHCR credentials; Ansible сам сверяет метку, запущенный образ и healthy
       - name: Switch BFF
         id: switch
@@ -142,4 +153,4 @@ jobs:
           RELEASE_SWITCH_STATUS: ${{ steps.switch.outcome }}
           RELEASE_HEALTH_STATUS: ${{ steps.health.outcome }}
           RELEASE_RETENTION_STATUS: ${{ steps.retention.outcome }}
-        run: bun run release notify Выкатка "$STATUS" "$SHA"
+        run: bun run release notify deploy "$STATUS" "$SHA"

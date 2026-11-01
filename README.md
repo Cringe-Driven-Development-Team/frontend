@@ -25,6 +25,11 @@ bun run dev
 попросит подтвердить доверие локальному сертификату; в WSL с Chrome в Windows после этого нужен
 `bun run dev:trust-windows` — [«Первый запуск»](docs/local-development.md#первый-запуск).
 Перед PR выполните `bun run check` и `bun run build`.
+
+`bun run dev` работает с HMR и без service worker. Проверить PWA и офлайн-режим локально —
+`bun run dev:pwa`: он собирает клиент production-конфигом и запускает BFF на `http://localhost:4173`,
+Docker не нужен. HMR там нет, после изменений клиента команду надо запустить заново. Подробнее —
+[«Проверка PWA»](docs/local-development.md#проверка-pwa).
 Подробности — в [локальной разработке](docs/local-development.md).
 
 ## Монорепа
@@ -57,6 +62,12 @@ bun run dev
 Настройка общего поиска четырёх соседних клонов через `openwiki link` —
 [README docs](https://github.com/Cringe-Driven-Development-Team/docs#readme).
 Без MCP читайте Markdown; код командных пакетов ищите в `frontend-packages`.
+
+Изменения `openwiki/**` в `main` запускают [Publish docs wiki](.github/workflows/publish-docs-wiki.yml):
+он вызывает `pages.yml` в `docs/main`; для диагностики доступен ручной запуск.
+Нужен secret `DOCS_PAGES_TOKEN` с Actions: write только для репозитория docs;
+настройка и публичная wiki — в [README docs](https://github.com/Cringe-Driven-Development-Team/docs#readme).
+Локальная проверка dispatch без GitHub: `bun test scripts/openwiki-publish.test.ts`.
 
 ## Как работать с задачами
 
