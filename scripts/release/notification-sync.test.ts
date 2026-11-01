@@ -401,3 +401,73 @@ test('вытесненный enqueue другого PR восстанавлив�
         ),
     ).toBe(true);
 });
+
+test('CLI доставляет current после Summary, recovery отдельно, ошибочные аргументы не отправляют', async () => {
+    ci();
+    const fake = globalThis.fetch;
+    const server = Bun.serve({
+        port: 0,
+        async fetch(request) {
+            const text = await request.text();
+            return fake(request.url, {
+                method: request.method,
+                headers: request.headers,
+                ...(text ? { body: text } : {}),
+            });
+        },
+    });
+    const cli = join(import.meta.dir, 'index.ts');
+    const env: NodeJS.ProcessEnv = {
+        ...process.env,
+        GITHUB_API_URL: server.url.origin,
+        GITHUB_GRAPHQL_URL: `${server.url.origin}/graphql`,
+        TELEGRAM_API: server.url.origin,
+    };
+    const run = async (args: string[], want = 0) => {
+        const proc = Bun.spawn(['bun', cli, ...args], {
+            cwd: f.dir,
+            env,
+            stdout: 'pipe',
+            stderr: 'pipe',
+        });
+        const [out, err, code] = await Promise.all([
+            new Response(proc.stdout).text(),
+            new Response(proc.stderr).text(),
+            proc.exited,
+        ]);
+        expect({ code, err: want === 0 ? err : '' }).toEqual({ code: want, err: '' });
+        return out;
+    };
+    try {
+        await run(['prepare-notifications', 'current']);
+        expect(posts).toBe(0);
+        expect(readFileSync(process.env.GITHUB_STEP_SUMMARY!, 'utf8')).toContain('/pull/2');
+        expect(readFileSync(process.env.GITHUB_OUTPUT!, 'utf8')).toContain(
+            `first_key=ready:${f.b}`,
+        );
+        await run(['notify-pending', 'ready', `ready:${f.b}`]);
+        expect(posts).toBe(1);
+        await run(['prepare-notifications', 'recover']);
+        await run(['notify-pending', 'all']);
+        expect(posts).toBe(1);
+        const count = f.records['release-automation']!.length;
+        await run(['sync']);
+        expect(posts).toBe(1);
+        expect(f.records['release-automation']).toHaveLength(count);
+        for (const args of [
+            ['prepare-notifications', 'wrong'],
+            ['notify-pending', 'wrong'],
+            ['notify-pending', 'queue', `ready:${f.b}`],
+            ['notify-pending', 'all', 'bad-key'],
+        ])
+            await run(args, 1);
+        expect(posts).toBe(1);
+        env.GITHUB_REF = 'refs/heads/other';
+        writeFileSync(process.env.GITHUB_OUTPUT!, '');
+        await run(['prepare-notifications', 'current']);
+        expect(readFileSync(process.env.GITHUB_OUTPUT!, 'utf8')).toContain('allowed=false');
+        expect(posts).toBe(1);
+    } finally {
+        await server.stop(true);
+    }
+});

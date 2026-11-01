@@ -13,10 +13,18 @@ interface Step {
 interface Workflow {
     on: Record<string, { types?: string[]; workflows?: string[]; branches?: string[] }>;
     permissions: Record<string, string>;
-    concurrency: { group: string; 'cancel-in-progress': boolean };
+    concurrency?: { group: string; 'cancel-in-progress': boolean };
     jobs: Record<
         string,
-        { environment?: unknown; steps: Step[]; if?: string; env?: Record<string, string> }
+        {
+            environment?: unknown;
+            steps: Step[];
+            if?: string;
+            env?: Record<string, string>;
+            needs?: unknown;
+            concurrency?: { group: string; 'cancel-in-progress': boolean };
+            permissions?: Record<string, string>;
+        }
     >;
 }
 async function workflow(name: string): Promise<Workflow> {
@@ -49,31 +57,55 @@ test('синхронизация слушает main CI/CD и очередь, н
     });
     expect(config.on.pull_request_target).toEqual({ types: ['enqueued'], branches: ['main'] });
     expect(config.on.workflow_dispatch).toBeDefined();
-    expect(config.concurrency).toEqual({
+    expect(config.concurrency).toBeUndefined();
+    const notifications = config.jobs.notifications!;
+    const board = config.jobs.board!;
+    expect(notifications.needs).toBeUndefined();
+    expect(board.needs).toBeUndefined();
+    expect(notifications.concurrency).toEqual({
         group: 'release-automation',
         'cancel-in-progress': false,
     });
-    expect(config.permissions).toEqual({
-        contents: 'read',
-        actions: 'read',
-        'pull-requests': 'read',
-        issues: 'read',
-        deployments: 'write',
+    expect(board.concurrency).toEqual({ group: 'release-board', 'cancel-in-progress': false });
+    expect(notifications.permissions?.deployments).toBe('write');
+    expect(board.permissions?.deployments).toBe('read');
+    expect(board.if).toContain("github.event_name != 'pull_request_target'");
+    expect(notifications.env?.ADD_TO_PROJECT_PAT).toBeUndefined();
+    expect(board.env?.TELEGRAM_BOT_TOKEN).toBeUndefined();
+    expect(board.env?.ADD_TO_PROJECT_PAT).toBeDefined();
+    expect(notifications.env?.TELEGRAM_BOT_TOKEN).toBeDefined();
+    for (const job of [notifications, board]) {
+        expect(job.environment).toBeUndefined();
+        const checkout = job.steps.find((step) => step.uses?.startsWith('actions/checkout'))!;
+        expect(checkout.with).toMatchObject({
+            ref: 'main',
+            'fetch-depth': 0,
+            'persist-credentials': false,
+        });
+        expect(Object.keys(job.env ?? {}).some((key) => /S3|SSH|DEPLOY_SSH|VAULT/.test(key))).toBe(
+            false,
+        );
+    }
+    expect(board.steps.at(-1)?.run).toBe('bun run release sync');
+    const current = notifications.steps.findIndex((step) => step.id === 'current');
+    const send = notifications.steps[current + 1]!;
+    expect(notifications.steps[current]?.run).toBe('bun run release prepare-notifications current');
+    expect(send.run).toBe('bun run release notify-pending "$KIND" "$NOTICE_KEY"');
+    expect(send.if).toBe(
+        "always() && steps.current.outputs.allowed == 'true' && steps.current.outputs.first_key != ''",
+    );
+    expect(send.env).toMatchObject({
+        KIND: '${{ steps.current.outputs.kind }}',
+        NOTICE_KEY: '${{ steps.current.outputs.first_key }}',
     });
-    const job = config.jobs.sync!;
-    expect(job.environment).toBeUndefined();
-    const checkout = job.steps.find((step) => step.uses?.startsWith('actions/checkout'))!;
-    expect(checkout.with).toMatchObject({
-        ref: 'main',
-        'fetch-depth': 0,
-        'persist-credentials': false,
-    });
-    expect(job.steps.find((step) => step.id === 'sync')?.run).toBe('bun run release sync');
-    const send = job.steps.find((step) => step.run === 'bun run release notify-pending')!;
-    expect(send.if).toBe("always() && steps.sync.outputs.allowed == 'true'");
-    expect(send['continue-on-error']).toBeUndefined();
-    expect(Object.keys(job.env ?? {}).some((key) => /S3|SSH|DEPLOY_SSH|VAULT/.test(key))).toBe(
-        false,
+    expect(notifications.steps[current + 2]?.run).toBe(
+        'bun run release prepare-notifications recover',
+    );
+    expect(notifications.steps[current + 2]?.if).toBe(
+        "always() && steps.current.outputs.allowed == 'true'",
+    );
+    expect(notifications.steps[current + 3]?.if).toBe(
+        "always() && steps.recovery.outputs.allowed == 'true'",
     );
 });
 
