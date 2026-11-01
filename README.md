@@ -58,6 +58,12 @@ bun run dev
 [README docs](https://github.com/Cringe-Driven-Development-Team/docs#readme).
 Без MCP читайте Markdown; код командных пакетов ищите в `frontend-packages`.
 
+Изменения `openwiki/**` в `main` запускают [Publish docs wiki](.github/workflows/publish-docs-wiki.yml):
+он вызывает `pages.yml` в `docs/main`; для диагностики доступен ручной запуск.
+Нужен secret `DOCS_PAGES_TOKEN` с Actions: write только для репозитория docs;
+настройка и публичная wiki — в [README docs](https://github.com/Cringe-Driven-Development-Team/docs#readme).
+Локальная проверка dispatch без GitHub: `bun test scripts/openwiki-publish.test.ts`.
+
 ## Как работать с задачами
 
 Задачи команды собраны на общей [доске](https://github.com/orgs/Cringe-Driven-Development-Team/projects/1).
