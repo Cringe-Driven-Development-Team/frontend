@@ -244,6 +244,40 @@ test('успешная выкатка во время синхронизации
     expect(states.get(2)!.status).toBe('Done');
 });
 
+test('GitHub union selection требует __typename aliases, иначе карточки не обновляются', async () => {
+    const original = f.extra!;
+    f.extra = (url, body, init) => {
+        const query = String(body?.query);
+        if (
+            query.includes('BoardIssue') &&
+            [...query.matchAll(/\bkind\s*:\s*__typename\b/g)].length !== 2
+        ) {
+            return Response.json({
+                errors: [{ message: "Selections can't be made directly on unions" }],
+            });
+        }
+        return original(url, body, init);
+    };
+    const result = await syncBoard(await readReleaseSnapshot(f.dir), f.dir);
+    expect(result.errors).toEqual([]);
+    expect(writes).toEqual([{ issue: 2, status: 'Ready for release' }]);
+});
+
+test('CD при второй карточке пересчитывает и ранее обработанную первую', async () => {
+    f.records.production = [];
+    let changed = false;
+    read = (number) => {
+        if (number === 2 && !changed) {
+            changed = true;
+            f.deploy(f.b, 21);
+        }
+    };
+    const result = await syncBoard(await readReleaseSnapshot(f.dir), f.dir);
+    expect(result.errors).toEqual([]);
+    expect(states.get(1)!.status).toBe('Done');
+    expect(states.get(2)!.status).toBe('Done');
+});
+
 test('нет карточки или прав PAT — видимая ошибка без посторонних mutations', async () => {
     states.get(2)!.card = false;
     expect((await syncBoard(await readReleaseSnapshot(f.dir), f.dir)).errors.join()).toContain(

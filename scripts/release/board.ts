@@ -127,11 +127,11 @@ async function issueState(id: string, projectId: string) {
                                 itemTypes: [CLOSED_EVENT, REOPENED_EVENT]
                             ) {
                                 nodes {
-                                    kind
+                                    kind: __typename
                                     ... on ClosedEvent {
                                         createdAt
                                         closer {
-                                            kind
+                                            kind: __typename
                                             ... on PullRequest {
                                                 number
                                                 repository {
@@ -350,6 +350,7 @@ export async function syncBoard(snapshot: ReleaseSnapshot, repoDir: string): Pro
         }
     };
     for (let pass = 0; pass < 3; pass++) {
+        const startedVersion = version;
         for (const linked of current.issues) {
             try {
                 await processIssue(linked);
@@ -359,7 +360,8 @@ export async function syncBoard(snapshot: ReleaseSnapshot, repoDir: string): Pro
                 result.errors.push(message);
             }
         }
-        if (!(await refresh())) return result;
+        await refresh();
+        if (version === startedVersion) return result;
     }
     result.errors.push('История production менялась три прохода подряд; повторите синхронизацию');
     return result;
