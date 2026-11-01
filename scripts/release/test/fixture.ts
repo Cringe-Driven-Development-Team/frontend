@@ -70,6 +70,7 @@ export function fixture() {
     }[] = [];
     const pulls = [a, b, outside].map((sha, i) => ({
         number: i + 1,
+        title: `PR ${i + 1}`,
         html_url: `https://github.com/${REPO}/pull/${i + 1}`,
         merge_commit_sha: sha,
         merged_at: '2026-11-01T01:00:00Z',
@@ -206,6 +207,17 @@ export function fixture() {
                 return Response.json({});
             }
             return slice(statuses.get(id) ?? []);
+        }
+        if (path.startsWith('/compare/')) {
+            const range = path.slice('/compare/'.length).replace('...', '..');
+            const commits = git(dir, 'rev-list', '--reverse', range)
+                .split('\n')
+                .filter(Boolean)
+                .map((sha) => ({ sha }));
+            return Response.json({
+                total_commits: commits.length,
+                commits: commits.slice((page - 1) * size, page * size),
+            });
         }
         if (path === '/pulls') return slice(pulls);
         if (path.startsWith('/actions/runs/'))

@@ -8,6 +8,7 @@ interface Step {
     if?: string;
     'continue-on-error'?: boolean;
     with?: Record<string, unknown>;
+    env?: Record<string, string>;
 }
 interface Workflow {
     on: Record<string, { types?: string[]; workflows?: string[]; branches?: string[] }>;
@@ -31,6 +32,9 @@ test('CD сообщает о начале непосредственно пер�
     expect(steps[at - 1]?.run).toBe('bun run release notify start success "$SHA"');
     expect(steps[at - 1]?.['continue-on-error']).toBe(true);
     expect(steps[at - 1]?.if).toBeUndefined();
+    expect(steps[at - 1]?.env?.RELEASE_BEFORE_SHA).toBe(
+        '${{ steps.confirmed.outputs.before_sha }}',
+    );
     expect(
         steps.find((step) => step.run === 'bun run release notify deploy "$STATUS" "$SHA"')?.if,
     ).toBe('always()');
@@ -89,3 +93,17 @@ test('Rollback использует тип уведомления rollback', asy
         ),
     ).toBe(true);
 });
+
+test.each(['cd.yml', 'rollback.yml'])(
+    '%s разрешает чтение состава, итог отправляется при сбое',
+    async (name) => {
+        const config = await workflow(name);
+        expect(config.permissions['pull-requests']).toBe('read');
+        expect(config.permissions.issues).toBe('read');
+        const send = Object.values(config.jobs)
+            .flatMap((job) => job.steps)
+            .find((step) => step.name === 'Send to tg')!;
+        expect(send.if).toBe('always()');
+        expect(send['continue-on-error']).toBe(true);
+    },
+);

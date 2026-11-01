@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
+  issues: read
   deployments: write
 
 env:
@@ -95,6 +97,7 @@ jobs:
       - name: Deployment started
         continue-on-error: true
         env:
+          RELEASE_BEFORE_SHA: ${{ steps.confirmed.outputs.before_sha }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
           TELEGRAM_TOPIC_ID: ${{ vars.TELEGRAM_RELEASES_TOPIC_ID }}
