@@ -31,7 +31,7 @@ test('карточка выкатки показывает полные SHA и d
     expect(text).toContain(`<code>sha256:${digest}</code>`);
 });
 
-test('начало выкатки показывает текущего инициатора и run без запроса compare', async () => {
+test('начало выкатки показывает инициатора и кнопку логов без запроса compare', async () => {
     const original = { ...process.env };
     Object.assign(process.env, {
         TELEGRAM_BOT_TOKEN: 'token',
@@ -41,22 +41,28 @@ test('начало выкатки показывает текущего иниц
         GITHUB_ACTOR: 'original',
         GITHUB_TRIGGERING_ACTOR: 'retry<&',
     });
-    const messages: string[] = [];
+    const messages: {
+        text: string;
+        reply_markup?: { inline_keyboard: { text: string; url: string }[][] };
+    }[] = [];
     globalThis.fetch = (async (input, init) => {
         expect(String(input)).toContain('/sendMessage');
-        messages.push((JSON.parse(String(init?.body)) as { text: string }).text);
+        messages.push(JSON.parse(String(init?.body)));
         return Response.json({ ok: true, result: { message_id: 1 } });
     }) as typeof fetch;
     try {
         await notify('start', 'success', 'a'.repeat(40));
         expect(messages).toHaveLength(1);
-        expect(messages[0]).toContain('началась');
-        expect(messages[0]).toContain('a'.repeat(40));
-        expect(messages[0]).toContain('retry&lt;&amp;');
-        expect(messages[0]).toContain('/actions/runs/12');
+        expect(messages[0]?.text).toContain('началась');
+        expect(messages[0]?.text).toContain('a'.repeat(40));
+        expect(messages[0]?.text).toContain('retry&lt;&amp;');
+        expect(messages[0]?.text).not.toContain('Логи выкатки');
+        expect(messages[0]?.reply_markup?.inline_keyboard).toEqual([
+            [{ text: 'Логи выкатки', url: 'https://github.com/owner/repo/actions/runs/12' }],
+        ]);
         delete process.env.GITHUB_TRIGGERING_ACTOR;
         await notify('start', 'success', 'b'.repeat(40));
-        expect(messages[1]).toContain('original');
+        expect(messages[1]?.text).toContain('original');
     } finally {
         for (const key of Object.keys(process.env)) if (!(key in original)) delete process.env[key];
         Object.assign(process.env, original);
