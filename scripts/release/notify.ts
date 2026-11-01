@@ -249,8 +249,8 @@ export async function notify(what: string, status: string, sha?: string): Promis
                 ...(actor
                     ? [`Запустил: ${mentionActor(actor, process.env.TELEGRAM_USER_MAP)}`]
                     : []),
-                `<a href="${escape(runUrl())}">Логи выкатки</a>`,
             ].join('\n'),
+            keyboard: [[button('Логи выкатки', runUrl())]],
         });
         return;
     }
