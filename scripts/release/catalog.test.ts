@@ -268,3 +268,47 @@ test.each(['http', 'graphql', 'partial'])(
         await expect(catalog.readPRChanges(f.a, f.b)).rejects.toThrow();
     },
 );
+
+test('каталог без задач сохраняет состав и отбрасывает пустые production до чтения статусов', async () => {
+    f.publish();
+    f.deploy();
+    f.records.production!.push({
+        id: 99,
+        sha: f.b,
+        payload: {},
+        created_at: '2026-11-01T04:00:00Z',
+    });
+    const result = await catalog.readReleaseCatalog(f.dir);
+    expect(result.published.find((r) => r.sha === f.b)?.prNumbers).toEqual([1, 2]);
+    expect([...result.deployed]).toEqual([1]);
+    expect(f.requests.some((r) => String(r.body?.query).includes('LinkedIssues'))).toBe(false);
+    expect(f.requests.some((r) => r.url.pathname.endsWith('/deployments/99/statuses'))).toBe(false);
+    expect((await readReleaseSnapshot(f.dir)).issues).toHaveLength(2);
+});
+
+test.each(['partial', 'status'])('каталог не маскирует ошибку production %s', async (kind) => {
+    f.publish();
+    const row = f.deploy();
+    if (kind === 'partial') row.payload = { action: 'deploy' } as typeof row.payload;
+    else
+        f.extra = (url) =>
+            url.pathname.endsWith(`/deployments/${row.id}/statuses`)
+                ? Response.json({}, { status: 503 })
+                : undefined;
+    await expect(catalog.readReleaseCatalog(f.dir)).rejects.toThrow();
+});
+
+test('каталог без задач сохраняет проверку digest, источника и успешной истории до rollback', async () => {
+    f.publish();
+    f.deploy(f.b);
+    const rollback = f.deploy(f.a, 21);
+    rollback.payload.action = 'rollback';
+    f.runs.set(21, { ...f.runs.get(21), workflow_id: 102, path: '.github/workflows/rollback.yml' });
+    expect([...(await catalog.readReleaseCatalog(f.dir)).deployed]).toEqual([1, 2]);
+    const other = f.publish(f.b, 90);
+    other.payload.image_ref = IMAGE.replace(/a{64}$/, 'b'.repeat(64));
+    await expect(catalog.readReleaseCatalog(f.dir)).rejects.toThrow('разными образами');
+    f.records['release-artifacts']!.pop();
+    f.runs.set(1, { ...f.runs.get(1), head_repository: { full_name: 'evil/fork' } });
+    await expect(catalog.readReleaseCatalog(f.dir)).rejects.toThrow('Недоверенный');
+});

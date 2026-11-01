@@ -128,15 +128,15 @@ function parsePayload(payload: unknown): unknown {
 }
 
 /**
- * Deployments окружения, от новых к старым, с последним статусом каждого.
+ * Deployments окружения от новых к старым, без запросов статусов.
  * @param environment окружение
  * @param [sha] только записи этого коммита
  * @returns записи
  */
-export async function listDeployments<P>(
+export async function listDeploymentRecords<P>(
     environment: string,
     sha?: string,
-): Promise<Deployment<P>[]> {
+): Promise<Omit<Deployment<P>, 'state'>[]> {
     const query = new URLSearchParams({ environment, per_page: String(PAGE_SIZE) });
     if (sha) query.set('sha', sha);
     // вся история: цель отката и защита ассетов могут лежать дальше первой страницы
@@ -147,20 +147,29 @@ export async function listDeployments<P>(
         raw.push(...batch);
         if (batch.length < PAGE_SIZE) break;
     }
-    const result: Deployment<P>[] = [];
-    for (const item of raw) {
-        const statuses = await api<{ state: DeploymentState }[]>(
-            `/deployments/${item.id}/statuses?per_page=1`,
-        );
-        result.push({
+    return raw
+        .map((item) => ({
             id: item.id,
             sha: item.sha,
             payload: parsePayload(item.payload) as P,
             createdAt: item.created_at,
-            state: statuses[0]?.state,
-        });
+        }))
+        .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id);
+}
+
+/** Deployments с последним статусом каждого, без фильтрации истории. */
+export async function listDeployments<P>(
+    environment: string,
+    sha?: string,
+): Promise<Deployment<P>[]> {
+    const result: Deployment<P>[] = [];
+    for (const item of await listDeploymentRecords<P>(environment, sha)) {
+        const statuses = await api<{ state: DeploymentState }[]>(
+            `/deployments/${item.id}/statuses?per_page=1`,
+        );
+        result.push({ ...item, state: statuses[0]?.state });
     }
-    return result.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id - a.id);
+    return result;
 }
 
 /**
