@@ -1,4 +1,5 @@
 import { ReleaseError, isSha, need, siteUrl } from './env.ts';
+import type { MergedPR, PublishedRelease } from './catalog.ts';
 
 /** Сообщение и кнопки существующей темы выкаток. */
 export interface TelegramMessage {
@@ -64,6 +65,54 @@ function revision(sha: string | undefined, repo: string): string {
 
 function button(text: string, url: string): { text: string; url: string } {
     return { text, url };
+}
+
+/** Постановка конкретного PR в очередь, без обещания позиции. */
+export function queueMessage(pr: Pick<MergedPR, 'number' | 'url'>): TelegramMessage {
+    return { text: `<a href="${escape(pr.url)}">PR #${pr.number}</a> поставлен в очередь` };
+}
+
+/** Готовый выпуск с полным списком PR либо ссылкой на полный отчёт при переполнении. */
+export function readyMessage(
+    release: PublishedRelease,
+    prs: readonly MergedPR[],
+    reportUrl: string,
+): TelegramMessage {
+    const header = [
+        '📦 Релиз фронта залит, ждёт выкатки',
+        `Релиз <code>${release.sha}</code>`,
+        `Образ BFF <code>${escape(release.imageRef.split('@')[1]!)}</code>`,
+        `<a href="${escape(release.ciRun)}">CI выпуска</a>`,
+    ];
+    const full = [
+        ...header,
+        ...(prs.length
+            ? prs.map((pr) => `• <a href="${escape(pr.url)}">#${pr.number}</a>`)
+            : ['Новых PR нет.']),
+    ].join('\n');
+    const entities: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"' };
+    const visible = full
+        .replace(/<[^>]*>/g, '')
+        .replace(/&(amp|lt|gt|quot);/g, (_, name: string) => entities[name]!);
+    const text =
+        [...visible].length <= 4096
+            ? full
+            : [
+                  ...header,
+                  `PR в выпуске: ${prs.length}`,
+                  `<a href="${escape(reportUrl)}">Все PR выпуска</a>`,
+              ].join('\n');
+    return {
+        text,
+        keyboard: [
+            [
+                button(
+                    'Выкатить',
+                    `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${need('GITHUB_REPOSITORY')}/actions/workflows/cd.yml`,
+                ),
+            ],
+        ],
+    };
 }
 
 async function changes(range: string | undefined): Promise<string[]> {
