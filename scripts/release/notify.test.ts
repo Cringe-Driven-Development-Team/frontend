@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, test } from 'bun:test';
 import { join } from 'node:path';
 import { fixture } from './test/fixture.ts';
 import { notify } from './notify.ts';
@@ -7,6 +7,9 @@ let release: ReturnType<typeof fixture> | undefined;
 
 const realFetch = globalThis.fetch;
 const originalEnv = { ...process.env };
+beforeEach(() => {
+    delete process.env.GITHUB_STEP_SUMMARY;
+});
 afterEach(() => {
     release?.restore();
     release = undefined;
