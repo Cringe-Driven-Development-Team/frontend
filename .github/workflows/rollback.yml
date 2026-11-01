@@ -51,12 +51,6 @@ jobs:
         env:
           SHA: ${{ steps.target.outputs.sha }}
         run: bun run release check "$SHA"
-      - name: Production record
-        id: start
-        env:
-          SHA: ${{ steps.target.outputs.sha }}
-          IMAGE_REF: ${{ steps.target.outputs.image_ref }}
-        run: bun run release start "$SHA" "$IMAGE_REF" rollback
       - name: Checkout deployment infrastructure
         uses: actions/checkout@v5
         with:
@@ -89,6 +83,20 @@ jobs:
           ssh-keygen -F cellestial.ru -f "$RUNNER_TEMP/deploy/known_hosts" > /dev/null
           echo "ANSIBLE_VAULT_PASSWORD_FILE=$RUNNER_TEMP/deploy/vault-pass" >> "$GITHUB_ENV"
       # тот же entrypoint, что у выкатки: отсутствующий или упавший контейнер откат не блокирует
+      - name: Release report
+        id: report
+        env:
+          RELEASE_BEFORE_SHA: ${{ steps.target.outputs.before_sha }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: bun run release report rollback "$SHA"
+      - name: Production record
+        id: start
+        env:
+          RELEASE_REPORT_BASE_SHA: ${{ steps.report.outputs.report_base_sha }}
+          RELEASE_REPORT_URL: ${{ steps.report.outputs.report_url }}
+          SHA: ${{ steps.target.outputs.sha }}
+          IMAGE_REF: ${{ steps.target.outputs.image_ref }}
+        run: bun run release start "$SHA" "$IMAGE_REF" rollback
       - name: Switch BFF
         id: switch
         working-directory: infra/ansible

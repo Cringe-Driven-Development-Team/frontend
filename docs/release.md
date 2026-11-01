@@ -305,3 +305,13 @@ Environment `release-artifacts` создаётся первой записью �
 > [!WARNING]
 > Ключ S3 действует на весь проект Selectel, а не только на бакет релизов: ограничение
 > environment веткой `main` снимать нельзя
+
+### Отчёт операции для webhook-потребителя
+
+`bun run release report <publish|deploy|rollback> <sha>` записывает состав конкретного
+диапазона в Summary без Telegram. CI/CD передают outputs `report_base_sha` и
+`report_url` в регистрацию операции; payload содержит `notification.base_sha`,
+`notification.report_url` и положительный `notification.run_attempt`. Неизвестная
+база или ошибка обогащения даёт неполный отчёт без ссылки «полный список» и не
+мешает публикации или выкатке. Production record создаётся непосредственно перед
+переключением BFF, после подготовки SSH и инструментов.

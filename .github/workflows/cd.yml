@@ -58,11 +58,6 @@ jobs:
       - name: Release check
         id: check
         run: bun run release check "$SHA"
-      - name: Production record
-        id: start
-        env:
-          IMAGE_REF: ${{ steps.artifacts.outputs.image_ref }}
-        run: bun run release start "$SHA" "$IMAGE_REF" deploy
       - name: Checkout deployment infrastructure
         uses: actions/checkout@v5
         with:
@@ -94,6 +89,11 @@ jobs:
           printf '%s\n' "$ANSIBLE_VAULT_PASSWORD" > "$RUNNER_TEMP/deploy/vault-pass"
           ssh-keygen -F cellestial.ru -f "$RUNNER_TEMP/deploy/known_hosts" > /dev/null
           echo "ANSIBLE_VAULT_PASSWORD_FILE=$RUNNER_TEMP/deploy/vault-pass" >> "$GITHUB_ENV"
+      - name: Release report
+        id: report
+        env:
+          RELEASE_BEFORE_SHA: ${{ steps.confirmed.outputs.before_sha }}
+        run: bun run release report deploy "$SHA"
       - name: Deployment started
         continue-on-error: true
         env:
@@ -104,6 +104,13 @@ jobs:
           TELEGRAM_USER_MAP: ${{ vars.TELEGRAM_USER_MAP }}
         run: bun run release notify start success "$SHA"
       # публичный образ — без GHCR credentials; Ansible сам сверяет метку, запущенный образ и healthy
+      - name: Production record
+        id: start
+        env:
+          RELEASE_REPORT_BASE_SHA: ${{ steps.report.outputs.report_base_sha }}
+          RELEASE_REPORT_URL: ${{ steps.report.outputs.report_url }}
+          IMAGE_REF: ${{ steps.artifacts.outputs.image_ref }}
+        run: bun run release start "$SHA" "$IMAGE_REF" deploy
       - name: Switch BFF
         id: switch
         working-directory: infra/ansible

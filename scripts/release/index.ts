@@ -19,6 +19,7 @@ import { checkImage, checkImageRef } from './image.ts';
 import { notify } from './notify.ts';
 import { retention } from './retention.ts';
 import { upload } from './upload.ts';
+import { reportRelease } from './report.ts';
 
 const USAGE = `Использование: bun run release <команда>
   upload <sha> [каталог]          apps/client/dist → releases/{sha}/, неизменяемо
@@ -34,12 +35,16 @@ const USAGE = `Использование: bun run release <команда>
   health <sha>                    Health check: прод отдаёт выпуск через BFF
   retention                       удалить старые ассеты
   sync                            сверить только доску
+  report <publish|deploy|rollback> <sha>    полный отчёт без Telegram
   prepare-notifications <current|recover>   подготовить текущее событие или восстановить пропущенные
   notify-pending [all|queue|ready] [key]     отправить выбранные уведомления
   notify <publish|deploy|rollback|start> <success|failure|cancelled> [sha]`;
 
 async function main(command: string | undefined, args: string[]): Promise<void> {
     switch (command) {
+        case 'report':
+            if (args.length !== 2) throw new ReleaseError(USAGE);
+            return reportRelease(args[0]!, checkSha(args[1]), process.cwd());
         case 'sync': {
             const result = await reconcileBoard(process.cwd());
             output('allowed', String(result.allowed));

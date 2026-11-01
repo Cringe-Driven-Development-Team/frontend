@@ -37,10 +37,10 @@ test('CD сообщает о начале непосредственно пер�
     const cd = await workflow('cd.yml');
     const steps = cd.jobs.cd!.steps;
     const at = steps.findIndex((step) => step.id === 'switch');
-    expect(steps[at - 1]?.run).toBe('bun run release notify start success "$SHA"');
-    expect(steps[at - 1]?.['continue-on-error']).toBe(true);
-    expect(steps[at - 1]?.if).toBeUndefined();
-    expect(steps[at - 1]?.env?.RELEASE_BEFORE_SHA).toBe(
+    expect(steps[at - 2]?.run).toBe('bun run release notify start success "$SHA"');
+    expect(steps[at - 2]?.['continue-on-error']).toBe(true);
+    expect(steps[at - 2]?.if).toBeUndefined();
+    expect(steps[at - 2]?.env?.RELEASE_BEFORE_SHA).toBe(
         '${{ steps.confirmed.outputs.before_sha }}',
     );
     expect(
@@ -137,5 +137,29 @@ test.each(['cd.yml', 'rollback.yml'])(
             .find((step) => step.name === 'Send to tg')!;
         expect(send.if).toBe('always()');
         expect(send['continue-on-error']).toBe(true);
+    },
+);
+
+test.each(['ci.yml', 'cd.yml', 'rollback.yml'])(
+    '%s публикует отчёт до записи операции',
+    async (name) => {
+        const config = await workflow(name);
+        const job =
+            config.jobs[name === 'ci.yml' ? 'publish' : name === 'cd.yml' ? 'cd' : 'rollback']!;
+        const report = job.steps.findIndex((step) => step.id === 'report');
+        const record = job.steps.findIndex(
+            (step) =>
+                step.run?.startsWith('bun run release register ') ||
+                step.run?.startsWith('bun run release start '),
+        );
+        expect(report).toBeGreaterThanOrEqual(0);
+        expect(record).toBeGreaterThan(report);
+        expect(job.steps[record]?.env?.RELEASE_REPORT_URL).toBe(
+            '${{ steps.report.outputs.report_url }}',
+        );
+        if (name !== 'ci.yml') {
+            const change = job.steps.findIndex((step) => step.id === 'switch');
+            expect(job.steps[change - 1]?.id).toBe('start');
+        }
     },
 );

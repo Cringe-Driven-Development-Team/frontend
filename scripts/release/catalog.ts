@@ -155,7 +155,8 @@ function runId(value: unknown): number {
     return Number(url.pathname.slice(prefix.length));
 }
 
-async function linkedIssues(number: number): Promise<LinkedIssue[]> {
+/** Закрывающие связи конкретного PR, со всеми страницами. */
+export async function linkedIssues(number: number): Promise<LinkedIssue[]> {
     const [owner, name] = need('GITHUB_REPOSITORY').split('/');
     const result: LinkedIssue[] = [];
     let cursor: string | null = null;
