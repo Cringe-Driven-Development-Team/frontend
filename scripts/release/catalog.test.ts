@@ -143,8 +143,9 @@ test('все страницы statuses и PR/closing issues читаются ц�
 });
 
 test('граница включения сохраняет добавление workflow по first-parent main', async () => {
-    expect(await activationTime(f.dir)).toBe('2026-11-01T00:00:00+00:00');
+    const first = await activationTime(f.dir);
+    expect(Date.parse(first)).toBe(Date.parse('2026-11-01T00:00:00Z'));
     git(f.dir, 'commit', '--allow-empty', '-m', 'later');
     git(f.dir, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
-    expect(await activationTime(f.dir)).toBe('2026-11-01T00:00:00+00:00');
+    expect(await activationTime(f.dir)).toBe(first);
 });

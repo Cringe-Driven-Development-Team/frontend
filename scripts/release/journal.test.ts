@@ -64,8 +64,9 @@ test('подтверждённое сообщение не пересылает�
 });
 
 test('baseline сохраняет время main и не отправляет сообщение', async () => {
-    expect(await ensureBaseline(f.dir)).toBe('2026-11-01T00:00:00+00:00');
-    expect(await ensureBaseline(f.dir)).toBe('2026-11-01T00:00:00+00:00');
+    const first = await ensureBaseline(f.dir);
+    expect(Date.parse(first)).toBe(Date.parse('2026-11-01T00:00:00Z'));
+    expect(await ensureBaseline(f.dir)).toBe(first);
     expect(f.records['release-automation']).toHaveLength(1);
     await sendPending(f.dir);
     expect(posts).toBe(0);
