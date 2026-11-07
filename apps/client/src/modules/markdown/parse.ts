@@ -14,7 +14,8 @@ export type MdBlock =
     | { type: 'paragraph'; children: MdInline[] }
     | { type: 'list'; ordered: boolean; start: number; items: MdBlock[][] }
     | { type: 'quote'; children: MdBlock[] }
-    | { type: 'code'; text: string };
+    /** lang — первое слово строки после ``` (` ```python ` → `python`), если оно есть */
+    | { type: 'code'; text: string; lang?: string };
 
 // Предел вложенности, чтобы рекурсия разбора и рендера не росла без границ. Глубже — текстом
 const MAX_DEPTH = 32;
@@ -51,6 +52,46 @@ export function safeHref(raw: string): string | null {
     const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(href);
     if (scheme && !/^https?$/i.test(scheme[1]!)) return null;
     return href;
+}
+
+/** Блок кода у позиции курсора в исходнике Markdown. */
+export interface CodeAt {
+    /** Первое слово после ```, если есть */
+    lang: string | undefined;
+    /** Начало строки курсора до кода: префиксы цитат и отступ пункта списка */
+    prefix: string;
+    /** Код блока от первой строки до курсора, без префиксов */
+    before: string;
+}
+
+/**
+ * Блок кода, внутри которого стоит курсор, — по тем же правилам, что у parseMarkdown: в цитатах
+ * и пунктах списка тоже.
+ * @param source исходник Markdown
+ * @param at позиция курсора
+ * @returns блок кода у курсора или null, если курсор не в коде
+ */
+export function codeBlockAt(source: string, at: number): CodeAt | null {
+    const lines = source.split('\n');
+    const row = source.slice(0, at).split('\n').length - 1;
+    const track: Track = { rows: lines.map((_, index) => index), fences: [] };
+    parseBlocks(lines, 0, track);
+    for (const fence of track.fences) {
+        const index = fence.rows.indexOf(row);
+        if (index < 0) continue;
+        const line = lines[row]!;
+        const code = fence.lines[index]!;
+        // строка кода — конец строки исходника: всё до него — префиксы контейнеров
+        const prefix = line.slice(0, Math.max(0, line.length - code.length));
+        const column = at - (source.lastIndexOf('\n', at - 1) + 1) - prefix.length;
+        if (column < 0) return null;
+        return {
+            lang: fence.lang,
+            prefix,
+            before: [...fence.lines.slice(0, index), code.slice(0, column)].join('\n'),
+        };
+    }
+    return null;
 }
 
 // ——— Блоки ———
@@ -113,7 +154,12 @@ function listMarker(line: string): ListMarker | null {
     };
 }
 
-const fenceOf = (line: string) => /^( {0,3})(`{3,}|~{3,})/.exec(line);
+// После ``` обратных кавычек быть не может: «```code```» — inline-code (CommonMark)
+function fenceOf(line: string): RegExpExecArray | null {
+    const fence = /^( {0,3})(`{3,}|~{3,})/.exec(line);
+    if (fence?.[2]?.startsWith('`') && line.includes('`', fence[0].length)) return null;
+    return fence;
+}
 const isHeading = (line: string): boolean => /^ {0,3}#{1,6}(?:[ \t]|$)/.test(line);
 const isQuote = (line: string): boolean => /^ {0,3}>/.test(line);
 
@@ -124,7 +170,51 @@ function interrupts(line: string): boolean {
     return item !== null && item.content.trim() !== '' && (!item.ordered || item.start === 1);
 }
 
-function parseBlocks(lines: string[], depth: number): MdBlock[] {
+const closingFence = (marker: string): RegExp =>
+    new RegExp(`^ {0,3}${marker[0] === '`' ? '`' : '~'}{${marker.length},}[ \\t]*$`);
+
+// Открыт ли абзац после строк цитаты или пункта: только его можно продолжить лениво (CommonMark)
+function paragraphState(): { push: (line: string) => void; open: () => boolean } {
+    let fence: RegExp | null = null;
+    let open = false;
+    return {
+        push(line) {
+            let rest = line;
+            // во вложенной цитате или пункте важен блок внутри них; глубже MAX_DEPTH разбор не вкладывает
+            for (let level = 0; level < MAX_DEPTH; level += 1) {
+                if (isQuote(rest)) rest = rest.replace(/^ {0,3}> ?/, '');
+                else {
+                    const item = fence ? null : listMarker(rest);
+                    if (!item) break;
+                    rest = item.content;
+                }
+            }
+            if (fence) {
+                if (fence.test(rest)) fence = null;
+                open = false;
+                return;
+            }
+            const marker = fenceOf(rest)?.[2];
+            if (marker) {
+                fence = closingFence(marker);
+                open = false;
+            } else open = !isBlank(rest) && !isHeading(rest);
+        },
+        open: () => open,
+    };
+}
+
+// Строки исходника для строк блока и найденные блоки кода: нужно только codeBlockAt
+interface Track {
+    rows: number[];
+    fences: { lang: string | undefined; rows: number[]; lines: string[] }[];
+}
+
+// Строки вложенного блока — те же строки исходника: одна строка контейнера даёт одну строку блока
+const nestedTrack = (track: Track | null, rows: number[]): Track | null =>
+    track && { rows, fences: track.fences };
+
+function parseBlocks(lines: string[], depth: number, track: Track | null = null): MdBlock[] {
     const blocks: MdBlock[] = [];
     let i = 0;
     while (i < lines.length) {
@@ -136,18 +226,23 @@ function parseBlocks(lines: string[], depth: number): MdBlock[] {
 
         const fence = fenceOf(line);
         if (fence) {
-            const [, lead = '', marker = ''] = fence;
-            const closing = new RegExp(
-                `^ {0,3}${marker[0] === '`' ? '`' : '~'}{${marker.length},}[ \\t]*$`,
-            );
+            const [whole, lead = '', marker = ''] = fence;
+            const lang = /^[ \t]*([^\s`]+)/.exec(line.slice(whole.length))?.[1];
+            const closing = closingFence(marker);
             const code: string[] = [];
             i += 1;
+            const from = i;
             while (i < lines.length && !closing.test(lines[i]!)) {
                 code.push(dropIndent(lines[i]!, Math.min(lead.length, indentOf(lines[i]!))));
                 i += 1;
             }
             i += 1;
-            blocks.push({ type: 'code', text: code.join('\n') });
+            track?.fences.push({ lang, rows: track.rows.slice(from, i - 1), lines: code });
+            blocks.push(
+                lang
+                    ? { type: 'code', text: code.join('\n'), lang }
+                    : { type: 'code', text: code.join('\n') },
+            );
             continue;
         }
 
@@ -167,22 +262,29 @@ function parseBlocks(lines: string[], depth: number): MdBlock[] {
 
         if (depth < MAX_DEPTH && isQuote(line)) {
             const inner: string[] = [];
+            const innerRows: number[] = [];
+            const paragraph = paragraphState();
             while (i < lines.length) {
                 const current = lines[i]!;
                 if (isQuote(current)) inner.push(current.replace(/^ {0,3}> ?/, ''));
                 // ленивое продолжение абзаца внутри цитаты
-                else if (!isBlank(current) && !interrupts(current) && !isBlank(inner.at(-1) ?? ''))
+                else if (!isBlank(current) && !interrupts(current) && paragraph.open())
                     inner.push(current);
                 else break;
+                paragraph.push(inner.at(-1)!);
+                if (track) innerRows.push(track.rows[i]!);
                 i += 1;
             }
-            blocks.push({ type: 'quote', children: parseBlocks(inner, depth + 1) });
+            blocks.push({
+                type: 'quote',
+                children: parseBlocks(inner, depth + 1, nestedTrack(track, innerRows)),
+            });
             continue;
         }
 
         const first = listMarker(line);
         if (depth < MAX_DEPTH && first) {
-            i = parseList(lines, i, first, depth, blocks);
+            i = parseList(lines, i, first, depth, blocks, track);
             continue;
         }
 
@@ -210,6 +312,7 @@ function parseList(
     first: ListMarker,
     depth: number,
     blocks: MdBlock[],
+    track: Track | null,
 ): number {
     const items: MdBlock[][] = [];
     const same = (item: ListMarker | null): item is ListMarker =>
@@ -219,6 +322,9 @@ function parseList(
         const item = listMarker(lines[i]!);
         if (!same(item)) break;
         const content = [item.content];
+        const contentRows = track ? [track.rows[i]!] : [];
+        const paragraph = paragraphState();
+        paragraph.push(item.content);
         i += 1;
         while (i < lines.length) {
             const current = lines[i]!;
@@ -228,18 +334,22 @@ function parseList(
                 if (filled >= lines.length || indentOf(lines[filled]!) < item.indent) break;
                 while (i < filled) {
                     content.push('');
+                    if (track) contentRows.push(track.rows[i]!);
                     i += 1;
                 }
+                paragraph.push('');
                 continue;
             }
             if (indentOf(current) >= item.indent) content.push(dropIndent(current, item.indent));
             // ленивое продолжение абзаца пункта
-            else if (!interrupts(current) && !listMarker(current) && !isBlank(content.at(-1) ?? ''))
+            else if (!interrupts(current) && !listMarker(current) && paragraph.open())
                 content.push(current);
             else break;
+            paragraph.push(content.at(-1)!);
+            if (track) contentRows.push(track.rows[i]!);
             i += 1;
         }
-        items.push(parseBlocks(content, depth + 1));
+        items.push(parseBlocks(content, depth + 1, nestedTrack(track, contentRows)));
         // пустые строки между пунктами одного списка
         const filled = nextFilled(lines, i);
         if (filled < lines.length && same(listMarker(lines[filled]!))) i = filled;
@@ -292,14 +402,32 @@ function backtickRuns(text: string): Map<number, number[]> {
     return runs;
 }
 
-// Пара `]` для каждой `[` одним проходом; без пары — -1
-function matchBrackets(text: string): Int32Array {
+// Ближайшая серия той же длины после from; позиция запросов только растёт, поэтому курсор — тоже
+function closingRuns(runs: Map<number, number[]>): (length: number, from: number) => number {
+    const cursors = new Map<number, number>();
+    return (length, from) => {
+        const list = runs.get(length) ?? [];
+        let cursor = cursors.get(length) ?? 0;
+        while (cursor < list.length && list[cursor]! < from) cursor += 1;
+        cursors.set(length, cursor);
+        return list[cursor] ?? -1;
+    };
+}
+
+// Пара `]` для каждой `[` одним проходом; без пары — -1. Скобки внутри inline-code не считаются
+function matchBrackets(text: string, runs: Map<number, number[]>): Int32Array {
     const match = new Int32Array(text.length).fill(-1);
     const stack: number[] = [];
+    const closingRun = closingRuns(runs);
     for (let i = 0; i < text.length; i += 1) {
         const char = text[i];
         if (char === '\\') i += 1;
-        else if (char === '[') stack.push(i);
+        else if (char === '`') {
+            let length = 0;
+            while (text[i + length] === '`') length += 1;
+            const close = closingRun(length, i + length);
+            i = (close < 0 ? i + length : close + length) - 1;
+        } else if (char === '[') stack.push(i);
         else if (char === ']') {
             const open = stack.pop();
             if (open !== undefined) match[open] = i;
@@ -419,8 +547,8 @@ function linkTail(
 
 function parseInline(text: string, depth: number): MdInline[] {
     const runs = backtickRuns(text);
-    const cursors = new Map<number, number>();
-    const brackets = matchBrackets(text);
+    const closingRun = closingRuns(runs);
+    const brackets = matchBrackets(text, runs);
     const closings = closingIndex(text);
     // меняются внутри append: без приведения TypeScript считает их всегда null
     let head = null as ListNode | null;
@@ -440,15 +568,6 @@ function parseInline(text: string, depth: number): MdInline[] {
         if (buffer) append({ type: 'text', text: buffer });
         buffer = '';
     };
-    // ближайшая серия той же длины после from: курсор только растёт, как и позиция разбора
-    const closingRun = (length: number, from: number): number => {
-        const list = runs.get(length) ?? [];
-        let cursor = cursors.get(length) ?? 0;
-        while (cursor < list.length && list[cursor]! < from) cursor += 1;
-        cursors.set(length, cursor);
-        return list[cursor] ?? -1;
-    };
-
     let i = 0;
     while (i < text.length) {
         const char = text[i]!;
