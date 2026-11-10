@@ -1,4 +1,3 @@
-import { useLayoutEffect, useRef } from '@cdd-team/react';
 import { Icon } from '@components/Icon/Icon';
 import styles from './Output.module.css';
 
@@ -10,7 +9,6 @@ export type Shown =
     | { kind: 'text'; text: string; stream?: 'stderr' }
     | { kind: 'error'; text: string }
     | { kind: 'image'; src: string }
-    | { kind: 'html'; html: string }
     | { kind: 'unsupported'; mimes: string[] };
 
 /** Многострочный текст nbformat: строка или массив строк. */
@@ -27,8 +25,7 @@ const joined = (value: unknown): string | undefined => {
 const stripAnsi = (text: string): string => text.replace(/\u001b\[[\d;]*m/g, '');
 
 /**
- * Одно представление вывода: PNG → SVG → HTML → текст. SVG — только как картинка, HTML — только в
- * изолированном iframe, JavaScript не исполняется.
+ * Одно представление вывода: PNG → SVG → текст. SVG — только как картинка, HTML не показывается.
  */
 export function pickOutput(output: NbOutput): Shown {
     switch (output.output_type) {
@@ -55,8 +52,6 @@ export function pickOutput(output: NbOutput): Shown {
             kind: 'image',
             src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`,
         };
-    const html = joined(data['text/html']);
-    if (html) return { kind: 'html', html };
     const plain = joined(data['text/plain']);
     if (plain !== undefined) return { kind: 'text', text: plain };
     return { kind: 'unsupported', mimes: Object.keys(data) };
@@ -137,8 +132,6 @@ function OutputView({ shown }: { shown: Shown }) {
             );
         case 'image':
             return <img className={styles.image} src={shown.src} alt="Изображение из вывода" />;
-        case 'html':
-            return <HtmlFrame html={shown.html} />;
         case 'unsupported':
             return (
                 <p className={styles.unsupported}>
@@ -152,22 +145,4 @@ function OutputView({ shown }: { shown: Shown }) {
                 </p>
             );
     }
-}
-
-/**
- * HTML — в iframe с пустым sandbox: без скриптов, форм и доступа к origin приложения. iframe
- * создаётся вручную: sandbox ставится раньше srcdoc, а в JSX-типах `@cdd-team/react` тега нет.
- */
-function HtmlFrame({ html }: { html: string }) {
-    const host = useRef<HTMLDivElement | null>(null);
-    useLayoutEffect(() => {
-        const frame = document.createElement('iframe');
-        frame.setAttribute('sandbox', '');
-        frame.title = 'HTML-вывод ячейки';
-        frame.className = styles.html!;
-        frame.srcdoc = html;
-        host.current?.replaceChildren(frame);
-        return () => frame.remove();
-    }, [html]);
-    return <div ref={host} />;
 }
