@@ -16,8 +16,6 @@ import { clsx } from '@cdd-team/clsx';
 import { useNavigate, useParams } from '@cdd-team/router';
 import { DeleteButton } from '@modules/notebookDelete/DeleteButton';
 import { DeleteNotebookDialog } from '@modules/notebookDelete/DeleteNotebookDialog';
-import { checkDeleteGate } from '@modules/notebookDelete/actions';
-import { deleteGate, type DeleteGate } from '@modules/notebookDelete/gate';
 import {
     addCell,
     leaveNotebook,
@@ -209,20 +207,8 @@ export function NotebookPage() {
     );
     const [attempt, setAttempt] = useState(0);
     const [selected, setSelected] = useState<string | undefined>(undefined);
-    /** Открытый диалог удаления: допуск по окружению из стора на момент нажатия корзины */
-    const [deleting, setDeleting] = useState<DeleteGate | null>(null);
-    const [checkingDelete, setCheckingDelete] = useState(false);
-    /**
-     * Окружение — с сервера: стор не видит запуск из другой вкладки и не опрашивает завершённую
-     * сессию с незавершённой очисткой; при сбое — последнее известное состояние стора.
-     */
-    const askDelete = async () => {
-        if (checkingDelete) return;
-        setCheckingDelete(true);
-        const gate = await checkDeleteGate(id);
-        setCheckingDelete(false);
-        setDeleting(gate === 'error' ? deleteGate(useRuntimeStore.getState().session, id) : gate);
-    };
+    /** Открытый диалог удаления: открывается сразу по сессии из стора, сервер уточняет её в фоне */
+    const [deleting, setDeleting] = useState(false);
     /** Куда перевести фокус после отрисовки: новая ячейка или соседняя после удаления */
     const [focusTarget, setFocusTarget] = useState<{ id: string | undefined } | null>(null);
     /** Созданная в этой сессии ячейка: Markdown в ней сразу открывается для ввода */
@@ -524,7 +510,7 @@ export function NotebookPage() {
                             </p>
                         )}
                     </div>
-                    {ready && <DeleteButton key="delete" onClick={() => void askDelete()} />}
+                    {ready && <DeleteButton key="delete" onClick={() => setDeleting(true)} />}
                     <ProfileLink key="profile" />
                 </Header>
                 {load === 'loading' && (
@@ -621,9 +607,9 @@ export function NotebookPage() {
                 <DeleteNotebookDialog
                     key="delete"
                     notebook={{ id, name: notebook.meta.name }}
-                    gate={deleting}
+                    known={runtime.session}
                     place="editor"
-                    onClose={() => setDeleting(null)}
+                    onClose={() => setDeleting(false)}
                     onGone={() => navigate({ to: '/' })}
                 />
             )}

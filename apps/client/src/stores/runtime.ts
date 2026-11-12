@@ -310,12 +310,13 @@ async function poll(): Promise<void> {
 }
 
 /**
- * Сессия завершена и хвост дочитан: опрос больше не нужен. Недочитанные исполнения запуска —
+ * Сессия завершена, очищена и хвост дочитан: опрос больше не нужен. Недочитанные исполнения запуска —
  * неизвестный результат, а не вечное «выполняется».
  */
 function finished(): boolean {
     const session = own();
-    if (session && !ENDED.has(session.state)) return false;
+    // Go отдаёт STOPPED до удаления облачных ресурсов: очистку дочитываем, удаление блокнота ждёт её
+    if (session && (!ENDED.has(session.state) || session.cleanup_error)) return false;
     // результат ещё сохраняется: дочитать, иначе «Сохраняем результаты…» навсегда
     if (resultsPending(get())) return false;
     const { run, outcome, executions } = get();
