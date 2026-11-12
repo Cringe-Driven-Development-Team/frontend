@@ -1,17 +1,11 @@
-import { registerSW } from 'virtual:pwa-register';
+import { register } from '@cdd-team/workbox/window';
 
 /**
- * Регистрирует service worker: `/sw.js` на origin приложения, scope `/`. Отказ регистрации не мешает
- * работе приложения: без него нет только офлайн-страницы. В `bun run dev` регистрации нет.
+ * Регистрирует service worker: `/sw.js` на origin приложения, scope `/`, только в production-сборке.
+ * Отказ регистрации не мешает работе приложения: без него нет только офлайн-страницы. Новая версия
+ * SW вступает в силу без перезагрузки вкладки: файлов SPA в его кеше нет.
  */
 export function registerServiceWorker(): void {
-    registerSW({
-        immediate: true,
-        /**
-         * Файлов SPA в кеше нет: новая версия не расходится с открытой вкладкой, а без этого
-         * обработчика регистратор перезагрузил бы её и пользователь потерял бы ввод
-         */
-        onNeedReload: () => undefined,
-        onRegisterError: console.error,
-    });
+    if (!import.meta.env.PROD) return;
+    register('/sw.js', '/').catch(console.error);
 }

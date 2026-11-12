@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { VitePWA } from 'vite-plugin-pwa';
+import { pwa } from '@cdd-team/vite-plugin-pwa';
 
 /**
  * Подставляет адрес static вместо `%VITE_STATIC_URL%` в CSS. `var()` не работает внутри `url()` и в
@@ -27,42 +27,21 @@ export const releaseMetaPlugin = (release: string): Plugin => ({
 });
 
 /**
- * Манифест, service worker и модуль `virtual:pwa-register`. Нужен и в dev: там нет SW, но клиент
- * импортирует этот модуль.
+ * Манифест и `sw.js`. Регистрирует service worker `src/serviceWorker.ts`; в dev плагин отдаёт только
+ * манифест.
  */
-export const vitepwaPlugin = (): Plugin[] =>
-    VitePWA({
-        /** Манифест и иконки отдаёт BFF со своего origin (`PUBLIC_FILES`): с CDN их не примут */
-        base: '/',
-        /** Регистрацию делает `src/serviceWorker.ts` */
-        injectRegister: false,
-        includeManifestIcons: false,
-        workbox: {
-            /** `sw.js` — один файл: его, как и манифест, отдаёт BFF */
-            inlineWorkboxRuntime: true,
-            sourcemap: false,
-            /**
-             * Кеш — только офлайн-страница, её стили (CSP запрещает встроенные) и шрифт; JS и CSS
-             * SPA всегда с CDN, HTML и RPC с данными пользователя не кешируются (docs: трек
-             * «Офлайн-режим»)
-             */
-            globPatterns: ['offline.html', 'offline.css', 'onest-variable.woff2'],
-            navigateFallback: null,
-            runtimeCaching: [
-                {
-                    urlPattern: ({ request }) => request.mode === 'navigate',
-                    handler: 'NetworkOnly',
-                    options: { precacheFallback: { fallbackURL: '/offline.html' } },
-                },
-            ],
-            /**
-             * В кеше нет файлов SPA, поэтому новая версия не расходится с открытой вкладкой и
-             * вступает сразу, без перезагрузки
-             */
-            skipWaiting: true,
-            clientsClaim: true,
-            cleanupOutdatedCaches: true,
-        },
+export const vitepwaPlugin = (): Plugin =>
+    pwa({
+        /** Манифест, `sw.js` и офлайн-файлы отдаёт BFF со своего origin (`PUBLIC_FILES`), не CDN */
+        publicPath: '/',
+        /**
+         * Кеш — только офлайн-страница, её стили (CSP запрещает встроенные), шрифт и манифест; JS и
+         * CSS SPA всегда с CDN, HTML и RPC с данными пользователя не кешируются (docs: трек
+         * «Офлайн-режим»)
+         */
+        precache: ['offline.html', 'offline.css', 'onest-variable.woff2', 'manifest.webmanifest'],
+        fallback: '/offline.html',
+        cacheNamespace: 'cellestial',
         manifest: {
             name: 'Cellestial',
             short_name: 'Cellestial',
