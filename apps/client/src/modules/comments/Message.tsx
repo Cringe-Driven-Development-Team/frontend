@@ -1,14 +1,57 @@
+import { useState } from '@cdd-team/react';
+import { clsx } from '@cdd-team/clsx';
+import { commentTextValue } from '@cdd/schemas/validate';
+import { Button } from '@components/Button/Button';
+import { IconButton } from '@components/IconButton/IconButton';
+import { Modal } from '@components/Modal/Modal';
+import { useTouchDevice } from '@utils/media';
 import { timeAgo } from '@utils/date';
+import { Field } from './Field';
 import type { Comment } from './list';
 import styles from './Message.module.css';
 
 /** Свойства {@link Message}. */
 interface MessageProps {
     comment: Comment;
+    /** Сохранить новый текст; `true` — сохранён */
+    onSave: (text: string) => Promise<boolean>;
+    /** Удалить сообщение; `true` — удалено */
+    onDelete: () => Promise<boolean>;
 }
 
-/** Сообщение треда: буква логина, логин, время и текст с переносами. */
-export function Message({ comment }: MessageProps) {
+/**
+ * Сообщение треда: буква логина, логин, время и текст с переносами. «Редактировать» и «Удалить» —
+ * только по `can_edit` / `can_delete` из ответа Go; на десктопе видны при наведении и фокусе, на
+ * таче — всегда. Отмена правки возвращает исходный текст; при ошибке введённый текст остаётся.
+ */
+export function Message({ comment, onSave, onDelete }: MessageProps) {
+    const touch = useTouchDevice();
+    /** Текст в поле правки; null — сообщение не редактируется */
+    const [draft, setDraft] = useState<string | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [confirming, setConfirming] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const fieldId = `comment-edit-${comment.id}`;
+    const cancelId = `comment-delete-cancel-${comment.id}`;
+
+    const canSave = draft !== null && !saving && commentTextValue(draft).success;
+    const save = async () => {
+        if (!canSave) return;
+        setSaving(true);
+        const saved = await onSave(draft);
+        setSaving(false);
+        if (saved) setDraft(null);
+    };
+    const remove = async () => {
+        setDeleting(true);
+        const removed = await onDelete();
+        // удалённое сообщение размонтируется вместе с диалогом
+        if (!removed) {
+            setDeleting(false);
+            setConfirming(false);
+        }
+    };
+
     return (
         <li className={styles.message}>
             <div key="head" className={styles.head}>
@@ -27,10 +70,110 @@ export function Message({ comment }: MessageProps) {
                         {timeAgo(comment.created_at)}
                     </span>
                 </div>
+                {draft === null && (comment.can_edit || comment.can_delete) && (
+                    <div key="actions" className={clsx(styles.actions, touch && styles.touch)}>
+                        {comment.can_edit && (
+                            <IconButton
+                                key="edit"
+                                icon="pencil"
+                                label="Редактировать комментарий"
+                                className={styles.action}
+                                onClick={() => {
+                                    setDraft(comment.text);
+                                    requestAnimationFrame(() =>
+                                        document.getElementById(fieldId)?.focus(),
+                                    );
+                                }}
+                            />
+                        )}
+                        {comment.can_delete && (
+                            <IconButton
+                                key="delete"
+                                icon="trash"
+                                label="Удалить комментарий"
+                                className={clsx(styles.action, styles.delete)}
+                                onClick={() => setConfirming(true)}
+                            />
+                        )}
+                    </div>
+                )}
             </div>
-            <p key="text" className={styles.text}>
-                {comment.text}
-            </p>
+            {draft === null ? (
+                <p key="text" className={styles.text}>
+                    {comment.text}
+                </p>
+            ) : (
+                <form
+                    key="edit"
+                    className={styles.edit}
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        void save();
+                    }}
+                >
+                    <Field
+                        key="field"
+                        id={fieldId}
+                        label="Текст комментария"
+                        value={draft}
+                        disabled={saving}
+                        onInput={setDraft}
+                        onSubmit={() => void save()}
+                        onEscape={() => {
+                            if (!saving) setDraft(null);
+                        }}
+                    />
+                    <div key="buttons" className={styles.buttons}>
+                        <Button
+                            key="save"
+                            type="submit"
+                            variant="primary"
+                            loading={saving}
+                            disabled={!canSave}
+                        >
+                            Сохранить
+                        </Button>
+                        <Button
+                            key="cancel"
+                            variant="secondary"
+                            disabled={saving}
+                            onClick={() => setDraft(null)}
+                        >
+                            Отмена
+                        </Button>
+                    </div>
+                </form>
+            )}
+            {confirming && (
+                <Modal
+                    key="confirm"
+                    title="Удалить комментарий?"
+                    description="Комментарий исчезнет из обсуждения ячейки. Это действие нельзя отменить."
+                    initialFocusId={cancelId}
+                    locked={deleting}
+                    onClose={() => setConfirming(false)}
+                >
+                    <div className={styles.buttons}>
+                        <Button
+                            key="cancel"
+                            id={cancelId}
+                            variant="secondary"
+                            disabled={deleting}
+                            onClick={() => setConfirming(false)}
+                        >
+                            Отмена
+                        </Button>
+                        <Button
+                            key="delete"
+                            variant="danger"
+                            loading={deleting}
+                            onClick={() => void remove()}
+                        >
+                            Удалить
+                        </Button>
+                    </div>
+                </Modal>
+            )}
         </li>
     );
 }

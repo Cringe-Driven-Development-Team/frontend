@@ -2,6 +2,11 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+
+    &:hover .actions,
+    &:focus-within .actions {
+        visibility: visible;
+    }
 }
 
 .head {
@@ -25,6 +30,7 @@
 }
 
 .who {
+    flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -49,4 +55,38 @@
     color: var(--color-text-primary);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
+}
+
+.actions {
+    display: flex;
+    flex: none;
+    gap: 2px;
+    visibility: hidden;
+
+    &.touch {
+        visibility: visible;
+    }
+}
+
+.action {
+    width: 32px;
+    height: 32px;
+    background: none;
+    box-shadow: none;
+}
+
+.delete:hover {
+    color: var(--color-error);
+}
+
+.edit {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
 }

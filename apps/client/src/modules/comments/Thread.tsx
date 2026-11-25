@@ -5,9 +5,9 @@ import { Button } from '@components/Button/Button';
 import { StateBlock } from '@components/StateBlock/StateBlock';
 import { changeCount, closeThread } from '@stores/comments';
 import { hideSnackbar, showSnackbar } from '@stores/snackbar';
-import { loadComments, sendComment } from './actions';
+import { deleteComment, editComment, loadComments, sendComment } from './actions';
 import { Field } from './Field';
-import { append, fromPage, prependOlder, type Comment } from './list';
+import { append, fromPage, prependOlder, remove, replace, type Comment } from './list';
 import { Message } from './Message';
 import styles from './Thread.module.css';
 
@@ -83,10 +83,11 @@ export function Thread({ notebookId, cellId, className }: ThreadProps) {
         };
         const onPointerDown = (event: PointerEvent) => {
             const target = event.target as Element;
-            // снекбар «Повторить» и диалоги — вне треда, но относятся к нему
+            // снекбар «Повторить» и диалог удаления — вне треда, но относятся к нему
             if (
                 rootRef.current?.contains(target) ||
-                target.closest(`[data-comment-toggle="${cellId}"], [role="alert"], [role="dialog"]`)
+                target.closest(`[data-comment-toggle="${cellId}"], [role="alert"]`) ||
+                document.querySelector('[aria-modal="true"]')
             ) {
                 return;
             }
@@ -150,6 +151,41 @@ export function Thread({ notebookId, cellId, className }: ThreadProps) {
         }
     };
 
+    const save = async (comment: Comment, text: string): Promise<boolean> => {
+        try {
+            const saved = await editComment(notebookId, cellId, comment.id, text);
+            if (aliveRef.current) {
+                setFeed((current) =>
+                    current.status === 'ready'
+                        ? { ...current, items: replace(current.items, saved) }
+                        : current,
+                );
+            }
+            return true;
+        } catch {
+            if (aliveRef.current) showSnackbar('Не удалось сохранить комментарий');
+            return false;
+        }
+    };
+
+    const drop = async (comment: Comment): Promise<boolean> => {
+        try {
+            await deleteComment(notebookId, cellId, comment.id);
+            changeCount(cellId, -1);
+            if (aliveRef.current) {
+                setFeed((current) =>
+                    current.status === 'ready'
+                        ? { ...current, items: remove(current.items, comment.id) }
+                        : current,
+                );
+            }
+            return true;
+        } catch {
+            if (aliveRef.current) showSnackbar('Не удалось удалить комментарий');
+            return false;
+        }
+    };
+
     const canSend = !sending && commentTextValue(draft).success;
     const submit = () => {
         if (canSend) void send(draft);
@@ -195,7 +231,12 @@ export function Thread({ notebookId, cellId, className }: ThreadProps) {
             {feed.status === 'ready' && hasItems && (
                 <ul key="list" className={styles.list}>
                     {feed.items.map((comment) => (
-                        <Message key={comment.id} comment={comment} />
+                        <Message
+                            key={comment.id}
+                            comment={comment}
+                            onSave={(text) => save(comment, text)}
+                            onDelete={() => drop(comment)}
+                        />
                     ))}
                 </ul>
             )}
