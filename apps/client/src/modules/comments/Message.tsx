@@ -1,4 +1,4 @@
-import { useState } from '@cdd-team/react';
+import { useRef, useState } from '@cdd-team/react';
 import { clsx } from '@cdd-team/clsx';
 import { commentTextValue } from '@cdd/schemas/validate';
 import { Button } from '@components/Button/Button';
@@ -31,20 +31,27 @@ export function Message({ comment, onSave, onDelete }: MessageProps) {
     const [saving, setSaving] = useState(false);
     const [confirming, setConfirming] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    /** Запрос идёт: рендер асинхронный, состояние в обработчиках до коммита ещё прежнее */
+    const busyRef = useRef(false);
     const fieldId = `comment-edit-${comment.id}`;
     const cancelId = `comment-delete-cancel-${comment.id}`;
 
     const canSave = draft !== null && !saving && commentTextValue(draft).success;
     const save = async () => {
-        if (!canSave) return;
+        if (!canSave || busyRef.current) return;
+        busyRef.current = true;
         setSaving(true);
         const saved = await onSave(draft);
+        busyRef.current = false;
         setSaving(false);
         if (saved) setDraft(null);
     };
     const remove = async () => {
+        if (busyRef.current) return;
+        busyRef.current = true;
         setDeleting(true);
         const removed = await onDelete();
+        busyRef.current = false;
         // удалённое сообщение размонтируется вместе с диалогом
         if (!removed) {
             setDeleting(false);

@@ -460,7 +460,11 @@ export function Cell({
                             <IconButton
                                 icon="comment"
                                 label={commentsOpen ? 'Скрыть комментарии' : 'Комментарии к ячейке'}
-                                className={clsx(styles.action, commentsOpen && styles.pressed)}
+                                className={clsx(
+                                    styles.action,
+                                    styles.comment,
+                                    commentsOpen && styles.pressed,
+                                )}
                                 onClick={onComment}
                             />
                         </span>

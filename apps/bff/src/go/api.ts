@@ -256,7 +256,6 @@ export function createGo(session: Session): Go {
                 [200],
                 contentChangeResponse,
             ),
-        /** 204 без тела: JSON не читается. */
         listComments: async (id, cellId, query) =>
             unwrap(
                 await call((init) =>
@@ -305,6 +304,7 @@ export function createGo(session: Session): Go {
                 [204],
             );
         },
+        /** 204 без тела: JSON не читается. */
         deleteNotebook: async (id) => {
             unwrap(
                 await call((init) =>

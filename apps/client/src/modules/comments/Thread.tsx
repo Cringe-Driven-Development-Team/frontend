@@ -25,7 +25,11 @@ type Feed =
 
 /** Фокус обратно на маркер или кнопку, открывшие тред. */
 const focusToggle = (cellId: string): void => {
-    document.querySelector<HTMLElement>(`[data-comment-toggle="${cellId}"]`)?.focus();
+    document
+        .querySelector<HTMLElement>(
+            `[data-comment-toggle="${cellId}"] button, button[data-comment-toggle="${cellId}"]`,
+        )
+        ?.focus();
 };
 
 /**
@@ -42,6 +46,8 @@ export function Thread({ notebookId, cellId, className }: ThreadProps) {
     const aliveRef = useRef(true);
     /** Снекбар «Повторить» этого треда: закрытие треда его снимает */
     const retryRef = useRef<number | undefined>(undefined);
+    /** Отправка идёт: рендер асинхронный, `sending` в обработчиках до коммита ещё прежний */
+    const sendingRef = useRef(false);
     const fieldId = `comment-field-${cellId}`;
 
     useEffect(() => {
@@ -128,6 +134,8 @@ export function Thread({ notebookId, cellId, className }: ThreadProps) {
     };
 
     const send = async (text: string): Promise<void> => {
+        if (sendingRef.current) return;
+        sendingRef.current = true;
         if (retryRef.current !== undefined) hideSnackbar(retryRef.current);
         setSending(true);
         try {
@@ -147,6 +155,7 @@ export function Thread({ notebookId, cellId, className }: ThreadProps) {
                 onClick: () => void send(text),
             });
         } finally {
+            sendingRef.current = false;
             if (aliveRef.current) setSending(false);
         }
     };

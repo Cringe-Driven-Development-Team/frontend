@@ -315,6 +315,13 @@
     box-shadow: none;
 }
 
+/* на таче наведения нет: кнопка комментариев видна и без фокуса в ячейке */
+.comment {
+    @media (pointer: coarse) {
+        visibility: visible;
+    }
+}
+
 .pressed {
     color: var(--color-primary-text);
 }
