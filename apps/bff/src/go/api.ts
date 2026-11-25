@@ -1,6 +1,9 @@
 import type {
     AddNotebookCellRequest,
     ChangeCurrentUserPasswordRequest,
+    Comment,
+    CommentPage,
+    CommentTextInput,
     ConfirmTwoFactorRequest,
     CreateNotebookRequest,
     Credentials,
@@ -35,6 +38,8 @@ import {
     activeRuntimeSessionResponse,
     authResponse,
     cellChangeResponse,
+    commentPageResponse,
+    commentResponse,
     contentChangeResponse,
     interruptResponse,
     notebookContentResponse,
@@ -96,6 +101,15 @@ export type Go = {
         body: MoveNotebookCellRequest,
     ): Promise<NotebookContentChange>;
     removeCell(id: number, cellId: string, hash: string): Promise<NotebookContentChange>;
+    listComments(id: number, cellId: string, query: { cursor?: string }): Promise<CommentPage>;
+    createComment(id: number, cellId: string, body: CommentTextInput): Promise<Comment>;
+    updateComment(
+        id: number,
+        cellId: string,
+        commentId: number,
+        body: CommentTextInput,
+    ): Promise<Comment>;
+    deleteComment(id: number, cellId: string, commentId: number): Promise<void>;
     deleteNotebook(id: number): Promise<void>;
     renameNotebook(id: number, name: string): Promise<Notebook>;
     logout(): Promise<ServerRevocation>;
@@ -243,6 +257,54 @@ export function createGo(session: Session): Go {
                 contentChangeResponse,
             ),
         /** 204 без тела: JSON не читается. */
+        listComments: async (id, cellId, query) =>
+            unwrap(
+                await call((init) =>
+                    go('GET', '/notebooks/{id}/content/cells/{cell_id}/comments', {
+                        params: { path: { id, cell_id: cellId }, query },
+                        init,
+                    }),
+                ),
+                [200],
+                commentPageResponse,
+            ),
+        createComment: async (id, cellId, body) =>
+            unwrap(
+                await call((init) =>
+                    go('POST', '/notebooks/{id}/content/cells/{cell_id}/comments', {
+                        params: { path: { id, cell_id: cellId } },
+                        contentType: 'application/json',
+                        body,
+                        init,
+                    }),
+                ),
+                [201],
+                commentResponse,
+            ),
+        updateComment: async (id, cellId, commentId, body) =>
+            unwrap(
+                await call((init) =>
+                    go('PATCH', '/notebooks/{id}/content/cells/{cell_id}/comments/{comment_id}', {
+                        params: { path: { id, cell_id: cellId, comment_id: commentId } },
+                        contentType: 'application/json',
+                        body,
+                        init,
+                    }),
+                ),
+                [200],
+                commentResponse,
+            ),
+        deleteComment: async (id, cellId, commentId) => {
+            unwrap(
+                await call((init) =>
+                    go('DELETE', '/notebooks/{id}/content/cells/{cell_id}/comments/{comment_id}', {
+                        params: { path: { id, cell_id: cellId, comment_id: commentId } },
+                        init,
+                    }),
+                ),
+                [204],
+            );
+        },
         deleteNotebook: async (id) => {
             unwrap(
                 await call((init) =>
