@@ -15,6 +15,7 @@ import LogoutIcon from '@assets/icons/logout.svg?react';
 import MoreIcon from '@assets/icons/more.svg?react';
 import OrbitIcon from '@assets/icons/orbit.svg?react';
 import PencilIcon from '@assets/icons/pencil.svg?react';
+import CommentIcon from '@assets/icons/comment.svg?react';
 import PlayIcon from '@assets/icons/play.svg?react';
 import PlusIcon from '@assets/icons/plus.svg?react';
 import PowerIcon from '@assets/icons/power.svg?react';
@@ -56,6 +57,7 @@ const ICONS = {
     power: PowerIcon,
     target: TargetIcon,
     ban: BanIcon,
+    comment: CommentIcon,
 };
 
 /** Имя иконки из макета. */

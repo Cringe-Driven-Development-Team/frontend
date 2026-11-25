@@ -133,6 +133,10 @@ interface CellProps {
     run?: 'running' | 'failed';
     /** Совпадения поиска по блокноту в исходнике ячейки */
     marks?: readonly SourceMark[];
+    /** Кнопка комментариев в панели ячейки; на таче панель только с ней */
+    onComment?: () => void;
+    /** Тред комментариев ячейки открыт: панель видна, кнопка нажата */
+    commentsOpen?: boolean;
 }
 
 /**
@@ -165,6 +169,8 @@ export function Cell({
     below,
     run,
     marks = NO_MARKS,
+    onComment,
+    commentsOpen = false,
 }: CellProps) {
     const isCode = cell.kind === 'code';
     const isRaw = cell.kind === 'raw';
@@ -299,6 +305,7 @@ export function Cell({
                 isCode && styles.code,
                 run && styles[run],
                 selected && styles.selected,
+                commentsOpen && styles.commentsOpen,
                 tooLarge && styles.tooLarge,
             )}
             onMouseDown={(event) => {
@@ -445,32 +452,47 @@ export function Cell({
                     </div>
                 )}
             </div>
-            {!readOnly && (
-                <div key="actions" className={styles.actions}>
-                    <IconButton
-                        key="up"
-                        icon="up"
-                        label="Переместить ячейку выше"
-                        className={styles.action}
-                        disabled={locked || !canMoveUp}
-                        onClick={onMoveUp}
-                    />
-                    <IconButton
-                        key="down"
-                        icon="down"
-                        label="Переместить ячейку ниже"
-                        className={styles.action}
-                        disabled={locked || !canMoveDown}
-                        onClick={onMoveDown}
-                    />
-                    <IconButton
-                        key="delete"
-                        icon="trash"
-                        label="Удалить ячейку"
-                        className={clsx(styles.action, styles.delete)}
-                        disabled={locked}
-                        onClick={onDelete}
-                    />
+            {(!readOnly || onComment) && (
+                <div key="actions" className={clsx(styles.actions, readOnly && styles.touch)}>
+                    {onComment && (
+                        // по атрибуту тред узнаёт свою кнопку: нажатие на неё — не клик вне треда
+                        <span key="comment" className={styles.toggle} data-comment-toggle={cell.id}>
+                            <IconButton
+                                icon="comment"
+                                label={commentsOpen ? 'Скрыть комментарии' : 'Комментарии к ячейке'}
+                                className={clsx(styles.action, commentsOpen && styles.pressed)}
+                                onClick={onComment}
+                            />
+                        </span>
+                    )}
+                    {!readOnly && (
+                        <>
+                            <IconButton
+                                key="up"
+                                icon="up"
+                                label="Переместить ячейку выше"
+                                className={styles.action}
+                                disabled={locked || !canMoveUp}
+                                onClick={onMoveUp}
+                            />
+                            <IconButton
+                                key="down"
+                                icon="down"
+                                label="Переместить ячейку ниже"
+                                className={styles.action}
+                                disabled={locked || !canMoveDown}
+                                onClick={onMoveDown}
+                            />
+                            <IconButton
+                                key="delete"
+                                icon="trash"
+                                label="Удалить ячейку"
+                                className={clsx(styles.action, styles.delete)}
+                                disabled={locked}
+                                onClick={onDelete}
+                            />
+                        </>
+                    )}
                 </div>
             )}
         </div>

@@ -298,8 +298,14 @@
     visibility: hidden;
 }
 
-.selected .actions {
+.selected .actions,
+.commentsOpen .actions,
+.actions.touch {
     visibility: visible;
+}
+
+.toggle {
+    display: contents;
 }
 
 .action {
@@ -307,6 +313,10 @@
     height: 32px;
     background: none;
     box-shadow: none;
+}
+
+.pressed {
+    color: var(--color-primary-text);
 }
 
 .delete:not(:disabled):hover {

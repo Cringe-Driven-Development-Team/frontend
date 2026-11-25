@@ -31,6 +31,9 @@ import {
 } from '@stores/notebook';
 import type { CreatableKind } from '@stores/notebook/snapshot';
 import { peekPreloadedNotebook, takePreloadedNotebook } from '@stores/preloaded';
+import { closeThread, toggleThread, useCommentsStore } from '@stores/comments';
+import { Marker } from '@modules/comments/Marker';
+import { Thread } from '@modules/comments/Thread';
 import {
     closeRuntime,
     openRuntime,
@@ -237,6 +240,7 @@ export function NotebookPage() {
     const forcedColors = useForcedColors();
     const notebook = useNotebookStore();
     const runtime = useRuntimeStore();
+    const openCellId = useCommentsStore((state) => state.openCellId);
 
     // до первой отрисовки: блокнот из bootstrap открывается в сторе без мигания скелетона
     useLayoutEffect(() => {
@@ -337,6 +341,13 @@ export function NotebookPage() {
     const ready = load === 'ready' && notebook.confirmed !== null;
     const cells = ready ? notebook.confirmed!.cells : [];
     const locked = structureLocked(notebook);
+
+    // ячейка с открытым тредом удалена, блокнот сменился или страница закрыта — тред закрывается
+    const threadCellGone = openCellId !== null && !cells.some((cell) => cell.id === openCellId);
+    useEffect(() => {
+        if (threadCellGone) closeThread();
+    }, [threadCellGone]);
+    useEffect(() => closeThread, [id]);
     const isEmpty = ready && cells.length === 0 && notebook.orphans.length === 0;
     const hasToolbar = load !== 'error';
     const execution = ready ? runtimeStatus(runtime) : undefined;
@@ -583,7 +594,10 @@ export function NotebookPage() {
                                         <OrphanDraft orphan={row.orphan} />
                                     </li>
                                 ) : (
-                                    <li key={row.cell.id}>
+                                    <li
+                                        key={row.cell.id}
+                                        data-comments={openCellId === row.cell.id ? '' : undefined}
+                                    >
                                         <CodeOrText
                                             key="cell"
                                             cell={row.cell}
@@ -618,7 +632,22 @@ export function NotebookPage() {
                                             onMoveUp={() => handleMove(row.cell.id, -1)}
                                             onMoveDown={() => handleMove(row.cell.id, 1)}
                                             onDelete={() => handleDelete(row.cell.id)}
+                                            onComment={() => toggleThread(row.cell.id)}
+                                            commentsOpen={openCellId === row.cell.id}
                                         />
+                                        <Marker
+                                            key="marker"
+                                            cellId={row.cell.id}
+                                            className={styles.marker}
+                                        />
+                                        {openCellId === row.cell.id && (
+                                            <Thread
+                                                key="thread"
+                                                notebookId={id}
+                                                cellId={row.cell.id}
+                                                className={styles.thread}
+                                            />
+                                        )}
                                         {row.index < cells.length - 1 && (
                                             <div key="insert" className={styles.insert}>
                                                 <AddCellChips

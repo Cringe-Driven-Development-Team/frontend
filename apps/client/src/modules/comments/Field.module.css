@@ -1,0 +1,28 @@
+.field {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 50px;
+    max-height: 240px;
+    padding: 12px 12px 12px 16px;
+    border: 1px solid var(--color-border-control);
+    border-radius: 12px;
+    background: var(--color-surface);
+    font: var(--font-body);
+    color: var(--color-text-primary);
+    resize: none;
+    overflow-wrap: anywhere;
+
+    &::placeholder {
+        color: var(--color-text-secondary);
+        opacity: 0.7;
+    }
+
+    &:focus-visible {
+        border-color: var(--color-focus);
+        outline: none;
+    }
+
+    &:disabled {
+        opacity: 0.6;
+    }
+}
