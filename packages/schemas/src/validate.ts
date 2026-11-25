@@ -251,6 +251,24 @@ export const array =
     };
 
 /**
+ * Словарь: любые ключи, каждое значение проходит одну проверку; путь проблемы — с ключом.
+ * @param item проверка значения
+ */
+export const recordOf =
+    <T, W>(item: Check<T, W>): Check<Record<string, T>, Record<string, W>> =>
+    (value, path, issues) => {
+        if (!isRecord(value)) return fail(issues, path, 'Ожидался объект');
+        const out: Record<string, T> = {};
+        let ok = true;
+        for (const [key, v] of Object.entries(value)) {
+            const r = item(v, [...path, key], issues);
+            if (r === INVALID) ok = false;
+            else out[key] = r;
+        }
+        return ok ? out : INVALID;
+    };
+
+/**
  * Объект по полям. `strip` отбрасывает лишние поля, `strict` считает их ошибкой объекта:
  * опечатка в имени поля не должна молча теряться.
  * @param shape проверки полей

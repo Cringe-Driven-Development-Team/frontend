@@ -31,7 +31,7 @@ import {
 } from '@stores/notebook';
 import type { CreatableKind } from '@stores/notebook/snapshot';
 import { peekPreloadedNotebook, takePreloadedNotebook } from '@stores/preloaded';
-import { closeThread, toggleThread, useCommentsStore } from '@stores/comments';
+import { closeThread, initComments, toggleThread, useCommentsStore } from '@stores/comments';
 import { Marker } from '@modules/comments/Marker';
 import { Thread } from '@modules/comments/Thread';
 import {
@@ -248,6 +248,7 @@ export function NotebookPage() {
         const first = takePreloadedNotebook(id);
         if (first) {
             openNotebook(first);
+            initComments(first.notebook.cell_comments_count);
             openRuntime(first);
             setLoad('ready');
             return () => {
@@ -264,6 +265,7 @@ export function NotebookPage() {
             }
             if (page) {
                 openNotebook(page);
+                initComments(page.notebook.cell_comments_count);
                 openRuntime(page);
                 setLoad('ready');
                 return;

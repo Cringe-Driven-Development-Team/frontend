@@ -12,6 +12,7 @@ import {
     object,
     oneOf,
     record,
+    recordOf,
     string,
     url,
     uuid,
@@ -145,6 +146,7 @@ export const notebookResponse: Validator<Notebook> = validator(
             can_manage_sharing: boolean,
             can_clone: boolean,
         }),
+        cell_comments_count: recordOf(int({ min: 1 })),
     }),
 );
 

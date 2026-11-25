@@ -135,6 +135,8 @@ export interface Notebook {
     created_at: string;
     updated_at: string;
     access: NotebookAccess;
+    /** Число комментариев по id ячейки; ячеек без комментариев нет (backend#134) */
+    cell_comments_count: Record<string, number>;
 }
 
 /** Блокнот в списке. */
