@@ -21,6 +21,8 @@ import {
 
 import type {
     AuthResponse,
+    Comment,
+    CommentPage,
     Notebook,
     NotebookCellChange,
     NotebookContent,
@@ -137,6 +139,12 @@ export const notebookResponse: Validator<Notebook> = validator(
         cells: array(cell),
         created_at: datetime,
         updated_at: datetime,
+        access: object({
+            is_owner: boolean,
+            can_edit: boolean,
+            can_manage_sharing: boolean,
+            can_clone: boolean,
+        }),
     }),
 );
 
@@ -248,4 +256,24 @@ export const stoppedResponse: Validator<{ stopped: true }> = validator(
 /** Прерывание kernel запрошено. */
 export const interruptResponse: Validator<{ interrupt_requested: true }> = validator(
     object({ interrupt_requested: literal(true) }),
+);
+
+const comment = object({
+    id: int({ min: 1 }),
+    notebook_id: int({ min: 1 }),
+    cell_id: cellId,
+    author: object({ id: int({ min: 1 }), login: string() }),
+    text: string({ min: 1 }),
+    created_at: datetime,
+    updated_at: datetime,
+    can_edit: boolean,
+    can_delete: boolean,
+});
+
+/** Комментарий к ячейке: создание и правка. */
+export const commentResponse: Validator<Comment> = validator(comment);
+
+/** Страница ленты комментариев ячейки. */
+export const commentPageResponse: Validator<CommentPage> = validator(
+    object({ items: array(comment), next_cursor: nullable(string({ min: 1 })) }),
 );

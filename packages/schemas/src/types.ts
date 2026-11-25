@@ -119,6 +119,14 @@ export interface Cell {
     source: string;
 }
 
+/** Права текущего посетителя на блокнот. */
+export interface NotebookAccess {
+    is_owner: boolean;
+    can_edit: boolean;
+    can_manage_sharing: boolean;
+    can_clone: boolean;
+}
+
 /** Блокнот. */
 export interface Notebook {
     id: number;
@@ -126,6 +134,7 @@ export interface Notebook {
     cells: Cell[];
     created_at: string;
     updated_at: string;
+    access: NotebookAccess;
 }
 
 /** Блокнот в списке. */
@@ -360,10 +369,60 @@ export interface RuntimeEventsResponse {
     has_more: boolean;
 }
 
+/** Автор комментария. */
+export interface CommentAuthor {
+    id: number;
+    login: string;
+}
+
+/** Комментарий к ячейке: `can_edit` и `can_delete` — права текущего пользователя. */
+export interface Comment {
+    id: number;
+    notebook_id: number;
+    cell_id: string;
+    author: CommentAuthor;
+    text: string;
+    created_at: string;
+    updated_at: string;
+    can_edit: boolean;
+    can_delete: boolean;
+}
+
+/** Страница ленты комментариев ячейки: новые первыми. */
+export interface CommentPage {
+    items: Comment[];
+    next_cursor: string | null;
+}
+
+/** Текст комментария. */
+export interface CommentTextInput {
+    text: string;
+}
+
+/** Ошибка комментариев. */
+export interface CommentError {
+    code:
+        | 'validation_error'
+        | 'unauthorized'
+        | 's2s_forbidden'
+        | 'not_found'
+        | 'forbidden'
+        | 'internal';
+    message: string;
+}
+
+/** Параметры ленты комментариев. */
+export type ListCommentsParams = {
+    limit?: number;
+    cursor?: string;
+};
+
 type Json<T> = { 'application/json': T };
 type Errors<S extends number, E> = { [K in S]: E };
 type Id = { id: number };
 type RuntimeId = { id: string };
+type CellPath = Id & { cell_id: string };
+type CommentPath = CellPath & { comment_id: number };
 type IfMatch = { 'If-Match': string };
 type RuntimeErrors = Errors<400 | 401 | 403 | 404 | 500, Error> & { 503: RuntimeError };
 type RuntimeConflictErrors = RuntimeErrors & { 409: RuntimeError };
@@ -505,6 +564,28 @@ export type GoPaths = {
                 400 | 401 | 403 | 404 | 409 | 500,
                 NotebookEditingError
             >;
+        };
+    };
+    '/notebooks/{id}/content/cells/{cell_id}/comments': {
+        GET: {
+            params: { path: CellPath; query?: ListCommentsParams };
+            responses: { 200: CommentPage } & Errors<400 | 401 | 403 | 404 | 500, CommentError>;
+        };
+        POST: {
+            params: { path: CellPath };
+            body: Json<CommentTextInput>;
+            responses: { 201: Comment } & Errors<400 | 401 | 403 | 404 | 413 | 500, CommentError>;
+        };
+    };
+    '/notebooks/{id}/content/cells/{cell_id}/comments/{comment_id}': {
+        PATCH: {
+            params: { path: CommentPath };
+            body: Json<CommentTextInput>;
+            responses: { 200: Comment } & Errors<400 | 401 | 403 | 404 | 413 | 500, CommentError>;
+        };
+        DELETE: {
+            params: { path: CommentPath };
+            responses: { 204: undefined } & Errors<400 | 401 | 403 | 404 | 500, CommentError>;
         };
     };
     '/notebooks/{id}/runtime-sessions': {
