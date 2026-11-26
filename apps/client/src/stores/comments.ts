@@ -18,14 +18,6 @@ export function initComments(counts: Record<string, number>): void {
     useCommentsStore.setState({ counts: { ...counts }, openCellId: null });
 }
 
-/**
- * Открывает тред ячейки, предыдущий закрывается.
- * @param cellId id ячейки
- */
-export function openThread(cellId: string): void {
-    useCommentsStore.setState({ openCellId: cellId });
-}
-
 /** Закрывает тред. */
 export function closeThread(): void {
     useCommentsStore.setState({ openCellId: null });
