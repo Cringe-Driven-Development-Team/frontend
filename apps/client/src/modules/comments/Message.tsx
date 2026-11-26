@@ -1,4 +1,4 @@
-import { useRef, useState } from '@cdd-team/react';
+import { useEffect, useRef, useState } from '@cdd-team/react';
 import { clsx } from '@cdd-team/clsx';
 import { commentTextValue } from '@cdd/schemas/validate';
 import { Button } from '@components/Button/Button';
@@ -33,6 +33,20 @@ export function Message({ comment, onSave, onDelete }: MessageProps) {
     const [deleting, setDeleting] = useState(false);
     /** Запрос идёт: рендер асинхронный, состояние в обработчиках до коммита ещё прежнее */
     const busyRef = useRef(false);
+    const itemRef = useRef<HTMLLIElement>(null);
+    /** Правка закрыта с клавиатуры или кнопкой: фокус обратно на «Редактировать» */
+    const [refocus, setRefocus] = useState(false);
+    useEffect(() => {
+        if (!refocus) return;
+        setRefocus(false);
+        itemRef.current
+            ?.querySelector<HTMLElement>('button[aria-label="Редактировать комментарий"]')
+            ?.focus();
+    }, [refocus]);
+    const closeEdit = () => {
+        setDraft(null);
+        setRefocus(true);
+    };
     const fieldId = `comment-edit-${comment.id}`;
     const cancelId = `comment-delete-cancel-${comment.id}`;
 
@@ -44,7 +58,7 @@ export function Message({ comment, onSave, onDelete }: MessageProps) {
         const saved = await onSave(draft);
         busyRef.current = false;
         setSaving(false);
-        if (saved) setDraft(null);
+        if (saved) closeEdit();
     };
     const remove = async () => {
         if (busyRef.current) return;
@@ -60,7 +74,7 @@ export function Message({ comment, onSave, onDelete }: MessageProps) {
     };
 
     return (
-        <li className={styles.message}>
+        <li ref={itemRef} className={styles.message}>
             <div key="head" className={styles.head}>
                 <span key="avatar" className={styles.avatar} aria-hidden="true">
                     {comment.author.login.charAt(0).toUpperCase()}
@@ -85,12 +99,7 @@ export function Message({ comment, onSave, onDelete }: MessageProps) {
                                 icon="pencil"
                                 label="Редактировать комментарий"
                                 className={styles.action}
-                                onClick={() => {
-                                    setDraft(comment.text);
-                                    requestAnimationFrame(() =>
-                                        document.getElementById(fieldId)?.focus(),
-                                    );
-                                }}
+                                onClick={() => setDraft(comment.text)}
                             />
                         )}
                         {comment.can_delete && (
@@ -124,10 +133,11 @@ export function Message({ comment, onSave, onDelete }: MessageProps) {
                         label="Текст комментария"
                         value={draft}
                         disabled={saving}
+                        focusOnMount
                         onInput={setDraft}
                         onSubmit={() => void save()}
                         onEscape={() => {
-                            if (!saving) setDraft(null);
+                            if (!saving) closeEdit();
                         }}
                     />
                     <div key="buttons" className={styles.buttons}>
@@ -144,7 +154,7 @@ export function Message({ comment, onSave, onDelete }: MessageProps) {
                             key="cancel"
                             variant="secondary"
                             disabled={saving}
-                            onClick={() => setDraft(null)}
+                            onClick={closeEdit}
                         >
                             Отмена
                         </Button>

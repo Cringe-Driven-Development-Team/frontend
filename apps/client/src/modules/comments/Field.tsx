@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from '@cdd-team/react';
+import { useEffect, useLayoutEffect, useRef } from '@cdd-team/react';
 import styles from './Field.module.css';
 
 /** Свойства {@link Field}. */
@@ -8,6 +8,8 @@ interface FieldProps {
     value: string;
     placeholder?: string;
     disabled?: boolean;
+    /** Фокус в поле сразу после появления, курсор — в конце текста */
+    focusOnMount?: boolean;
     onInput: (value: string) => void;
     /** Ctrl/Cmd+Enter — отправить */
     onSubmit: () => void;
@@ -22,6 +24,7 @@ export function Field({
     value,
     placeholder,
     disabled,
+    focusOnMount = false,
     onInput,
     onSubmit,
     onEscape,
@@ -33,6 +36,12 @@ export function Field({
         element.style.height = 'auto';
         element.style.height = `${element.scrollHeight + element.offsetHeight - element.clientHeight}px`;
     }, [value]);
+    useEffect(() => {
+        const element = ref.current;
+        if (!focusOnMount || !element) return;
+        element.focus();
+        element.setSelectionRange(element.value.length, element.value.length);
+    }, [focusOnMount]);
     return (
         <textarea
             ref={ref}

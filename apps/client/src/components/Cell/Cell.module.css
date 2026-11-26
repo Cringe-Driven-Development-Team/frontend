@@ -300,6 +300,7 @@
 
 .selected .actions,
 .commentsOpen .actions,
+.actions:focus-within,
 .actions.touch {
     visibility: visible;
 }
