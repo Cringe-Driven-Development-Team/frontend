@@ -264,7 +264,7 @@ const comment = object({
     id: int({ min: 1 }),
     notebook_id: int({ min: 1 }),
     cell_id: cellId,
-    author: object({ id: int({ min: 1 }), login: string() }),
+    author: object({ id: int({ min: 1 }), login: string(), avatar_url: nullable(url) }),
     text: string({ min: 1 }),
     created_at: datetime,
     updated_at: datetime,

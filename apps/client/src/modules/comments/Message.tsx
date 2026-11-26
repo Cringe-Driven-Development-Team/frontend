@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from '@cdd-team/react';
 import { clsx } from '@cdd-team/clsx';
 import { commentTextValue } from '@cdd/schemas/validate';
+import { Avatar } from '@components/Avatar/Avatar';
 import { Button } from '@components/Button/Button';
 import { IconButton } from '@components/IconButton/IconButton';
 import { Modal } from '@components/Modal/Modal';
@@ -20,7 +21,7 @@ interface MessageProps {
 }
 
 /**
- * Сообщение треда: буква логина, логин, время и текст с переносами. «Редактировать» и «Удалить» —
+ * Сообщение треда: аватар автора, логин, время и текст с переносами. «Редактировать» и «Удалить» —
  * только по `can_edit` / `can_delete` из ответа Go; на десктопе видны при наведении и фокусе, на
  * таче — всегда. Отмена правки возвращает исходный текст; при ошибке введённый текст остаётся.
  */
@@ -76,9 +77,12 @@ export function Message({ comment, onSave, onDelete }: MessageProps) {
     return (
         <li ref={itemRef} className={styles.message}>
             <div key="head" className={styles.head}>
-                <span key="avatar" className={styles.avatar} aria-hidden="true">
-                    {comment.author.login.charAt(0).toUpperCase()}
-                </span>
+                <Avatar
+                    key="avatar"
+                    login={comment.author.login}
+                    src={comment.author.avatar_url}
+                    className={styles.avatar}
+                />
                 <div key="who" className={styles.who}>
                     <span key="login" className={styles.login}>
                         {comment.author.login}

@@ -375,6 +375,8 @@ export interface RuntimeEventsResponse {
 export interface CommentAuthor {
     id: number;
     login: string;
+    /** Публичный URL аватара; null — аватара нет (backend#137) */
+    avatar_url: string | null;
 }
 
 /** Комментарий к ячейке: `can_edit` и `can_delete` — права текущего пользователя. */

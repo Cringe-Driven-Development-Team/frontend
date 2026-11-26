@@ -16,17 +16,8 @@
 }
 
 .avatar {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    justify-content: center;
     width: 32px;
     height: 32px;
-    border-radius: 50%;
-    background: var(--color-primary);
-    box-shadow: inset 0 0 0 1px var(--color-border);
-    font: var(--font-body-accent);
-    color: var(--color-on-primary);
 }
 
 .who {
