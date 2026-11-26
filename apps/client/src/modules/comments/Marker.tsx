@@ -4,12 +4,16 @@ import { toggleThread, useCommentsStore } from '@stores/comments';
 import { plural } from '@utils/plural';
 import styles from './Marker.module.css';
 
-/**
- * Маркер у ячейки с комментариями: число и открытие треда. Без комментариев не показывается.
- * @param props.cellId ячейка
- * @param props.className положение у ячейки — задаёт страница
- */
-export function Marker({ cellId, className }: { cellId: string; className?: string }) {
+/** Свойства {@link Marker}. */
+interface MarkerProps {
+    /** Ячейка */
+    cellId: string;
+    /** Положение у ячейки — задаёт страница */
+    className?: string;
+}
+
+/** Маркер у ячейки с комментариями: число и открытие треда. Без комментариев не показывается. */
+export function Marker({ cellId, className }: MarkerProps) {
     const count = useCommentsStore((state) => state.counts[cellId] ?? 0);
     const open = useCommentsStore((state) => state.openCellId === cellId);
     if (count === 0) return null;
