@@ -251,6 +251,24 @@ export const array =
     };
 
 /**
+ * Словарь: любые ключи, каждое значение проходит одну проверку; путь проблемы — с ключом.
+ * @param item проверка значения
+ */
+export const recordOf =
+    <T, W>(item: Check<T, W>): Check<Record<string, T>, Record<string, W>> =>
+    (value, path, issues) => {
+        if (!isRecord(value)) return fail(issues, path, 'Ожидался объект');
+        const out: Record<string, T> = {};
+        let ok = true;
+        for (const [key, v] of Object.entries(value)) {
+            const r = item(v, [...path, key], issues);
+            if (r === INVALID) ok = false;
+            else out[key] = r;
+        }
+        return ok ? out : INVALID;
+    };
+
+/**
  * Объект по полям. `strip` отбрасывает лишние поля, `strict` считает их ошибкой объекта:
  * опечатка в имени поля не должна молча теряться.
  * @param shape проверки полей
@@ -424,6 +442,48 @@ export const moveCellInput = validator(
 
 /** Удаление ячейки. */
 export const deleteCellInput = validator(object({ ...target, cellId }, 'strict'));
+
+/** ID комментария: положительное целое. */
+const commentId = int({ min: 1 });
+
+/**
+ * Текст комментария по контракту Go: после обрезки пробелов 1–5000 code points. Уходит как есть.
+ * @param value проверяемое значение
+ * @param path путь до поля
+ * @param issues накопитель проблем
+ */
+const commentText: Check<string> = (value, path, issues) => {
+    if (typeof value !== 'string') return fail(issues, path, 'Ожидалась строка');
+    const length = [...value.trim()].length;
+    if (length < 1) return fail(issues, path, 'Пустой комментарий');
+    if (length > 5000) return fail(issues, path, 'Не длиннее 5000 символов');
+    return value;
+};
+
+/** Текст комментария отдельно — для формы до отправки той же функцией, что и в BFF. */
+export const commentTextValue = validator(commentText);
+
+/** Query ленты комментариев ячейки. */
+export const listCommentsInput = validator(
+    query({
+        notebookId: intParam({ min: 1 }),
+        cellId,
+        cursor: optional(string({ min: 1, max: 2048 })),
+    }),
+);
+
+/** Новый комментарий к ячейке. */
+export const createCommentInput = validator(
+    object({ notebookId, cellId, text: commentText }, 'strict'),
+);
+
+/** Новый текст своего комментария. */
+export const updateCommentInput = validator(
+    object({ notebookId, cellId, commentId, text: commentText }, 'strict'),
+);
+
+/** Удаление комментария. */
+export const deleteCommentInput = validator(object({ notebookId, cellId, commentId }, 'strict'));
 
 /** Запуск окружения блокнота. */
 export const startRuntimeInput = validator(

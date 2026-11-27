@@ -1,6 +1,7 @@
 import type { PathsOf } from '../http.ts';
 import { auth } from './auth.ts';
 import { cells } from './cells.ts';
+import { comments } from './comments.ts';
 import { notebooks } from './notebooks.ts';
 import { runtime } from './runtime.ts';
 import { twoFactor } from './twoFactor.ts';
@@ -13,6 +14,7 @@ export const routes = [
     ...twoFactor,
     ...notebooks,
     ...cells,
+    ...comments,
     ...runtime,
 ] as const;
 

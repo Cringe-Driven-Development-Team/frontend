@@ -298,8 +298,15 @@
     visibility: hidden;
 }
 
-.selected .actions {
+.selected .actions,
+.commentsOpen .actions,
+.actions:focus-within,
+.actions.touch {
     visibility: visible;
+}
+
+.toggle {
+    display: contents;
 }
 
 .action {
@@ -307,6 +314,17 @@
     height: 32px;
     background: none;
     box-shadow: none;
+}
+
+/* на таче наведения нет: кнопка комментариев видна и без фокуса в ячейке */
+.comment {
+    @media (pointer: coarse) {
+        visibility: visible;
+    }
+}
+
+.pressed {
+    color: var(--color-primary-text);
 }
 
 .delete:not(:disabled):hover {

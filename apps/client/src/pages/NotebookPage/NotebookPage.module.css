@@ -105,6 +105,44 @@
     }
 }
 
+/* Открытый тред комментариев: ячейка подсвечена, пока тред открыт */
+.cells > li[data-comments]::after {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    box-shadow: inset 0 0 0 2px var(--color-focus);
+    pointer-events: none;
+    content: '';
+}
+
+/* Маркер комментариев: на правом крае ячейки; на узком экране — под ней справа */
+.marker {
+    position: absolute;
+    top: 52px;
+    right: -28px;
+    z-index: 1;
+
+    @media (max-width: 860px) {
+        position: static;
+        display: flex;
+        margin: 8px 0 0 auto;
+    }
+}
+
+/* Тред: поповер справа от колонки ячеек; где ему не хватает места справа — блок под ячейкой */
+.thread {
+    position: absolute;
+    top: 0;
+    left: calc(100% + 36px);
+    z-index: 2;
+
+    /* колонка 792 по центру + 36 + 272 + отступ 16 помещаются с 1440 px */
+    @media (max-width: 1439px) {
+        position: static;
+        margin-top: 12px;
+    }
+}
+
 /* Вставка между ячейками: зона — промежуток под ячейкой, чипы видны при наведении или фокусе */
 .insert {
     position: absolute;

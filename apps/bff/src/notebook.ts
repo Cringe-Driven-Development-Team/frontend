@@ -14,6 +14,8 @@ export type NotebookPage = {
         updated_at: string;
         hash: string;
         cells: NotebookContent['cells'];
+        /** Число комментариев по id ячейки: маркеры у ячеек */
+        cell_comments_count: Record<string, number>;
     };
     active_session: RuntimeSession | null;
     runtime_queue: RuntimeQueueSnapshot | null;
@@ -46,6 +48,7 @@ export async function loadNotebook(go: Go, id: number): Promise<NotebookPage> {
             updated_at: meta.updated_at,
             hash: content.hash,
             cells: content.cells,
+            cell_comments_count: meta.cell_comments_count,
         },
         active_session: activeSession,
         runtime_queue: runtimeQueue,
